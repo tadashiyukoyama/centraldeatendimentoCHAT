@@ -84,9 +84,16 @@ falhando no job `87830390554`. A falha é determinística no mock de
 `useChannelConfig.js`. O resultado observado foi 2 testes falhos, 376 de 377
 arquivos aprovados e 3738 de 3740 testes aprovados. `lint-frontend` passou.
 
+O run automático mais recente da PR, `29567520103`, reproduziu exatamente os
+mesmos 2 testes falhos, com 376 de 377 arquivos e 3738 de 3740 testes
+aprovados. O erro terminal continua sendo a ausência de `useStore` no mock de
+`dashboard/composables/store`; o sourcemap ausente de
+`@chatwoot/prosemirror-schema` permanece ancillary. Nenhum arquivo de produto
+foi alterado para obter essa evidência.
+
 Os arquivos do produto envolvidos não foram alterados nesta correção e não
 tinham diff em relação à base autorizada; o diagnóstico não inclui conserto de
-produto. O CI será observado após o novo commit, sem reexecução manual antes
+produto. O CI foi observado após o novo commit, sem reexecução manual antes
 dele.
 
 ## Evidência operacional

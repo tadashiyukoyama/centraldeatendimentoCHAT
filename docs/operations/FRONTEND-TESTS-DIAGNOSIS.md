@@ -41,6 +41,12 @@ Error: ENOENT: no such file or directory, open '.../@chatwoot/prosemirror-schema
 It did not replace the failing job or change the terminal `useStore` failure.
 The current failure is therefore the same failure as the previous run.
 
+The automatic PR run after the Windows foundation follow-up was
+`29567520103`. It reproduced the same two failures, with 376/377 files and
+3738/3740 tests passing; `lint-frontend` and all backend jobs passed. The
+missing `@chatwoot/prosemirror-schema` sourcemap was also logged again. No
+frontend product file was changed to obtain this result.
+
 ## Scope decision
 
 No related product file was changed by this PR. The comparison against the
