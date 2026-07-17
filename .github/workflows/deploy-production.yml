@@ -1,0 +1,230 @@
+name: Deploy production image through ICP
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Full 40-character commit SHA already published to GHCR
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: centraldeatendimentochat-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Validate explicit image tag
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          set -euo pipefail
+          [[ "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]]
+
+      - name: Checkout exact deployment revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.image_tag }}
+          fetch-depth: 1
+
+      - name: Validate deployment revision ancestry
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$IMAGE_TAG"
+          git cat-file -e "$IMAGE_TAG^{commit}"
+          if test -f .git/shallow; then
+            git fetch --no-tags --unshallow origin "+refs/heads/main:refs/remotes/origin/main"
+          else
+            git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main"
+          fi
+          git rev-parse --verify refs/remotes/origin/main >/dev/null
+          git merge-base --is-ancestor "$IMAGE_TAG" origin/main
+          test "$(git log -1 --format=%H)" = "$IMAGE_TAG"
+          test "$(git hash-object scripts/deploy/deploy-production.sh)" = "$(git rev-parse "$IMAGE_TAG:scripts/deploy/deploy-production.sh")"
+          test "$(git hash-object scripts/deploy/rollback-production.sh)" = "$(git rev-parse "$IMAGE_TAG:scripts/deploy/rollback-production.sh")"
+
+      - name: Prepare deploy key
+        env:
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$PROD_SSH_KEY"
+          printf '%s\n' "$PROD_SSH_KEY" > "$RUNNER_TEMP/prod-key"
+          chmod 600 "$RUNNER_TEMP/prod-key"
+
+      - name: Prepare pinned SSH host key
+        env:
+          PROD_HOST: ${{ vars.PROD_HOST }}
+          PROD_PORT: ${{ vars.PROD_PORT }}
+          PROD_SSH_HOST_KEY: ${{ vars.PROD_SSH_HOST_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$PROD_HOST"
+          test -n "$PROD_PORT"
+          test -n "$PROD_SSH_HOST_KEY"
+          ssh-keyscan -p "$PROD_PORT" "$PROD_HOST" > "$RUNNER_TEMP/prod-host-key.scan" 2>/dev/null
+          actual=$(ssh-keygen -lf "$RUNNER_TEMP/prod-host-key.scan" -E sha256 | awk 'NR == 1 {print $2}')
+          test "$actual" = "$PROD_SSH_HOST_KEY"
+          cp "$RUNNER_TEMP/prod-host-key.scan" "$RUNNER_TEMP/prod-known-hosts"
+
+      - name: Verify remote production contract
+        env:
+          PROD_HOST: ${{ vars.PROD_HOST }}
+          PROD_PORT: ${{ vars.PROD_PORT }}
+          PROD_USER: ${{ vars.PROD_USER }}
+        run: |
+          set -euo pipefail
+          declare -A expected=(
+            [deploy-production.sh]="$(sha256sum scripts/deploy/deploy-production.sh | awk '{print $1}')"
+            [rollback-production.sh]="$(sha256sum scripts/deploy/rollback-production.sh | awk '{print $1}')"
+            [install-production-env.sh]="$(sha256sum scripts/deploy/install-production-env.sh | awk '{print $1}')"
+            [docker-compose.production.yaml]="$(sha256sum infra/compose/docker-compose.production.yaml | awk '{print $1}')"
+            [ssh-gateway.sh]="$(sha256sum scripts/deploy/ssh-gateway.sh | awk '{print $1}')"
+          )
+          remote_contract=$(ssh -i "$RUNNER_TEMP/prod-key" -p "$PROD_PORT" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/prod-known-hosts" \
+            "$PROD_USER@$PROD_HOST" verify-contract)
+          declare -A seen=()
+          mismatch=0
+          count=0
+          while IFS=' ' read -r name hash extra; do
+            [[ -z "${name:-}" ]] && continue
+            expected_hash=''
+            case "$name" in
+              deploy-production.sh|rollback-production.sh|install-production-env.sh|docker-compose.production.yaml|ssh-gateway.sh)
+                expected_hash=${expected[$name]}
+                ;;
+              *)
+                mismatch=1
+                break
+                ;;
+            esac
+            if [[ -n "${extra:-}" || ! "$hash" =~ ^[0-9a-f]{64}$ || "$hash" != "$expected_hash" || -n "${seen[$name]:-}" ]]; then
+              mismatch=1
+              break
+            fi
+            seen[$name]=1
+            ((count += 1))
+          done <<< "$remote_contract"
+          for name in "${!expected[@]}"; do
+            if [[ -z "${seen[$name]:-}" ]]; then
+              mismatch=1
+              break
+            fi
+          done
+          if (( mismatch != 0 || count != ${#expected[@]} )); then
+            echo 'Production contract mismatch: remote root-owned files do not match the selected commit.' >&2
+            exit 1
+          fi
+
+      - name: Preflight immutable image and public ingress
+        env:
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          PROD_DOMAIN: ${{ vars.PROD_DOMAIN }}
+          PROD_EXPECTED_IP: ${{ vars.PROD_EXPECTED_IP }}
+          ICP_PANEL_DOMAIN: ${{ vars.ICP_PANEL_DOMAIN }}
+        run: |
+          set -euo pipefail
+
+          validate_ipv4() {
+            local ip=$1
+            local IFS=.
+            local -a octets
+            local octet
+
+            read -r -a octets <<< "$ip"
+            if (( ${#octets[@]} != 4 )); then
+              return 1
+            fi
+            for octet in "${octets[@]}"; do
+              [[ "$octet" =~ ^[0-9]{1,3}$ ]] || return 1
+              if [[ ${#octet} -gt 1 && "$octet" == 0* ]]; then
+                return 1
+              fi
+              (( 10#$octet <= 255 )) || return 1
+            done
+          }
+
+          check_https() {
+            local label=$1
+            local domain=$2
+            local http_status
+
+            if ! http_status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 15 "https://${domain}/"); then
+              echo "${label} TLS validation failed for https://${domain}/" >&2
+              return 1
+            fi
+            if [[ "$http_status" == 000 || ! "$http_status" =~ ^[0-9]{3}$ || "$http_status" -lt 200 || "$http_status" -gt 599 ]]; then
+              echo "${label} returned an invalid or unreachable HTTP status: ${http_status}" >&2
+              return 1
+            fi
+            echo "${label} status observed: ${http_status}"
+          }
+
+          test -n "$GHCR_PULL_TOKEN"
+          test -n "$IMAGE_TAG"
+          test -n "$PROD_DOMAIN"
+          test -n "$PROD_EXPECTED_IP"
+          test -n "$ICP_PANEL_DOMAIN"
+          [[ "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$PROD_DOMAIN" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$ ]]
+          [[ "$ICP_PANEL_DOMAIN" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$ ]]
+          validate_ipv4 "$PROD_EXPECTED_IP"
+
+          trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
+          printf '%s' "$GHCR_PULL_TOKEN" | docker login ghcr.io --username tadashiyukoyama --password-stdin >/dev/null
+          docker buildx imagetools inspect "ghcr.io/tadashiyukoyama/centraldeatendimentochat:${IMAGE_TAG}" >/dev/null
+
+          mapfile -t resolved_ips < <(getent ahostsv4 "$PROD_DOMAIN" | awk '{print $1}' | sort -u)
+          if (( ${#resolved_ips[@]} != 1 )) || [[ "${resolved_ips[0]:-}" != "$PROD_EXPECTED_IP" ]]; then
+            echo "PROD_DOMAIN does not resolve exclusively to PROD_EXPECTED_IP: ${PROD_DOMAIN}" >&2
+            exit 1
+          fi
+          check_https 'Chatwoot domain' "$PROD_DOMAIN"
+          check_https 'ICP panel domain' "$ICP_PANEL_DOMAIN"
+
+      - name: Install production environment file
+        env:
+          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+          PROD_HOST: ${{ vars.PROD_HOST }}
+          PROD_PORT: ${{ vars.PROD_PORT }}
+          PROD_USER: ${{ vars.PROD_USER }}
+        run: |
+          set -euo pipefail
+          test -n "$PROD_ENV_FILE"
+          printf '%s' "$PROD_ENV_FILE" | ssh -i "$RUNNER_TEMP/prod-key" -p "$PROD_PORT" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/prod-known-hosts" "$PROD_USER@$PROD_HOST" install-env
+
+      - name: Deploy exact image and verify ICP
+        env:
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          PROD_DOMAIN: ${{ vars.PROD_DOMAIN }}
+          ICP_PANEL_DOMAIN: ${{ vars.ICP_PANEL_DOMAIN }}
+          PROD_EXPECTED_IP: ${{ vars.PROD_EXPECTED_IP }}
+          PROD_HOST: ${{ vars.PROD_HOST }}
+          PROD_PORT: ${{ vars.PROD_PORT }}
+          PROD_USER: ${{ vars.PROD_USER }}
+        run: |
+          set -euo pipefail
+          test -n "$GHCR_PULL_TOKEN"
+          test -n "$PROD_DOMAIN"
+          test -n "$PROD_EXPECTED_IP"
+          test -n "$ICP_PANEL_DOMAIN"
+          [[ "$PROD_DOMAIN" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$ ]]
+          [[ "$ICP_PANEL_DOMAIN" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$ ]]
+          printf '%s' "$GHCR_PULL_TOKEN" | ssh -i "$RUNNER_TEMP/prod-key" -p "$PROD_PORT" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/prod-known-hosts" "$PROD_USER@$PROD_HOST" "deploy-production $IMAGE_TAG $PROD_DOMAIN $ICP_PANEL_DOMAIN $PROD_EXPECTED_IP"
+
+      - name: Remove transient SSH material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/prod-key" "$RUNNER_TEMP/prod-host-key.scan" "$RUNNER_TEMP/prod-known-hosts"

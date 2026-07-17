@@ -1,5 +1,11 @@
 name: centraldeatendimentochat-production
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '5'
+
 services:
   rails:
     image: ${CHATWOOT_IMAGE:?Defina CHATWOOT_IMAGE com uma tag imutável}
@@ -13,7 +19,7 @@ services:
       INSTALLATION_ENV: docker
       PORT: 3000
     volumes:
-      - ${CHATWOOT_STORAGE_DIR:?Defina CHATWOOT_STORAGE_DIR}/storage:/app/storage
+      - ${CHATWOOT_STORAGE_DIR:?Defina CHATWOOT_STORAGE_DIR}:/app/storage
     ports:
       - '127.0.0.1:${CHATWOOT_APP_PORT:-3000}:3000'
     depends_on:
@@ -33,6 +39,7 @@ services:
       timeout: 5s
       start_period: 45s
       retries: 5
+    logging: *default-logging
     security_opt:
       - no-new-privileges:true
     networks:
@@ -49,13 +56,14 @@ services:
       RAILS_ENV: production
       INSTALLATION_ENV: docker
     volumes:
-      - ${CHATWOOT_STORAGE_DIR:?Defina CHATWOOT_STORAGE_DIR}/storage:/app/storage
+      - ${CHATWOOT_STORAGE_DIR:?Defina CHATWOOT_STORAGE_DIR}:/app/storage
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     command: ['bundle', 'exec', 'sidekiq', '-C', 'config/sidekiq.yml']
+    logging: *default-logging
     security_opt:
       - no-new-privileges:true
     networks:
@@ -75,6 +83,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+    logging: *default-logging
     networks:
       - private
 
@@ -91,6 +100,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+    logging: *default-logging
     networks:
       - private
 
