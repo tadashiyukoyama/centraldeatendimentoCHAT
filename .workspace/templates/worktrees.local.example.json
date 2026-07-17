@@ -1,8 +1,10 @@
 {
+  "schemaVersion": 1,
   "projectId": "CENTRAL_ATENDIMENTO_CHAT",
   "canonicalClonePath": "<absolute-local-workspace-root>/server",
   "worktreesRoot": "<absolute-local-workspace-root>/worktrees",
   "maxAdditionalWorktrees": 2,
   "actualStateSource": "git worktree list --porcelain",
+  "ledgerRole": "purpose-and-lifecycle",
   "activeAdditionalWorktrees": []
 }

@@ -90,7 +90,9 @@ function Get-WorkspaceRegisteredWorktreePaths {
 
 function Get-WorkspaceContext {
   [CmdletBinding()]
-  param()
+  param(
+    [switch]$IgnoreWorkspaceEnvironment
+  )
 
   $checkoutRoot = ConvertTo-WorkspaceAbsolutePath (Invoke-WorkspaceGit @('rev-parse', '--show-toplevel'))
   $gitCommonDir = ConvertTo-WorkspaceAbsolutePath (Invoke-WorkspaceGit @('rev-parse', '--path-format=absolute', '--git-common-dir'))
@@ -121,8 +123,12 @@ function Get-WorkspaceContext {
   }
 
   $workspaceRoot = $null
-  $processWorkspaceRoot = [Environment]::GetEnvironmentVariable($workspaceEnvironmentVariable, 'Process')
-  $userWorkspaceRoot = [Environment]::GetEnvironmentVariable($workspaceEnvironmentVariable, 'User')
+  $processWorkspaceRoot = $null
+  $userWorkspaceRoot = $null
+  if (-not $IgnoreWorkspaceEnvironment) {
+    $processWorkspaceRoot = [Environment]::GetEnvironmentVariable($workspaceEnvironmentVariable, 'Process')
+    $userWorkspaceRoot = [Environment]::GetEnvironmentVariable($workspaceEnvironmentVariable, 'User')
+  }
   if (-not [string]::IsNullOrWhiteSpace($processWorkspaceRoot)) {
     $workspaceRoot = ConvertTo-WorkspaceAbsolutePath $processWorkspaceRoot
   } elseif (-not [string]::IsNullOrWhiteSpace($userWorkspaceRoot)) {

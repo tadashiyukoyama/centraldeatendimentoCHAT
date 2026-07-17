@@ -139,6 +139,7 @@ versionado e autorização explícita; o Codex não promove produção por SSH l
 
 - `git diff --check` sem erro;
 - documentação e exemplos de ambiente coerentes com a mudança;
+- contratos do workspace validados pelo schema e pelos testes PowerShell quando a fundação for alterada;
 - Compose validado com `docker compose config` quando aplicável;
 - testes/lint adequados ao escopo, sem alegar sucesso de comandos não executados;
 - nenhum segredo ou artefato privado no diff;

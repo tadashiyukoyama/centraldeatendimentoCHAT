@@ -97,3 +97,9 @@ As validações locais previstas para a fundação são `verify-capsule.ps1`,
 `validate-local-boundaries.ps1`. Elas devem comprovar separadamente
 `checkoutRoot`, `canonicalServerRoot` e `workspaceRoot`, além de origem,
 upstream, limites de worktree e fronteiras privadas.
+
+O gate versionado acrescenta os schemas Draft 2020-12 portátil, local e ledger,
+`scripts/validate-workspace-contracts.ps1` e 14 testes PowerShell
+autocontidos. O workflow Windows executa esses contratos, constrói uma cápsula
+temporária, cria uma linked worktree real, repete as verificações em `server` e
+na linked e só remove a linked após confirmar status limpo.

@@ -14,9 +14,11 @@ function Get-DirectoryBytes {
   )
 
   if (-not (Test-Path -LiteralPath $Path -PathType Container)) { return [int64]0 }
-  $sum = (Get-ChildItem -LiteralPath $Path -Force -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
-  if ($null -eq $sum) { return [int64]0 }
-  return [int64]$sum
+  $measure = @(Get-ChildItem -LiteralPath $Path -Force -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum)
+  if ($measure.Count -eq 0) { return [int64]0 }
+  $sumProperty = $measure[0].PSObject.Properties['Sum']
+  if ($null -eq $sumProperty -or $null -eq $sumProperty.Value) { return [int64]0 }
+  return [int64]$sumProperty.Value
 }
 
 $paths = @(
