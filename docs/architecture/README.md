@@ -9,6 +9,8 @@ governança ficam aqui e em `infra/`.
 - [Segredos e dados](../operations/SECRETS.md)
 - [Memória e documentação](../operations/MEMORY_AND_DOCUMENTATION.md)
 - [Runbook operacional](../operations/RUNBOOK.md)
+- [Arquitetura mobile](MOBILE-ARCHITECTURE.md)
+- [Workspace multi-repositório](MULTI-REPOSITORY-WORKSPACE.md)
 - [ADR-0001: cápsula e orçamento de worktrees](../decisions/0001-capsula-worktree-budget.md)
 
 ## Estado da decisão

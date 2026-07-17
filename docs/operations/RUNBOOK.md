@@ -1,5 +1,12 @@
 # Runbook operacional inicial
 
+## Gate atual da fundação
+
+Nesta fase de consolidação não instalar Docker, não iniciar containers, não
+executar Rails, Sidekiq, PostgreSQL, Redis, migrations, healthchecks ou deploy.
+Os comandos de runtime abaixo são referências para uma fase posterior,
+dependente de autorização explícita.
+
 ## Verificações seguras
 
 ```powershell
@@ -40,7 +47,10 @@ Os workflows upstream continuam responsáveis pelos testes e build do Chatwoot.
 
 ## Worktrees
 
-O máximo é de três worktrees adicionais além do clone canônico. Quando o
+O máximo é de duas worktrees adicionais além do clone canônico. Quando o
 orçamento estiver cheio, reutilizar um worktree limpo ou parar e pedir
 autorização para remoção. Não usar `git clean`, `git reset --hard` ou exclusão
 recursiva como limpeza de rotina.
+
+Antes de criar worktree, instalar dependências, fazer build ou iniciar o
+bootstrap mobile, executar `scripts/disk-guard.ps1 -ReadOnly`.

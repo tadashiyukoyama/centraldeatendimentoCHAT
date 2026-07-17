@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-  [int]$MaxAdditionalWorktrees = 3
+  [int]$MaxAdditionalWorktrees = 2
 )
 
 $ErrorActionPreference = 'Stop'
@@ -19,13 +19,15 @@ $additional = @($worktreePaths | Where-Object {
   -not [System.String]::Equals($_, $canonicalPath, [System.StringComparison]::OrdinalIgnoreCase)
 })
 
-[pscustomobject]@{
+[pscustomobject]$result = [pscustomobject]@{
   canonical = $canonicalPath
   maxAdditionalWorktrees = $MaxAdditionalWorktrees
   additionalActiveWorktrees = $additional.Count
   availableSlots = [Math]::Max(0, $MaxAdditionalWorktrees - $additional.Count)
   paths = $additional
-} | ConvertTo-Json -Depth 4
+}
+
+$result | ConvertTo-Json -Depth 4
 
 if ($additional.Count -gt $MaxAdditionalWorktrees) {
   throw "Orçamento excedido: $($additional.Count) worktrees adicionais ativos; máximo permitido: $MaxAdditionalWorktrees."

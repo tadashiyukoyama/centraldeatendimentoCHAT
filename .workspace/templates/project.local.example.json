@@ -1,0 +1,14 @@
+{
+  "projectId": "CENTRAL_ATENDIMENTO_CHAT",
+  "workspaceRoot": "<absolute-local-workspace-root>",
+  "serverRoot": "<absolute-local-workspace-root>/server",
+  "mobileRoot": "<absolute-local-workspace-root>/mobile",
+  "runtimeRoot": "<absolute-local-workspace-root>/runtime",
+  "privateRoot": "<absolute-local-workspace-root>/private",
+  "artifactsRoot": "<absolute-local-workspace-root>/artifacts",
+  "worktreesRoot": "<absolute-local-workspace-root>/worktrees",
+  "origin": "https://github.com/tadashiyukoyama/centraldeatendimentoCHAT.git",
+  "upstream": "https://github.com/chatwoot/chatwoot.git",
+  "sha": "<observed-sha>",
+  "maxAdditionalWorktrees": 2
+}

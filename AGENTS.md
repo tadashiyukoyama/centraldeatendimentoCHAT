@@ -2,6 +2,11 @@
 
 Este bloco é a política específica do repositório `tadashiyukoyama/centraldeatendimentoCHAT` e complementa as diretrizes upstream do Chatwoot abaixo. O código foi originado de `chatwoot/chatwoot`; o remote `upstream` permanece apontando para a origem oficial e o remote `origin` aponta para o repositório deste projeto.
 
+**Precedência:** quando houver conflito, as regras específicas de
+`CENTRAL_ATENDIMENTO_CHAT` prevalecem sobre instruções herdadas do upstream
+Chatwoot. As regras de sistema, segurança e autorização continuam superiores a
+ambas.
+
 ## 1. Escopo, identidade e fontes da verdade
 
 - Projeto: `CENTRAL_ATENDIMENTO_CHAT`.
@@ -59,16 +64,23 @@ centraldeatendimentoCHAT/
 └── <clone canônico>  código Git do projeto
 ```
 
-O clone canônico não entra na contagem. O limite é de **3 worktrees adicionais
+O clone canônico não entra na contagem. O limite é de **2 worktrees adicionais
 ativos**. Antes de criar ou remover um worktree, executar
 `git worktree list --porcelain` e `pwsh -File scripts/check-worktree-budget.ps1`.
 
-O limite não bloqueia o Codex: permite o checkout principal mais três tarefas
-isoladas em paralelo. Ao atingir três, o Codex deve reutilizar um worktree limpo
-ou solicitar autorização para remover um worktree depois de verificar branch,
+O limite não bloqueia o Codex: permite o checkout principal mais duas tarefas
+isoladas em paralelo. Uma worktree não é obrigatória para toda tarefa; tarefas
+pequenas devem usar o checkout canônico. Ao atingir duas, o Codex deve reutilizar
+uma worktree limpa ou solicitar autorização para remover uma depois de verificar branch,
 commits úteis, PR, alterações não commitadas e processos ativos. Não apagar,
 prunar ou limpar automaticamente; alterações não commitadas sempre bloqueiam
 remoção.
+
+Não criar `.codex` dentro de `server/`, `mobile/` ou `worktrees/`. A configuração
+do Codex permanece no `CODEX_HOME` existente no disco D:. Não instalar
+dependências automaticamente em todas as worktrees. Executar o disk guard antes
+de criar worktree, fazer Docker build, `pnpm install`, `bundle install` ou build
+mobile.
 
 ## 4. Segredos, banco e dados privados
 
@@ -113,7 +125,7 @@ Antes de escrever:
 
 1. ler este `AGENTS.md` e os documentos relevantes em `docs/`;
 2. confirmar raiz Git, branch, remotes, SHA e status inicial;
-3. consultar o orçamento de worktrees;
+3. consultar o orçamento de worktrees e executar o disk guard em modo somente leitura;
 4. buscar `upstream` somente quando a tarefa exigir sincronização;
 5. definir arquivos autorizados, riscos e testes antes da mudança;
 6. manter mudanças não relacionadas intactas.
@@ -197,10 +209,11 @@ Chatwoot continuam válidas nas seções seguintes.
 
 ## Codex Worktree Workflow
 
-- Use a separate git worktree + branch per task to keep changes isolated.
-- Keep Codex-specific local setup under `.codex/` and use `Procfile.worktree` for worktree process orchestration.
-- The setup workflow in `.codex/environments/environment.toml` should dynamically generate per-worktree DB/port values (Rails, Vite, Redis DB index) to avoid collisions.
-- Start each worktree with its own Overmind socket/title so multiple instances can run at the same time.
+- Uma worktree adicional é criada apenas quando houver necessidade real de isolamento, paralelismo ou reprodução independente.
+- Tarefas pequenas usam o checkout canônico `server/`.
+- A configuração do Codex fica no `CODEX_HOME` existente no disco D:; não criar `.codex/` no projeto, no mobile ou em worktrees.
+- O limite operacional é de duas worktrees adicionais, além do checkout canônico.
+- Cada worktree isolada deve receber portas, banco lógico e socket próprios apenas quando a tarefa realmente exigir processos concorrentes.
 
 ## Commit Messages
 
