@@ -75,6 +75,58 @@ jobs:
           test "$actual" = "$PROD_SSH_HOST_KEY"
           cp "$RUNNER_TEMP/prod-host-key.scan" "$RUNNER_TEMP/prod-known-hosts"
 
+      - name: Verify remote production contract
+        env:
+          PROD_HOST: ${{ vars.PROD_HOST }}
+          PROD_PORT: ${{ vars.PROD_PORT }}
+          PROD_USER: ${{ vars.PROD_USER }}
+        run: |
+          set -euo pipefail
+          declare -A expected=(
+            [deploy-production.sh]="$(sha256sum scripts/deploy/deploy-production.sh | awk '{print $1}')"
+            [rollback-production.sh]="$(sha256sum scripts/deploy/rollback-production.sh | awk '{print $1}')"
+            [install-production-env.sh]="$(sha256sum scripts/deploy/install-production-env.sh | awk '{print $1}')"
+            [docker-compose.production.yaml]="$(sha256sum infra/compose/docker-compose.production.yaml | awk '{print $1}')"
+            [ssh-gateway.sh]="$(sha256sum scripts/deploy/ssh-gateway.sh | awk '{print $1}')"
+          )
+          remote_contract=$(ssh -i "$RUNNER_TEMP/prod-key" -p "$PROD_PORT" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/prod-known-hosts" \
+            "$PROD_USER@$PROD_HOST" verify-contract)
+          declare -A seen=()
+          mismatch=0
+          count=0
+          while IFS=' ' read -r name hash extra; do
+            [[ -z "${name:-}" ]] && continue
+            expected_hash=''
+            case "$name" in
+              deploy-production.sh|rollback-production.sh|install-production-env.sh|docker-compose.production.yaml|ssh-gateway.sh)
+                expected_hash=${expected[$name]}
+                ;;
+              *)
+                mismatch=1
+                break
+                ;;
+            esac
+            if [[ -n "${extra:-}" || ! "$hash" =~ ^[0-9a-f]{64}$ || "$hash" != "$expected_hash" || -n "${seen[$name]:-}" ]]; then
+              mismatch=1
+              break
+            fi
+            seen[$name]=1
+            ((count += 1))
+          done <<< "$remote_contract"
+          for name in "${!expected[@]}"; do
+            if [[ -z "${seen[$name]:-}" ]]; then
+              mismatch=1
+              break
+            fi
+          done
+          if (( mismatch != 0 || count != ${#expected[@]} )); then
+            echo 'Production contract mismatch: remote root-owned files do not match the selected commit.' >&2
+            exit 1
+          fi
+
       - name: Install production environment file
         env:
           PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}

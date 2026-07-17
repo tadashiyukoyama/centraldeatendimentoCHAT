@@ -35,6 +35,7 @@ jobs:
           deploy_workflow = Path('.github/workflows/deploy-production.yml').read_text()
           deploy_script = Path('scripts/deploy/deploy-production.sh').read_text()
           rollback_script = Path('scripts/deploy/rollback-production.sh').read_text()
+          gateway_script = Path('scripts/deploy/ssh-gateway.sh').read_text()
           manifest_path = Path('.workspace/project.portable.json')
           schema_path = Path('.workspace/schemas/project.portable.schema.json')
           import json
@@ -67,6 +68,60 @@ jobs:
           assert 'ref: ${{ inputs.image_tag }}' in deploy_workflow
           assert 'git merge-base --is-ancestor "$IMAGE_TAG" origin/main' in deploy_workflow
           assert 'git hash-object scripts/deploy/deploy-production.sh' in deploy_workflow
+          assert 'verify-contract)' in gateway_script
+          assert 'verify-contract' in deploy_workflow
+          assert 'sha256sum' in gateway_script
+          for fixed_path in (
+              '/usr/local/sbin/central-atendimento-deploy',
+              '/usr/local/sbin/central-atendimento-rollback',
+              '/usr/local/sbin/central-atendimento-install-env',
+              '/opt/central-atendimento/compose/docker-compose.production.yaml',
+              '/usr/local/sbin/central-atendimento-ssh-gateway',
+          ):
+              assert fixed_path in gateway_script
+          assert 'Production contract mismatch: remote root-owned files do not match the selected commit.' in deploy_workflow
+          assert deploy_workflow.index('verify-contract') < deploy_workflow.index('Install production environment file')
+          assert 'path arguments' not in gateway_script
+          assert 'install-contract' not in deploy_workflow
+          assert 'test -z "${first_arg:-}"' in gateway_script
+          assert "echo 'Unsupported SSH command'" in gateway_script
+          expected_contract = {
+              'deploy-production.sh': 'a' * 64,
+              'rollback-production.sh': 'b' * 64,
+              'install-production-env.sh': 'c' * 64,
+              'docker-compose.production.yaml': 'd' * 64,
+              'ssh-gateway.sh': 'e' * 64,
+          }
+          def contract_matches(expected, payload):
+              seen = {}
+              for line in payload.splitlines():
+                  fields = line.split()
+                  if len(fields) != 2 or fields[0] not in expected or fields[0] in seen:
+                      return False
+                  if not re.fullmatch(r'[0-9a-f]{64}', fields[1]) or fields[1] != expected[fields[0]]:
+                      return False
+                  seen[fields[0]] = fields[1]
+              return seen == expected
+          equal_contract = '\n'.join(f'{name} {value}' for name, value in expected_contract.items())
+          assert contract_matches(expected_contract, equal_contract)
+          assert not contract_matches(expected_contract, equal_contract.replace('b' * 64, 'f' * 64))
+          assert not contract_matches(expected_contract, equal_contract.replace('ssh-gateway.sh ' + 'e' * 64, ''))
+          assert not contract_matches(expected_contract, equal_contract + '\nextra-path ' + 'e' * 64)
+          assert not contract_matches(expected_contract, equal_contract.replace('deploy-production.sh ', 'arbitrary/path '))
+          assert 'bootstrap-attempt' in deploy_script
+          assert 'Incomplete first deployment detected: manual audit is required before retry.' in deploy_script
+          assert 'run_compose stop rails sidekiq postgres redis' in deploy_script
+          assert 'chown root:root' in deploy_script
+          assert 'chmod 600' in deploy_script
+          assert 'write_active_image' in deploy_script
+          assert 'previous_image' not in deploy_script
+          domain_gate = deploy_script.index('check_public_domain\nassert_icp')
+          marker_creation = deploy_script.index('write_bootstrap_marker started')
+          postgres_start = deploy_script.index('run_compose up -d postgres redis')
+          migration = deploy_script.index('db:chatwoot_prepare')
+          assert domain_gate < marker_creation < postgres_start < migration
+          assert 'docker compose down' not in deploy_script
+          assert 'docker volume rm' not in deploy_script
           assert '--insecure' not in deploy_script
           assert '--insecure' not in rollback_script
           assert 'Subsequent deployment blocked: database backup gate is not configured.' in deploy_script
@@ -100,3 +155,107 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends shellcheck
           shellcheck scripts/deploy/*.sh
+
+      - name: Exercise deployment safety gates without application services
+        shell: bash
+        run: |
+          set -euo pipefail
+          script="$PWD/scripts/deploy/deploy-production.sh"
+          image_tag=0000000000000000000000000000000000000000
+          workdir=$(mktemp -d)
+          trap 'rm -rf "$workdir"' EXIT
+
+          active_root="$workdir/active"
+          mkdir -p "$active_root/shared"
+          touch "$active_root/shared/active-image"
+          set +e
+          output=$(APP_ROOT="$active_root" "$script" "$image_tag" example.invalid panel.invalid </dev/null 2>&1)
+          status=$?
+          set -e
+          test "$status" -eq 78
+          grep -F 'Subsequent deployment blocked: database backup gate is not configured.' <<< "$output"
+
+          attempt_root="$workdir/attempt"
+          mkdir -p "$attempt_root/shared"
+          touch "$attempt_root/shared/bootstrap-attempt"
+          set +e
+          output=$(APP_ROOT="$attempt_root" "$script" "$image_tag" example.invalid panel.invalid </dev/null 2>&1)
+          status=$?
+          set -e
+          test "$status" -eq 79
+          grep -F 'Incomplete first deployment detected: manual audit is required before retry.' <<< "$output"
+
+          invalid_root="$workdir/invalid"
+          mkdir -p "$invalid_root/shared"
+          set +e
+          output=$(APP_ROOT="$invalid_root" "$script" "$image_tag" does-not-exist.invalid panel.invalid </dev/null 2>&1)
+          status=$?
+          set -e
+          test "$status" -ne 0
+          test ! -e "$invalid_root/shared/bootstrap-attempt"
+          test ! -e "$invalid_root/shared/active-image"
+
+          fake_bin="$workdir/fake-bin"
+          fake_app="$workdir/fake-app"
+          fake_log="$workdir/fake-docker.log"
+          mkdir -p "$fake_bin" "$fake_app/shared"
+          cat > "$fake_bin/getent" <<'EOF'
+          #!/usr/bin/env bash
+          printf '%s STREAM 216.22.27.48\n' "${FAKE_DNS_IP:-216.22.27.48}"
+          EOF
+          cat > "$fake_bin/curl" <<'EOF'
+          #!/usr/bin/env bash
+          set -Eeuo pipefail
+          if [[ "$*" == *"--write-out"* ]]; then
+            printf '502'
+          fi
+          EOF
+          cat > "$fake_bin/docker" <<'EOF'
+          #!/usr/bin/env bash
+          set -Eeuo pipefail
+          printf '%s\n' "$*" >> "$FAKE_DOCKER_LOG"
+          if [[ "${1:-}" == inspect ]]; then
+            case "${3:-}" in
+              *Config.Image*) printf '%s\n' "${ICP_IMAGE}" ;;
+              *State.Running*) printf 'true\n' ;;
+            esac
+            exit 0
+          fi
+          if [[ "${1:-}" == network && "${2:-}" == inspect ]]; then
+            exit 0
+          fi
+          if [[ "${1:-}" == compose ]]; then
+            if [[ "$*" == *" up -d postgres redis"* ]]; then
+              test -f "$APP_ROOT/shared/bootstrap-attempt"
+              printf 'stateful-op-seen-marker\n' >> "$FAKE_DOCKER_LOG"
+              exit 1
+            fi
+            if [[ "$*" == *" stop rails sidekiq postgres redis"* ]]; then
+              printf 'project-services-stopped\n' >> "$FAKE_DOCKER_LOG"
+              exit 0
+            fi
+          fi
+          EOF
+          chmod +x "$fake_bin/getent" "$fake_bin/curl" "$fake_bin/docker"
+
+          set +e
+          sudo -n env \
+            "PATH=$fake_bin:$PATH" \
+            "APP_ROOT=$fake_app" \
+            "COMPOSE_FILE=$workdir/compose.yaml" \
+            "CHATWOOT_ENV_FILE=$workdir/production.env" \
+            "FAKE_DOCKER_LOG=$fake_log" \
+            "ICP_IMAGE=icontainer/openresty:1.29.2.3" \
+            "ICP_CONTAINER=ic-openresty-tATe" \
+            "ICP_NETWORK=icontainer-network" \
+            "PROD_EXPECTED_IP=216.22.27.48" \
+            "$script" "$image_tag" chat.example.test panel.example.test </dev/null > "$workdir/failure.log" 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -F 'stateful-op-seen-marker' "$fake_log"
+          grep -F 'project-services-stopped' "$fake_log"
+          test -f "$fake_app/shared/bootstrap-attempt"
+          sudo -n grep -F 'state=started' "$fake_app/shared/bootstrap-attempt"
+          test ! -e "$fake_app/shared/active-image"
+          echo 'Deployment gates and first-bootstrap failure behavior: OK'
