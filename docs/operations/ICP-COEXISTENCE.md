@@ -20,7 +20,7 @@ The chosen coexistence mode is therefore the host-loopback mode. Chatwoot Rails 
 
 Do not edit generated OpenResty files over SSH. Create the domain and proxy through the ICP panel's persistent domain/proxy workflow, then verify the generated result through the panel and by public HTTPS tests.
 
-Before the first application state is changed, the deployment gate resolves the Chatwoot domain to the expected VPS IP (`216.22.27.48` unless an explicit infrastructure override is supplied), performs a normal certificate-validated HTTPS request, and records the observed HTTP status. Status 200-599 is accepted because the Rails service may not be active yet; status 000, DNS mismatch or invalid TLS blocks the deployment. This check does not modify ICP/OpenResty and runs before PostgreSQL, Redis or migrations.
+Before the first application state is changed, the deployment gate resolves the Chatwoot domain to the IPv4 supplied by the production environment variable `PROD_EXPECTED_IP` (documentation placeholder: `192.0.2.44`), performs a normal certificate-validated HTTPS request, and records the observed HTTP status. Status 200-599 is accepted because the Rails service may not be active yet; status 000, DNS mismatch or invalid TLS blocks the deployment. This check does not modify ICP/OpenResty and runs before PostgreSQL, Redis or migrations. The GitHub preflight performs the same checks before `install-env`.
 
 ## Public channels
 

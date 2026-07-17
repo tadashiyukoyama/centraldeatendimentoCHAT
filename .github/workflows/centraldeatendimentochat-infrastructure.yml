@@ -68,6 +68,19 @@ jobs:
           assert 'ref: ${{ inputs.image_tag }}' in deploy_workflow
           assert 'git merge-base --is-ancestor "$IMAGE_TAG" origin/main' in deploy_workflow
           assert 'git hash-object scripts/deploy/deploy-production.sh' in deploy_workflow
+          assert 'PROD_EXPECTED_IP: ${{ vars.PROD_EXPECTED_IP }}' in deploy_workflow
+          assert 'docker buildx imagetools inspect' in deploy_workflow
+          assert 'PROD_EXPECTED_IP' in deploy_workflow
+          assert 'deploy-production $IMAGE_TAG $PROD_DOMAIN $ICP_PANEL_DOMAIN $PROD_EXPECTED_IP' in deploy_workflow
+          assert 'PROD_EXPECTED_IP' in deploy_script
+          assert 'readonly EXPECTED_PUBLIC_IP' not in deploy_script
+          assert 'PROD_EXPECTED_IP:-' not in deploy_script
+          assert 'validate_ipv4' in deploy_script
+          assert 'validate_ipv4' in rollback_script
+          assert 'requires image SHA, Chatwoot domain, ICP panel domain and expected IPv4' in deploy_script
+          assert 'requires image SHA, Chatwoot domain, ICP panel domain and expected IPv4' in rollback_script
+          legacy_vps_ip = '.'.join(('216', '22', '27', '48'))
+          assert __import__('subprocess').run(['git', 'grep', '-n', legacy_vps_ip], capture_output=True).returncode == 1
           assert 'verify-contract)' in gateway_script
           assert 'verify-contract' in deploy_workflow
           assert 'sha256sum' in gateway_script
@@ -120,6 +133,11 @@ jobs:
           postgres_start = deploy_script.index('run_compose up -d postgres redis')
           migration = deploy_script.index('db:chatwoot_prepare')
           assert domain_gate < marker_creation < postgres_start < migration
+          assert deploy_script.index('docker pull "$image"') < marker_creation
+          assert deploy_script.index('docker logout ghcr.io') < marker_creation
+          assert deploy_workflow.index('Preflight immutable image and public ingress') < deploy_workflow.index('Install production environment file')
+          assert deploy_workflow.index('docker buildx imagetools inspect') < deploy_workflow.index('Install production environment file')
+          assert deploy_workflow.index('PROD_DOMAIN does not resolve') < deploy_workflow.index('Install production environment file')
           assert 'docker compose down' not in deploy_script
           assert 'docker volume rm' not in deploy_script
           assert '--insecure' not in deploy_script
@@ -169,7 +187,7 @@ jobs:
           mkdir -p "$active_root/shared"
           touch "$active_root/shared/active-image"
           set +e
-          output=$(APP_ROOT="$active_root" "$script" "$image_tag" example.invalid panel.invalid </dev/null 2>&1)
+          output=$(APP_ROOT="$active_root" "$script" "$image_tag" example.invalid panel.invalid 192.0.2.44 </dev/null 2>&1)
           status=$?
           set -e
           test "$status" -eq 78
@@ -179,7 +197,7 @@ jobs:
           mkdir -p "$attempt_root/shared"
           touch "$attempt_root/shared/bootstrap-attempt"
           set +e
-          output=$(APP_ROOT="$attempt_root" "$script" "$image_tag" example.invalid panel.invalid </dev/null 2>&1)
+          output=$(APP_ROOT="$attempt_root" "$script" "$image_tag" example.invalid panel.invalid 192.0.2.44 </dev/null 2>&1)
           status=$?
           set -e
           test "$status" -eq 79
@@ -188,12 +206,46 @@ jobs:
           invalid_root="$workdir/invalid"
           mkdir -p "$invalid_root/shared"
           set +e
-          output=$(APP_ROOT="$invalid_root" "$script" "$image_tag" does-not-exist.invalid panel.invalid </dev/null 2>&1)
+          output=$(APP_ROOT="$invalid_root" "$script" "$image_tag" does-not-exist.invalid panel.invalid 192.0.2.44 </dev/null 2>&1)
           status=$?
           set -e
           test "$status" -ne 0
           test ! -e "$invalid_root/shared/bootstrap-attempt"
           test ! -e "$invalid_root/shared/active-image"
+
+          for invalid_ip in 192.0.2.999 192.0.2.1/24 example.invalid -192.0.2.1 192.0.2.01; do
+            set +e
+            output=$(APP_ROOT="$invalid_root" "$script" "$image_tag" example.invalid panel.invalid "$invalid_ip" </dev/null 2>&1)
+            status=$?
+            set -e
+            test "$status" -eq 64
+          done
+
+          gateway_bin="$workdir/gateway-bin"
+          mkdir -p "$gateway_bin"
+          cat > "$gateway_bin/sudo" <<'EOF'
+          #!/usr/bin/env bash
+          exit 42
+          EOF
+          chmod +x "$gateway_bin/sudo"
+          gateway="$PWD/scripts/deploy/ssh-gateway.sh"
+          for action in deploy-production rollback-production; do
+            set +e
+            SSH_ORIGINAL_COMMAND="$action $image_tag chat.example.test panel.example.test" PATH="$gateway_bin:$PATH" bash "$gateway"
+            status=$?
+            set -e
+            test "$status" -ne 42
+            set +e
+            SSH_ORIGINAL_COMMAND="$action $image_tag chat.example.test panel.example.test 192.0.2.44" PATH="$gateway_bin:$PATH" bash "$gateway"
+            status=$?
+            set -e
+            test "$status" -eq 42
+            set +e
+            SSH_ORIGINAL_COMMAND="$action $image_tag chat.example.test panel.example.test 192.0.2.44 extra" PATH="$gateway_bin:$PATH" bash "$gateway"
+            status=$?
+            set -e
+            test "$status" -ne 42
+          done
 
           fake_bin="$workdir/fake-bin"
           fake_app="$workdir/fake-app"
@@ -201,7 +253,7 @@ jobs:
           mkdir -p "$fake_bin" "$fake_app/shared"
           cat > "$fake_bin/getent" <<'EOF'
           #!/usr/bin/env bash
-          printf '%s STREAM 216.22.27.48\n' "${FAKE_DNS_IP:-216.22.27.48}"
+          printf '%s STREAM 192.0.2.44\n' "${FAKE_DNS_IP:-192.0.2.44}"
           EOF
           cat > "$fake_bin/curl" <<'EOF'
           #!/usr/bin/env bash
@@ -224,6 +276,9 @@ jobs:
           if [[ "${1:-}" == network && "${2:-}" == inspect ]]; then
             exit 0
           fi
+          if [[ "${1:-}" == pull && "${FAKE_DOCKER_FAIL_PULL:-0}" == 1 ]]; then
+            exit 1
+          fi
           if [[ "${1:-}" == compose ]]; then
             if [[ "$*" == *" up -d postgres redis"* ]]; then
               test -f "$APP_ROOT/shared/bootstrap-attempt"
@@ -238,6 +293,29 @@ jobs:
           EOF
           chmod +x "$fake_bin/getent" "$fake_bin/curl" "$fake_bin/docker"
 
+          pull_fail_app="$workdir/pull-fail-app"
+          mkdir -p "$pull_fail_app/shared"
+          pull_fail_log="$workdir/pull-fail-docker.log"
+          set +e
+          sudo -n env \
+            "PATH=$fake_bin:$PATH" \
+            "APP_ROOT=$pull_fail_app" \
+            "COMPOSE_FILE=$workdir/compose.yaml" \
+            "CHATWOOT_ENV_FILE=$workdir/production.env" \
+            "FAKE_DOCKER_LOG=$pull_fail_log" \
+            "FAKE_DOCKER_FAIL_PULL=1" \
+            "ICP_IMAGE=icontainer/openresty:1.29.2.3" \
+            "ICP_CONTAINER=ic-openresty-tATe" \
+            "ICP_NETWORK=icontainer-network" \
+            "PROD_EXPECTED_IP=192.0.2.44" \
+            "$script" "$image_tag" chat.example.test panel.example.test 192.0.2.44 </dev/null > "$workdir/pull-failure.log" 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          test ! -e "$pull_fail_app/shared/bootstrap-attempt"
+          test ! -e "$pull_fail_app/shared/active-image"
+          grep -F 'logout ghcr.io' "$pull_fail_log"
+
           set +e
           sudo -n env \
             "PATH=$fake_bin:$PATH" \
@@ -248,8 +326,8 @@ jobs:
             "ICP_IMAGE=icontainer/openresty:1.29.2.3" \
             "ICP_CONTAINER=ic-openresty-tATe" \
             "ICP_NETWORK=icontainer-network" \
-            "PROD_EXPECTED_IP=216.22.27.48" \
-            "$script" "$image_tag" chat.example.test panel.example.test </dev/null > "$workdir/failure.log" 2>&1
+            "PROD_EXPECTED_IP=192.0.2.44" \
+            "$script" "$image_tag" chat.example.test panel.example.test 192.0.2.44 </dev/null > "$workdir/failure.log" 2>&1
           status=$?
           set -e
           test "$status" -ne 0

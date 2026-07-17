@@ -8,11 +8,35 @@ readonly IMAGE_REPOSITORY=${IMAGE_REPOSITORY:-ghcr.io/tadashiyukoyama/centraldea
 readonly ICP_CONTAINER=${ICP_CONTAINER:-ic-openresty-tATe}
 readonly ICP_IMAGE=${ICP_IMAGE:-icontainer/openresty:1.29.2.3}
 readonly ICP_NETWORK=${ICP_NETWORK:-icontainer-network}
-readonly EXPECTED_PUBLIC_IP=${PROD_EXPECTED_IP:-216.22.27.48}
 
-image_tag=${1:?image tag is required}
-chatwoot_domain=${2:?Chatwoot domain is required}
-icp_panel_domain=${3:?ICP panel domain is required}
+validate_ipv4() {
+  local ip=$1
+  local IFS=.
+  local -a octets
+  local octet
+
+  read -r -a octets <<< "$ip"
+  if (( ${#octets[@]} != 4 )); then
+    return 1
+  fi
+  for octet in "${octets[@]}"; do
+    [[ "$octet" =~ ^[0-9]{1,3}$ ]] || return 1
+    if [[ ${#octet} -gt 1 && "$octet" == 0* ]]; then
+      return 1
+    fi
+    (( 10#$octet <= 255 )) || return 1
+  done
+}
+
+if [[ $# -ne 4 ]]; then
+  echo 'deploy-production requires image SHA, Chatwoot domain, ICP panel domain and expected IPv4' >&2
+  exit 64
+fi
+
+image_tag=$1
+chatwoot_domain=$2
+icp_panel_domain=$3
+expected_public_ip=$4
 if [[ ! "$image_tag" =~ ^[0-9a-f]{40}$ ]]; then
   echo 'image tag must be a full commit SHA' >&2
   exit 64
@@ -25,6 +49,11 @@ if [[ ! "$icp_panel_domain" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A
   echo 'ICP panel domain is invalid' >&2
   exit 64
 fi
+if ! validate_ipv4 "$expected_public_ip"; then
+  echo 'expected public IP must be a canonical IPv4 address' >&2
+  exit 64
+fi
+readonly expected_public_ip
 
 readonly active_image_file="$APP_ROOT/shared/active-image"
 readonly bootstrap_attempt_file="$APP_ROOT/shared/bootstrap-attempt"
@@ -49,8 +78,8 @@ check_public_domain() {
   local resolved_ips=()
 
   mapfile -t resolved_ips < <(getent ahostsv4 "$chatwoot_domain" | awk '{print $1}' | sort -u)
-  if (( ${#resolved_ips[@]} != 1 )) || [[ "${resolved_ips[0]:-}" != "$EXPECTED_PUBLIC_IP" ]]; then
-    echo "Chatwoot domain does not resolve exclusively to expected VPS IP ${EXPECTED_PUBLIC_IP}: ${chatwoot_domain}" >&2
+  if (( ${#resolved_ips[@]} != 1 )) || [[ "${resolved_ips[0]:-}" != "$expected_public_ip" ]]; then
+    echo "Chatwoot domain does not resolve exclusively to expected VPS IP ${expected_public_ip}: ${chatwoot_domain}" >&2
     return 1
   fi
 
@@ -126,17 +155,23 @@ rollback_on_error() {
 check_public_domain
 assert_icp
 run_compose config --quiet
-started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-write_bootstrap_marker started "$started_at"
-trap rollback_on_error ERR
 
 # The workflow passes a short-lived GHCR token through stdin. It is not persisted.
 registry_token=$(cat)
+cleanup_registry_auth() {
+  docker logout ghcr.io >/dev/null 2>&1 || true
+}
+trap cleanup_registry_auth EXIT
 if [[ -n "$registry_token" ]]; then
   printf '%s' "$registry_token" | docker login ghcr.io --username tadashiyukoyama --password-stdin >/dev/null
 fi
+unset registry_token
 docker pull "$image" >/dev/null
 docker logout ghcr.io >/dev/null 2>&1 || true
+
+started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+write_bootstrap_marker started "$started_at"
+trap rollback_on_error ERR
 
 export CHATWOOT_IMAGE="$image"
 run_compose up -d postgres redis >/dev/null

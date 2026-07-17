@@ -20,7 +20,7 @@ Variables:
 - `PROD_DOMAIN`
 - `PROD_SSH_HOST_KEY` (SHA-256 SSH host-key fingerprint)
 - `ICP_PANEL_DOMAIN`
-- `PROD_EXPECTED_IP` (optional override; the current VPS contract is `216.22.27.48`)
+- `PROD_EXPECTED_IP` (required IPv4 variable in the `production` environment; documentation placeholder: `192.0.2.44`)
 
 The domain must be created through the ICP panel as a dedicated subdomain. TLS must be enabled there after DNS resolves to the VPS. The panel domain remains separate.
 
@@ -32,12 +32,14 @@ The domain must be created through the ICP panel as a dedicated subdomain. TLS m
 4. The workflow checks out `inputs.image_tag`, proves that commit is present, proves it is an ancestor of `origin/main`, and verifies the deployment scripts are the blobs from that same commit.
 5. Before sending the environment file or token, the runner calculates the five contract hashes from the selected commit and calls the restricted `verify-contract` action. A mismatch aborts with `Production contract mismatch: remote root-owned files do not match the selected commit.` The workflow never updates root-owned files automatically.
 6. The runner verifies the SSH host key and uses the restricted deploy key.
-7. The environment file is sent over the authenticated SSH channel and stored with mode 0600; its value is never printed.
-8. The deploy script validates DNS, strict TLS and ICP reachability for the public domain before creating any bootstrap marker, starting PostgreSQL/Redis or running a migration. HTTP 200-599 is accepted because the application may not be active yet; status 000 or invalid TLS blocks the operation.
-9. A new bootstrap atomically creates `shared/bootstrap-attempt` with the image, UTC start time and `state=started` before stateful Compose operations.
-10. PostgreSQL and Redis start on the private network; `db:chatwoot_prepare` runs; Rails and Sidekiq start.
-11. The internal Rails health endpoint, public Chatwoot domain, ICP panel and ICP container are tested with strict TLS verification. Only after all healthchecks does the script atomically write `active-image` and mark the bootstrap `completed`.
-12. A first-deploy failure preserves PostgreSQL, Redis, storage and `bootstrap-attempt`, stops project services, and does not create `active-image`. It does not restore a previous application image because the first deploy has no previous image.
+7. Before any mutating SSH command, the runner validates the immutable image exists in GHCR, validates `PROD_EXPECTED_IP`, checks that `PROD_DOMAIN` resolves exclusively to it, and performs strict HTTPS checks for the Chatwoot and ICP panel domains. HTTP 200-599 is accepted because the application may not be active yet; status 000 or invalid TLS blocks the operation.
+8. The environment file is sent over the authenticated SSH channel and stored with mode 0600; its value is never printed.
+9. The deploy command receives exactly four arguments: image SHA, Chatwoot domain, ICP panel domain and expected IPv4. The gateway rejects missing or extra arguments.
+10. The deploy script repeats the DNS, strict TLS and ICP checks before changing application state, validates Compose, authenticates to GHCR, pulls the immutable image, and logs out before creating any bootstrap marker.
+11. A successful image pull is followed immediately by the atomic `shared/bootstrap-attempt` marker with the image, UTC start time and `state=started`, before stateful Compose operations.
+12. PostgreSQL and Redis start on the private network; `db:chatwoot_prepare` runs; Rails and Sidekiq start.
+13. The internal Rails health endpoint, public Chatwoot domain, ICP panel and ICP container are tested with strict TLS verification. Only after all healthchecks does the script atomically write `active-image` and mark the bootstrap `completed`.
+14. A first-deploy failure preserves PostgreSQL, Redis, storage and `bootstrap-attempt`, stops project services, and does not create `active-image`. It does not restore a previous application image because the first deploy has no previous image.
 
 ## Production filesystem
 
@@ -66,3 +68,9 @@ The restricted SSH gateway exposes only the fixed-path `verify-contract` read ac
 ## Failed first bootstrap
 
 The first deploy has no previous application image for rollback. A failure after `bootstrap-attempt` is created must leave the marker in place, preserve database and storage paths, stop `rails`, `sidekiq`, `postgres` and `redis` when present, and leave `active-image` absent. Retrying is prohibited until a manual audit and explicit owner authorization remove the marker through a separate administrative command. Error handling never deletes volumes, containers or the marker and never touches ICP/OpenResty.
+
+## Preflight and secret handling
+
+The GHCR pull token is supplied only to the runner through the protected secret, used through `docker login --password-stdin` for `buildx imagetools inspect`, and cleaned up with `docker logout` on both success and failure. It is never sent to the VPS during preflight, stored in a file, placed in arguments, written to the bootstrap marker or printed in logs. The preflight must pass before `install-env` is allowed.
+
+`PROD_EXPECTED_IP` is an environment variable, not a secret and not a repository fallback. The repository contains only documentation placeholders; the production environment supplies the actual IPv4 value.
