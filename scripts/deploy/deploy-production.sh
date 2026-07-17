@@ -43,8 +43,8 @@ assert_icp() {
 
 wait_for_rails() {
   local attempt
-  for attempt in $(seq 1 30); do
-    if curl --fail --silent --show-error --max-time 5 http://127.0.0.1:${CHATWOOT_APP_PORT:-3000}/health >/dev/null; then
+  for ((attempt = 1; attempt <= 30; attempt++)); do
+    if curl --fail --silent --show-error --max-time 5 "http://127.0.0.1:${CHATWOOT_APP_PORT:-3000}/health" >/dev/null; then
       return 0
     fi
     sleep 5

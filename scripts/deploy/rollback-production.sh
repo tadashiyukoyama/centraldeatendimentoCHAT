@@ -45,8 +45,8 @@ docker logout ghcr.io >/dev/null 2>&1 || true
 
 export CHATWOOT_IMAGE="$image"
 run_compose up -d rails sidekiq >/dev/null
-for attempt in $(seq 1 30); do
-  if curl --fail --silent --show-error --max-time 5 http://127.0.0.1:${CHATWOOT_APP_PORT:-3000}/health >/dev/null; then
+for ((attempt = 1; attempt <= 30; attempt++)); do
+  if curl --fail --silent --show-error --max-time 5 "http://127.0.0.1:${CHATWOOT_APP_PORT:-3000}/health" >/dev/null; then
     curl --fail --silent --show-error --max-time 20 "https://${chatwoot_domain}/health" >/dev/null
     curl --fail --silent --show-error --insecure --max-time 15 "https://${icp_panel_domain}" >/dev/null
     printf '%s\n' "$image" > "$active_image_file"
