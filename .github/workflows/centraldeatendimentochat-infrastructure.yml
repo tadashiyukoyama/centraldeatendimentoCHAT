@@ -1,0 +1,48 @@
+name: Central de Atendimento CHAT infrastructure contract
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Validate Compose and workspace contracts
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check pyyaml
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          local = yaml.safe_load(Path('infra/compose/docker-compose.local.yaml').read_text())
+          production = yaml.safe_load(Path('infra/compose/docker-compose.production.yaml').read_text())
+          assert set(local['services']) == {'base', 'rails', 'sidekiq', 'vite', 'postgres', 'redis', 'mailhog'}
+          assert set(production['services']) == {'rails', 'sidekiq', 'postgres', 'redis'}
+          assert 'ports' not in production['services']['postgres']
+          assert 'ports' not in production['services']['redis']
+          for service in production['services']:
+              assert 'private' in production['services'][service]['networks']
+          assert production['services']['postgres']['image'] == 'pgvector/pgvector:pg16'
+          assert production['services']['redis']['image'] == 'redis:7-alpine'
+          tracked = '\n'.join(__import__('subprocess').check_output(['git', 'ls-files'], text=True).splitlines())
+          assert not any(line.startswith(('private/', 'runtime/', 'worktrees/', 'artifacts/')) for line in tracked.splitlines())
+          assert not any(line.endswith('/.env') or line == '.env' for line in tracked.splitlines())
+          print('Infrastructure contract: OK')
+          PY
+
+      - name: Check patch whitespace
+        run: git diff --check

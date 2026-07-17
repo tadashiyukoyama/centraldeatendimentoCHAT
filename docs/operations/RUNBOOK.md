@@ -34,6 +34,10 @@ Deploy, migration e rollback de produção exigem autorização explícita. O
 rollback de aplicação deve preservar o volume do banco; alteração incompatível
 de schema exige runbook específico e restauração ensaiada.
 
+O workflow `Central de Atendimento CHAT infrastructure contract` valida a
+estrutura do Compose e impede que a cápsula privada seja confundida com o Git.
+Os workflows upstream continuam responsáveis pelos testes e build do Chatwoot.
+
 ## Worktrees
 
 O máximo é de três worktrees adicionais além do clone canônico. Quando o

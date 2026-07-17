@@ -30,6 +30,7 @@ exposto pelo host é o Rails em `127.0.0.1:3000`, destinado ao proxy local.
 | Cache/fila | Redis 7 | cache, pub/sub e backend de jobs | `runtime/data/redis` local; volume dedicado em produção |
 | Arquivos | Active Storage | anexos e uploads | `runtime/data/storage` local; S3 compatível ou volume dedicado em produção |
 | Desenvolvimento | Vite + MailHog | hot reload e captura local de email | temporário |
+| Governança | GitHub Actions | validação do contrato de Compose e separação de dados privados | artefatos do CI |
 
 ## Ambientes
 
