@@ -21,6 +21,8 @@ services:
     build:
       context: ../..
       dockerfile: ./docker/dockerfiles/rails.Dockerfile
+      args:
+        BASE_IMAGE: centraldeatendimentochat:development
     image: centraldeatendimentochat-rails:development
     volumes:
       - ../..:/app:delegated
@@ -74,6 +76,8 @@ services:
     build:
       context: ../..
       dockerfile: ./docker/dockerfiles/vite.Dockerfile
+      args:
+        BASE_IMAGE: centraldeatendimentochat:development
     image: centraldeatendimentochat-vite:development
     volumes:
       - ../..:/app:delegated
