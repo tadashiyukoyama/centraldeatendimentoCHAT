@@ -4,6 +4,7 @@ param()
 $ErrorActionPreference = 'Stop'
 
 $sourceRepoRoot = [System.IO.Directory]::GetParent([System.IO.Directory]::GetParent($PSScriptRoot).FullName).FullName
+$script:PowerShellExecutable = if ($PSVersionTable.PSEdition -eq 'Core') { 'pwsh' } else { 'powershell.exe' }
 $testRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("centraldeatendimentochat-workspace-tests-" + [guid]::NewGuid().ToString('N'))
 $capsuleRoot = Join-Path $testRoot 'capsule'
 $serverRoot = Join-Path $capsuleRoot 'server'
@@ -47,7 +48,7 @@ function Invoke-WorkspaceScriptJson {
 
   $oldPreference = $ErrorActionPreference
   $ErrorActionPreference = 'Continue'
-  $output = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ScriptPath @Arguments 2>&1
+  $output = & $script:PowerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $ScriptPath @Arguments 2>&1
   $ErrorActionPreference = $oldPreference
   if ($LASTEXITCODE -ne 0) {
     throw (($output | Out-String).Trim())
@@ -266,7 +267,7 @@ try {
       $manifest = $original | ConvertFrom-Json
       $manifest.projectId = 'WRONG_PROJECT'
       Write-PortableObject $manifest
-      Assert-Throws { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $validatorPath } 'projectId'
+      Assert-Throws { & $script:PowerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $validatorPath } 'projectId'
     } finally {
       Set-TextFile $path $original
     }
@@ -281,7 +282,7 @@ try {
       foreach ($extraPath in $extraPaths) {
         $null = Invoke-LocalGit $serverRoot @('worktree', 'add', '--detach', $extraPath, 'HEAD')
       }
-      Assert-Throws { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $checkBudgetPath } 'Orcamento excedido'
+      Assert-Throws { & $script:PowerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $checkBudgetPath } 'Orcamento excedido'
     } finally {
       foreach ($extraPath in @($extraPaths | Sort-Object -Descending)) {
         if (Test-Path -LiteralPath $extraPath) {
@@ -298,7 +299,7 @@ try {
       $manifest = $original | ConvertFrom-Json
       $manifest.serverRelativePath = 'D:\absolute-server'
       Write-PortableObject $manifest
-      Assert-Throws { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $validatorPath } 'portable'
+      Assert-Throws { & $script:PowerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $validatorPath } 'portable'
     } finally {
       Set-TextFile $path $original
     }
@@ -308,7 +309,7 @@ try {
     $mobileGit = Join-Path $mobileRoot '.git'
     New-Item -ItemType Directory -Force -Path $mobileGit | Out-Null
     try {
-      Assert-Throws { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $verifyPath } 'mobile deve conter'
+      Assert-Throws { & $script:PowerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $verifyPath } 'mobile deve conter'
     } finally {
       Remove-Item -LiteralPath $mobileGit -Recurse -Force
     }
@@ -318,7 +319,7 @@ try {
     $missingPath = Join-Path $runtimeRoot 'data\redis'
     Remove-Item -LiteralPath $missingPath -Recurse -Force
     try {
-      Assert-Throws { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $rehydratePath -ReadOnly } 'diretorios ausentes'
+      Assert-Throws { & $script:PowerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $rehydratePath -ReadOnly } 'diretorios ausentes'
       Assert-True (-not (Test-Path -LiteralPath $missingPath)) 'Reidratação read-only escreveu no workspace.'
     } finally {
       New-Item -ItemType Directory -Force -Path $missingPath | Out-Null
@@ -328,16 +329,16 @@ try {
   Run-Test 'disk guard does not depend on drive D' {
     $scriptText = Get-Content -LiteralPath $diskGuardPath -Raw
     Assert-True ($scriptText -notmatch 'Get-PSDrive\s+C,D') 'Disk guard ainda referencia C,D literalmente.'
-    $disk = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $diskGuardPath -ReadOnly | Out-String | ConvertFrom-Json
+    $disk = & $script:PowerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $diskGuardPath -ReadOnly | Out-String | ConvertFrom-Json
     $expectedDrive = ([System.IO.Path]::GetPathRoot($capsuleRoot)).Substring(0, 1).ToUpperInvariant()
     Assert-True (@($disk.observedDriveRoots) -contains $expectedDrive) 'Disk guard nao observou o drive do workspace.'
   }
 
   Run-Test 'server and linked worktree report the same count' {
-    $serverBudget = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $checkBudgetPath | Out-String | ConvertFrom-Json
+    $serverBudget = & $script:PowerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $checkBudgetPath | Out-String | ConvertFrom-Json
     Push-Location $linkedRoot
     try {
-      $linkedBudget = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $linkedRoot 'scripts\check-worktree-budget.ps1') | Out-String | ConvertFrom-Json
+      $linkedBudget = & $script:PowerShellExecutable -NoProfile -ExecutionPolicy Bypass -File (Join-Path $linkedRoot 'scripts\check-worktree-budget.ps1') | Out-String | ConvertFrom-Json
     } finally {
       Pop-Location
     }
