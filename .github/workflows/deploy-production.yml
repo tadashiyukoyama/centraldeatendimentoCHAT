@@ -1,0 +1,87 @@
+name: Deploy production image through ICP
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Full 40-character commit SHA already published to GHCR
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: centraldeatendimentochat-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout deployment scripts
+        uses: actions/checkout@v4
+
+      - name: Validate explicit image tag
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          [[ "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]]
+
+      - name: Prepare deploy key
+        env:
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$PROD_SSH_KEY"
+          printf '%s\n' "$PROD_SSH_KEY" > "$RUNNER_TEMP/prod-key"
+          chmod 600 "$RUNNER_TEMP/prod-key"
+
+      - name: Prepare pinned SSH host key
+        env:
+          PROD_HOST: ${{ vars.PROD_HOST }}
+          PROD_PORT: ${{ vars.PROD_PORT }}
+          PROD_SSH_HOST_KEY: ${{ vars.PROD_SSH_HOST_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$PROD_HOST"
+          test -n "$PROD_PORT"
+          test -n "$PROD_SSH_HOST_KEY"
+          ssh-keyscan -p "$PROD_PORT" "$PROD_HOST" > "$RUNNER_TEMP/prod-host-key.scan" 2>/dev/null
+          actual=$(ssh-keygen -lf "$RUNNER_TEMP/prod-host-key.scan" -E sha256 | awk 'NR == 1 {print $2}')
+          test "$actual" = "$PROD_SSH_HOST_KEY"
+          cp "$RUNNER_TEMP/prod-host-key.scan" "$RUNNER_TEMP/prod-known-hosts"
+
+      - name: Install production environment file
+        env:
+          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+          PROD_HOST: ${{ vars.PROD_HOST }}
+          PROD_PORT: ${{ vars.PROD_PORT }}
+          PROD_USER: ${{ vars.PROD_USER }}
+        run: |
+          set -euo pipefail
+          test -n "$PROD_ENV_FILE"
+          printf '%s' "$PROD_ENV_FILE" | ssh -i "$RUNNER_TEMP/prod-key" -p "$PROD_PORT" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/prod-known-hosts" "$PROD_USER@$PROD_HOST" install-env
+
+      - name: Deploy exact image and verify ICP
+        env:
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          PROD_DOMAIN: ${{ vars.PROD_DOMAIN }}
+          ICP_PANEL_DOMAIN: ${{ vars.ICP_PANEL_DOMAIN }}
+          PROD_HOST: ${{ vars.PROD_HOST }}
+          PROD_PORT: ${{ vars.PROD_PORT }}
+          PROD_USER: ${{ vars.PROD_USER }}
+        run: |
+          set -euo pipefail
+          test -n "$GHCR_PULL_TOKEN"
+          test -n "$PROD_DOMAIN"
+          test -n "$ICP_PANEL_DOMAIN"
+          [[ "$PROD_DOMAIN" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$ ]]
+          [[ "$ICP_PANEL_DOMAIN" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$ ]]
+          printf '%s' "$GHCR_PULL_TOKEN" | ssh -i "$RUNNER_TEMP/prod-key" -p "$PROD_PORT" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/prod-known-hosts" "$PROD_USER@$PROD_HOST" "deploy-production $IMAGE_TAG $PROD_DOMAIN $ICP_PANEL_DOMAIN"
+
+      - name: Remove transient SSH material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/prod-key" "$RUNNER_TEMP/prod-host-key.scan" "$RUNNER_TEMP/prod-known-hosts"

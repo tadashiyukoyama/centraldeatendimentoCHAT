@@ -49,10 +49,15 @@ jobs:
           assert set(production['services']) == {'rails', 'sidekiq', 'postgres', 'redis'}
           assert 'ports' not in production['services']['postgres']
           assert 'ports' not in production['services']['redis']
-          for service in production['services']:
-              assert 'private' in production['services'][service]['networks']
+          assert production['services']['rails']['networks'] == ['private']
+          for service in ('sidekiq', 'postgres', 'redis'):
+              assert production['services'][service]['networks'] == ['private']
+          assert set(production['networks']) == {'private'}
+          assert production['services']['rails']['ports'] == ['127.0.0.1:${CHATWOOT_APP_PORT:-3000}:3000']
           assert production['services']['postgres']['image'] == 'pgvector/pgvector:pg16'
           assert production['services']['redis']['image'] == 'redis:7-alpine'
+          assert all('ports' not in production['services'][service] for service in ('sidekiq', 'postgres', 'redis'))
+          assert not any(service in production['services'] for service in ('vite', 'mailhog', 'nginx', 'openresty'))
           tracked = '\n'.join(__import__('subprocess').check_output(['git', 'ls-files'], text=True).splitlines())
           assert not any(line.startswith(('private/', 'runtime/', 'worktrees/', 'artifacts/')) for line in tracked.splitlines())
           assert not any(line.endswith('/.env') or line == '.env' for line in tracked.splitlines())
@@ -61,3 +66,28 @@ jobs:
 
       - name: Check patch whitespace
         run: git diff --check
+
+      - name: Validate production Compose with placeholders
+        shell: bash
+        run: |
+          set -euo pipefail
+          workdir=$(mktemp -d)
+          trap 'rm -rf "$workdir"' EXIT
+          cat > "$workdir/production.env" <<EOF
+          CHATWOOT_IMAGE=ghcr.io/tadashiyukoyama/centraldeatendimentochat:0000000000000000000000000000000000000000
+          CHATWOOT_ENV_FILE=$workdir/production.env
+          CHATWOOT_APP_PORT=3000
+          CHATWOOT_STORAGE_DIR=$workdir/storage
+          CHATWOOT_POSTGRES_DATA_DIR=$workdir/storage/postgres
+          CHATWOOT_REDIS_DATA_DIR=$workdir/storage/redis
+          POSTGRES_PASSWORD=placeholder-only
+          REDIS_PASSWORD=placeholder-only
+          EOF
+          mkdir -p "$workdir/storage/postgres" "$workdir/storage/redis"
+          docker compose --env-file "$workdir/production.env" -f infra/compose/docker-compose.production.yaml config --quiet
+
+      - name: ShellCheck deployment scripts
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends shellcheck
+          shellcheck scripts/deploy/*.sh
