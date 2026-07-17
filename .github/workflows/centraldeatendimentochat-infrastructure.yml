@@ -71,7 +71,8 @@ jobs:
           assert 'PROD_EXPECTED_IP: ${{ vars.PROD_EXPECTED_IP }}' in deploy_workflow
           assert 'docker buildx imagetools inspect' in deploy_workflow
           assert 'PROD_EXPECTED_IP' in deploy_workflow
-          assert 'deploy-production $IMAGE_TAG $PROD_DOMAIN $ICP_PANEL_DOMAIN $PROD_EXPECTED_IP' in deploy_workflow
+          assert 'deploy-production $IMAGE_TAG' in deploy_workflow
+          assert '$PROD_DOMAIN $ICP_PANEL_DOMAIN $PROD_EXPECTED_IP' in deploy_workflow
           assert 'PROD_EXPECTED_IP' in deploy_script
           assert 'readonly EXPECTED_PUBLIC_IP' not in deploy_script
           assert 'PROD_EXPECTED_IP:-' not in deploy_script
