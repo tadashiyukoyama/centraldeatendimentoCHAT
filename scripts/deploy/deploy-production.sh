@@ -25,9 +25,14 @@ if [[ ! "$icp_panel_domain" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A
   exit 64
 fi
 
-readonly image="$IMAGE_REPOSITORY:$image_tag"
 readonly active_image_file="$APP_ROOT/shared/active-image"
 readonly previous_image_file="$APP_ROOT/shared/previous-image"
+if [[ -e "$active_image_file" ]]; then
+  echo 'Subsequent deployment blocked: database backup gate is not configured.' >&2
+  exit 78
+fi
+
+readonly image="$IMAGE_REPOSITORY:$image_tag"
 readonly compose_args=(--env-file "$ENV_FILE" -f "$COMPOSE_FILE" -p centraldeatendimentochat-production)
 
 run_compose() {
@@ -38,7 +43,14 @@ assert_icp() {
   test "$(docker inspect --format '{{.Config.Image}}' "$ICP_CONTAINER")" = "$ICP_IMAGE"
   test "$(docker inspect --format '{{.State.Running}}' "$ICP_CONTAINER")" = true
   docker network inspect "$ICP_NETWORK" >/dev/null
-  curl --fail --silent --show-error --insecure --max-time 15 "https://${icp_panel_domain}" >/dev/null
+  if ! curl --fail --silent --show-error --max-time 15 "https://${icp_panel_domain}" >/dev/null; then
+    echo "ICP panel TLS validation failed for https://${icp_panel_domain}" >&2
+    echo 'Observed certificate:' >&2
+    timeout 15 openssl s_client -connect "${icp_panel_domain}:443" -servername "$icp_panel_domain" </dev/null 2>/dev/null \
+      | openssl x509 -noout -subject -issuer -dates -fingerprint -sha256 >&2 \
+      || echo 'Unable to read the presented certificate.' >&2
+    return 1
+  fi
 }
 
 wait_for_rails() {

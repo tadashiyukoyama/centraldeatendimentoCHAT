@@ -32,6 +32,9 @@ jobs:
 
           local = yaml.safe_load(Path('infra/compose/docker-compose.local.yaml').read_text())
           production = yaml.safe_load(Path('infra/compose/docker-compose.production.yaml').read_text())
+          deploy_workflow = Path('.github/workflows/deploy-production.yml').read_text()
+          deploy_script = Path('scripts/deploy/deploy-production.sh').read_text()
+          rollback_script = Path('scripts/deploy/rollback-production.sh').read_text()
           manifest_path = Path('.workspace/project.portable.json')
           schema_path = Path('.workspace/schemas/project.portable.schema.json')
           import json
@@ -61,6 +64,12 @@ jobs:
           tracked = '\n'.join(__import__('subprocess').check_output(['git', 'ls-files'], text=True).splitlines())
           assert not any(line.startswith(('private/', 'runtime/', 'worktrees/', 'artifacts/')) for line in tracked.splitlines())
           assert not any(line.endswith('/.env') or line == '.env' for line in tracked.splitlines())
+          assert 'ref: ${{ inputs.image_tag }}' in deploy_workflow
+          assert 'git merge-base --is-ancestor "$IMAGE_TAG" origin/main' in deploy_workflow
+          assert 'git hash-object scripts/deploy/deploy-production.sh' in deploy_workflow
+          assert '--insecure' not in deploy_script
+          assert '--insecure' not in rollback_script
+          assert 'Subsequent deployment blocked: database backup gate is not configured.' in deploy_script
           print('Infrastructure and portable workspace contracts: OK')
           PY
 

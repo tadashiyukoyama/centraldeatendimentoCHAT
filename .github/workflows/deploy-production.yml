@@ -20,14 +20,36 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Checkout deployment scripts
-        uses: actions/checkout@v4
-
       - name: Validate explicit image tag
         env:
           IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
+          set -euo pipefail
           [[ "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]]
+
+      - name: Checkout exact deployment revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.image_tag }}
+          fetch-depth: 1
+
+      - name: Validate deployment revision ancestry
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$IMAGE_TAG"
+          git cat-file -e "$IMAGE_TAG^{commit}"
+          if test -f .git/shallow; then
+            git fetch --no-tags --unshallow origin "+refs/heads/main:refs/remotes/origin/main"
+          else
+            git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main"
+          fi
+          git rev-parse --verify refs/remotes/origin/main >/dev/null
+          git merge-base --is-ancestor "$IMAGE_TAG" origin/main
+          test "$(git log -1 --format=%H)" = "$IMAGE_TAG"
+          test "$(git hash-object scripts/deploy/deploy-production.sh)" = "$(git rev-parse "$IMAGE_TAG:scripts/deploy/deploy-production.sh")"
+          test "$(git hash-object scripts/deploy/rollback-production.sh)" = "$(git rev-parse "$IMAGE_TAG:scripts/deploy/rollback-production.sh")"
 
       - name: Prepare deploy key
         env:

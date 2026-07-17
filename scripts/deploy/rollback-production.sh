@@ -33,7 +33,14 @@ run_compose() { docker compose "${compose_args[@]}" "$@"; }
 test "$(docker inspect --format '{{.Config.Image}}' "$ICP_CONTAINER")" = "$ICP_IMAGE"
 test "$(docker inspect --format '{{.State.Running}}' "$ICP_CONTAINER")" = true
 docker network inspect "$ICP_NETWORK" >/dev/null
-curl --fail --silent --show-error --insecure --max-time 15 "https://${icp_panel_domain}" >/dev/null
+if ! curl --fail --silent --show-error --max-time 15 "https://${icp_panel_domain}" >/dev/null; then
+  echo "ICP panel TLS validation failed for https://${icp_panel_domain}" >&2
+  echo 'Observed certificate:' >&2
+  timeout 15 openssl s_client -connect "${icp_panel_domain}:443" -servername "$icp_panel_domain" </dev/null 2>/dev/null \
+    | openssl x509 -noout -subject -issuer -dates -fingerprint -sha256 >&2 \
+    || echo 'Unable to read the presented certificate.' >&2
+  exit 1
+fi
 run_compose config --quiet
 
 registry_token=$(cat)
@@ -48,7 +55,14 @@ run_compose up -d rails sidekiq >/dev/null
 for ((attempt = 1; attempt <= 30; attempt++)); do
   if curl --fail --silent --show-error --max-time 5 "http://127.0.0.1:${CHATWOOT_APP_PORT:-3000}/health" >/dev/null; then
     curl --fail --silent --show-error --max-time 20 "https://${chatwoot_domain}/health" >/dev/null
-    curl --fail --silent --show-error --insecure --max-time 15 "https://${icp_panel_domain}" >/dev/null
+    if ! curl --fail --silent --show-error --max-time 15 "https://${icp_panel_domain}" >/dev/null; then
+      echo "ICP panel TLS validation failed for https://${icp_panel_domain}" >&2
+      echo 'Observed certificate:' >&2
+      timeout 15 openssl s_client -connect "${icp_panel_domain}:443" -servername "$icp_panel_domain" </dev/null 2>/dev/null \
+        | openssl x509 -noout -subject -issuer -dates -fingerprint -sha256 >&2 \
+        || echo 'Unable to read the presented certificate.' >&2
+      exit 1
+    fi
     printf '%s\n' "$image" > "$active_image_file"
     echo "Rollback prepared for $image"
     exit 0
