@@ -1,79 +1,72 @@
 [CmdletBinding()]
 param(
-  [string]$WorkspaceRoot = $env:CENTRAL_ATENDIMENTO_WORKSPACE_ROOT
+  [string]$WorkspaceRoot
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'lib\WorkspaceContext.ps1')
 
-$repoRoot = (git rev-parse --show-toplevel).Trim()
-if (-not $repoRoot) {
-  throw 'Execute este script dentro do clone do servidor.'
+if ($WorkspaceRoot) {
+  $env:CENTRAL_ATENDIMENTO_WORKSPACE_ROOT = $WorkspaceRoot
+}
+$context = Get-WorkspaceContext
+$portable = $context.portableManifest
+
+foreach ($requiredPath in @($context.checkoutRoot, $context.canonicalServerRoot, $context.workspaceRoot)) {
+  if (-not (Test-Path -LiteralPath $requiredPath -PathType Container)) {
+    throw "Raiz obrigatoria ausente: $requiredPath"
+  }
 }
 
-if (-not $WorkspaceRoot) {
-  $WorkspaceRoot = [System.IO.Path]::GetFullPath((Join-Path $repoRoot '..'))
+$expectedServer = [System.IO.Path]::GetFullPath((Join-Path $context.workspaceRoot $portable.serverRelativePath))
+if (-not (Test-WorkspaceSamePath $expectedServer $context.canonicalServerRoot)) {
+  throw "canonicalServerRoot nao corresponde ao manifesto: $expectedServer"
 }
-
-$workspaceRoot = [System.IO.Path]::GetFullPath($WorkspaceRoot)
-$portablePath = Join-Path $repoRoot '.workspace\project.portable.json'
-if (-not (Test-Path -LiteralPath $portablePath -PathType Leaf)) {
-  throw "Manifesto portátil ausente: $portablePath"
-}
-
-$portable = Get-Content -Raw $portablePath | ConvertFrom-Json
-if ($portable.projectId -ne 'CENTRAL_ATENDIMENTO_CHAT') {
-  throw 'projectId inesperado no manifesto portátil.'
-}
-if ([int]$portable.maxAdditionalWorktrees -ne 2) {
-  throw 'O manifesto portátil deve limitar duas worktrees adicionais.'
-}
-
-$expectedServer = [System.IO.Path]::GetFullPath((Join-Path $workspaceRoot $portable.serverRelativePath))
-$actualServer = [System.IO.Path]::GetFullPath($repoRoot)
-if (-not [System.String]::Equals($expectedServer, $actualServer, [System.StringComparison]::OrdinalIgnoreCase)) {
-  throw "Git root inesperado. Esperado: $expectedServer; encontrado: $actualServer"
+if (-not (Test-Path -LiteralPath $context.checkoutRoot -PathType Container)) {
+  throw "checkoutRoot nao existe: $($context.checkoutRoot)"
 }
 
 $requiredDirectories = @(
-  'server',
-  'mobile',
-  'artifacts',
-  'private\credentials',
-  'private\env',
-  'private\recovery\database',
-  'runtime\data\postgres',
-  'runtime\data\redis',
-  'runtime\data\storage',
-  'runtime\cache',
-  'runtime\logs',
-  'runtime\memory\short-term',
-  'runtime\temp',
-  'worktrees'
+  $context.canonicalServerRoot,
+  $context.mobileRoot,
+  $context.artifactsRoot,
+  (Join-Path $context.privateRoot 'credentials'),
+  (Join-Path $context.privateRoot 'env'),
+  (Join-Path $context.privateRoot 'recovery\database'),
+  (Join-Path $context.runtimeRoot 'data\postgres'),
+  (Join-Path $context.runtimeRoot 'data\redis'),
+  (Join-Path $context.runtimeRoot 'data\storage'),
+  (Join-Path $context.runtimeRoot 'cache'),
+  (Join-Path $context.runtimeRoot 'logs'),
+  (Join-Path $context.runtimeRoot 'memory\short-term'),
+  (Join-Path $context.runtimeRoot 'temp'),
+  $context.worktreesRoot
 )
-
 $missing = @($requiredDirectories | Where-Object {
-  -not (Test-Path -LiteralPath (Join-Path $workspaceRoot $_) -PathType Container)
+  -not (Test-Path -LiteralPath $_ -PathType Container)
 })
 if ($missing.Count -gt 0) {
-  throw "Diretórios obrigatórios ausentes: $($missing -join ', ')"
+  throw "Diretorios obrigatorios ausentes: $($missing -join ', ')"
 }
 
-$mobileGit = Test-Path -LiteralPath (Join-Path $workspaceRoot 'mobile\.git')
-$mobileCode = @(Get-ChildItem -LiteralPath (Join-Path $workspaceRoot 'mobile') -Force -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'README.md' })
+$mobileGit = Test-Path -LiteralPath (Join-Path $context.mobileRoot '.git')
+$mobileCode = @(Get-ChildItem -LiteralPath $context.mobileRoot -Force -Recurse -File -ErrorAction SilentlyContinue | Where-Object {
+  $_.FullName -ne (Join-Path $context.mobileRoot 'README.md')
+})
 if ($mobileGit -or $mobileCode.Count -gt 0) {
-  throw 'A pasta mobile deve conter apenas o marcador README.md e não pode ter .git.'
+  throw 'A pasta mobile deve conter apenas o marcador README.md e nao pode ter .git.'
 }
 
-$origin = (git config --get remote.origin.url).Trim()
-$upstream = (git config --get remote.upstream.url).Trim()
-if ($origin -notmatch 'tadashiyukoyama/centraldeatendimentoCHAT') {
-  throw "origin inesperado: $origin"
-}
-if ($upstream -notmatch 'chatwoot/chatwoot') {
-  throw "upstream inesperado: $upstream"
+$registeredWorktrees = @(Get-WorkspaceRegisteredWorktreePaths)
+$additional = @($registeredWorktrees | Where-Object {
+  -not (Test-WorkspaceSamePath $_ $context.canonicalServerRoot)
+})
+if ($additional.Count -gt $context.maxAdditionalWorktrees) {
+  throw "Mais de $($context.maxAdditionalWorktrees) worktrees adicionais ativas: $($additional.Count)"
 }
 
-$trackedViolations = @(git ls-files | Where-Object {
+$trackedFiles = @((Invoke-WorkspaceGit @('ls-files')) -split "`r?`n" | Where-Object { $_ })
+$trackedViolations = @($trackedFiles | Where-Object {
   $_ -match '(^|/)(private|runtime|worktrees|artifacts)/' -or
   $_ -match '(^|/)\.env$' -or
   $_ -match '^infra/env/[^/]+\.env$'
@@ -82,35 +75,34 @@ if ($trackedViolations.Count -gt 0) {
   throw "Caminhos privados versionados: $($trackedViolations -join ', ')"
 }
 
-$codexViolations = @(
-  (Join-Path $repoRoot '.codex'),
-  (Join-Path $workspaceRoot 'mobile\.codex'),
-  (Join-Path $workspaceRoot 'worktrees\.codex')
-) | Where-Object { Test-Path -LiteralPath $_ }
+$codexCandidates = @(
+  (Join-Path $context.checkoutRoot '.codex'),
+  (Join-Path $context.mobileRoot '.codex'),
+  (Join-Path $context.worktreesRoot '.codex')
+)
+$codexViolations = @($codexCandidates | Where-Object { Test-Path -LiteralPath $_ })
 if ($codexViolations.Count -gt 0) {
-  throw "Configuração .codex fora do CODEX_HOME: $($codexViolations -join ', ')"
-}
-
-$worktrees = @(git worktree list --porcelain | Where-Object { $_ -like 'worktree *' } | ForEach-Object {
-  [System.IO.Path]::GetFullPath($_.Substring(9).Trim())
-})
-$additional = @($worktrees | Where-Object {
-  -not [System.String]::Equals($_, $actualServer, [System.StringComparison]::OrdinalIgnoreCase)
-})
-if ($additional.Count -gt 2) {
-  throw "Mais de duas worktrees adicionais ativas: $($additional.Count)"
+  throw "Configuracao .codex fora do CODEX_HOME: $($codexViolations -join ', ')"
 }
 
 [pscustomobject]@{
-  projectId = $portable.projectId
-  workspaceRoot = $workspaceRoot
-  serverRoot = $actualServer
+  projectId = $context.projectId
+  checkoutRoot = $context.checkoutRoot
+  canonicalServerRoot = $context.canonicalServerRoot
+  workspaceRoot = $context.workspaceRoot
+  gitCommonDir = $context.gitCommonDir
+  worktreesRoot = $context.worktreesRoot
+  mobileRoot = $context.mobileRoot
+  runtimeRoot = $context.runtimeRoot
+  privateRoot = $context.privateRoot
+  artifactsRoot = $context.artifactsRoot
+  isLinkedWorktree = $context.isLinkedWorktree
   mobileReserved = $true
   mobileHasGit = $mobileGit
   mobileCodeFiles = $mobileCode.Count
   additionalActiveWorktrees = $additional.Count
-  maxAdditionalWorktrees = 2
-  origin = $origin
-  upstream = $upstream
+  maxAdditionalWorktrees = $context.maxAdditionalWorktrees
+  origin = $context.origin
+  upstream = $context.upstream
   trackedBoundaryViolations = $trackedViolations.Count
-} | ConvertTo-Json -Depth 4
+} | ConvertTo-Json -Depth 5

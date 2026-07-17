@@ -26,9 +26,10 @@ Fontes de verdade, nesta ordem:
 1. estado real do Git (`git status`, `git worktree list --porcelain`, SHA e remotes);
 2. código e migrations do clone canônico;
 3. Compose e runbooks versionados em `infra/` e `docs/`;
-4. manifestos locais em `.workspace/`, somente para identidade e política de armazenamento;
-5. estado efetivamente observado nos containers e no banco;
-6. memória curta e artifacts, que são auxiliares e nunca substituem documentação versionada.
+4. estado atual canônico em `docs/operations/CURRENT-PROJECT-STATE.md`;
+5. manifestos locais em `.workspace/`, somente para identidade e política de armazenamento;
+6. estado efetivamente observado nos containers e no banco;
+7. memória curta e artifacts, que são auxiliares e nunca substituem documentação versionada.
 
 Merge no GitHub não prova deploy, documentação não prova execução e um nome de
 branch não substitui o SHA completo.

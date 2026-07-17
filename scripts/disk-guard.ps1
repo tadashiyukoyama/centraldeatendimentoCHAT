@@ -4,32 +4,38 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$repoRoot = (git rev-parse --show-toplevel).Trim()
-$workspaceRoot = $env:CENTRAL_ATENDIMENTO_WORKSPACE_ROOT
-if (-not $workspaceRoot) {
-  $workspaceRoot = [Environment]::GetEnvironmentVariable('CENTRAL_ATENDIMENTO_WORKSPACE_ROOT', 'User')
-}
-if (-not $workspaceRoot) {
-  $workspaceRoot = [System.IO.Path]::GetFullPath((Join-Path $repoRoot '..'))
-}
+. (Join-Path $PSScriptRoot 'lib\WorkspaceContext.ps1')
+$context = Get-WorkspaceContext
 
-function Get-DirectoryBytes([string]$Path) {
-  if (-not (Test-Path -LiteralPath $Path -PathType Container)) { return 0 }
+function Get-DirectoryBytes {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Path
+  )
+
+  if (-not (Test-Path -LiteralPath $Path -PathType Container)) { return [int64]0 }
   $sum = (Get-ChildItem -LiteralPath $Path -Force -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
-  if ($null -eq $sum) { return 0 }
+  if ($null -eq $sum) { return [int64]0 }
   return [int64]$sum
 }
 
 $paths = @(
-  [pscustomobject]@{ name = 'server'; path = [System.IO.Path]::GetFullPath($repoRoot) },
-  [pscustomobject]@{ name = 'runtime'; path = [System.IO.Path]::GetFullPath((Join-Path $workspaceRoot 'runtime')) },
-  [pscustomobject]@{ name = 'artifacts'; path = [System.IO.Path]::GetFullPath((Join-Path $workspaceRoot 'artifacts')) },
-  [pscustomobject]@{ name = 'worktrees'; path = [System.IO.Path]::GetFullPath((Join-Path $workspaceRoot 'worktrees')) }
+  [pscustomobject]@{ name = 'checkout'; path = $context.checkoutRoot },
+  [pscustomobject]@{ name = 'runtime'; path = $context.runtimeRoot },
+  [pscustomobject]@{ name = 'artifacts'; path = $context.artifactsRoot },
+  [pscustomobject]@{ name = 'worktrees'; path = $context.worktreesRoot }
 ) | ForEach-Object {
   [pscustomobject]@{ name = $_.name; path = $_.path; bytes = Get-DirectoryBytes $_.path }
 }
 
-$drives = @(Get-PSDrive C,D | Select-Object Name,Used,Free)
+$driveNames = @($context.workspaceRoot, $context.checkoutRoot, $context.gitCommonDir | ForEach-Object {
+  $root = [System.IO.Path]::GetPathRoot($_)
+  if ($root -match '^(?<drive>[A-Za-z]):[\\/]$') { $Matches.drive.ToUpperInvariant() }
+}) | Sort-Object -Unique
+$drives = @($driveNames | ForEach-Object {
+  Get-PSDrive -Name $_ -ErrorAction SilentlyContinue | Select-Object Name, Used, Free
+})
+
 $pending = @(
   'Docker Desktop storage',
   'WSL2 virtual disk',
@@ -41,10 +47,12 @@ $pending = @(
 )
 
 [pscustomobject]@{
-  mode = 'read-only'
+  mode = if ($ReadOnly) { 'read-only' } else { 'report-only' }
+  workspaceRoot = $context.workspaceRoot
+  observedDriveRoots = $driveNames
   drives = $drives
   knownProjectPaths = $paths
   pendingBoundaries = $pending
   deletionPerformed = $false
   cDriveProtectionClaimed = $false
-} | ConvertTo-Json -Depth 5
+} | ConvertTo-Json -Depth 6

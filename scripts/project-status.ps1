@@ -2,34 +2,35 @@
 param()
 
 $ErrorActionPreference = 'Stop'
-$repoRoot = (git rev-parse --show-toplevel).Trim()
-$workspaceRoot = $env:CENTRAL_ATENDIMENTO_WORKSPACE_ROOT
-if (-not $workspaceRoot) {
-  $workspaceRoot = [Environment]::GetEnvironmentVariable('CENTRAL_ATENDIMENTO_WORKSPACE_ROOT', 'User')
-}
-if (-not $workspaceRoot) {
-  $workspaceRoot = [System.IO.Path]::GetFullPath((Join-Path $repoRoot '..'))
-}
+. (Join-Path $PSScriptRoot 'lib\WorkspaceContext.ps1')
+$context = Get-WorkspaceContext
 
-$worktreePaths = @(git worktree list --porcelain | Where-Object { $_ -like 'worktree *' } | ForEach-Object {
-  [System.IO.Path]::GetFullPath($_.Substring(9).Trim())
+$worktreePaths = @(Get-WorkspaceRegisteredWorktreePaths)
+$additional = @($worktreePaths | Where-Object {
+  -not (Test-WorkspaceSamePath $_ $context.canonicalServerRoot)
 })
-$additional = @($worktreePaths | Where-Object { $_ -ne [System.IO.Path]::GetFullPath($repoRoot) })
-$status = @(git status --short)
+$statusText = Invoke-WorkspaceGit @('status', '--short')
 
 [pscustomobject]@{
-  projectId = 'CENTRAL_ATENDIMENTO_CHAT'
-  workspaceRoot = [System.IO.Path]::GetFullPath($workspaceRoot)
-  serverRoot = [System.IO.Path]::GetFullPath($repoRoot)
-  mobileRoot = [System.IO.Path]::GetFullPath((Join-Path $workspaceRoot 'mobile'))
-  branch = (git branch --show-current).Trim()
-  headSha = (git rev-parse HEAD).Trim()
-  origin = (git config --get remote.origin.url).Trim()
-  upstream = (git config --get remote.upstream.url).Trim()
-  originMain = (git rev-parse origin/main).Trim()
-  clean = ($status.Count -eq 0)
+  projectId = $context.projectId
+  workspaceRoot = $context.workspaceRoot
+  canonicalServerRoot = $context.canonicalServerRoot
+  checkoutRoot = $context.checkoutRoot
+  gitCommonDir = $context.gitCommonDir
+  mobileRoot = $context.mobileRoot
+  runtimeRoot = $context.runtimeRoot
+  privateRoot = $context.privateRoot
+  artifactsRoot = $context.artifactsRoot
+  worktreesRoot = $context.worktreesRoot
+  isLinkedWorktree = $context.isLinkedWorktree
+  branch = Invoke-WorkspaceGit @('branch', '--show-current')
+  headSha = Invoke-WorkspaceGit @('rev-parse', 'HEAD')
+  origin = $context.origin
+  upstream = $context.upstream
+  originMain = Invoke-WorkspaceGit @('rev-parse', 'origin/main')
+  clean = [string]::IsNullOrWhiteSpace($statusText)
   additionalActiveWorktrees = $additional.Count
-  maxAdditionalWorktrees = 2
-  mobileReserved = (Test-Path -LiteralPath (Join-Path $workspaceRoot 'mobile'))
+  maxAdditionalWorktrees = $context.maxAdditionalWorktrees
+  mobileReserved = (Test-Path -LiteralPath $context.mobileRoot -PathType Container)
   dockerPresent = [bool](Get-Command docker -ErrorAction SilentlyContinue)
-} | ConvertTo-Json -Depth 4
+} | ConvertTo-Json -Depth 5
