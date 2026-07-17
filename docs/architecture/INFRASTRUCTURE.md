@@ -19,6 +19,9 @@ O proxy público termina TLS, aplica limites de corpo e encaminha WebSocket para
 o Rails. PostgreSQL e Redis não publicam portas na Internet. O único endpoint
 exposto pelo host é o Rails em `127.0.0.1:3000`, destinado ao proxy local.
 
+O aplicativo mobile não é um serviço Docker nem um segundo backend. Ele será um
+cliente React Native separado, consumindo a mesma API versionada do servidor.
+
 ## Componentes
 
 | Camada | Componente | Responsabilidade | Persistência |
@@ -89,3 +92,4 @@ compatível. Rollback de schema exige procedimento separado e backup validado.
 - proxy duplicado dentro do Compose;
 - observabilidade vendida como pronta sem agente ou backend configurado;
 - uso de segredos de desenvolvimento em produção.
+- clone ou build do aplicativo mobile.

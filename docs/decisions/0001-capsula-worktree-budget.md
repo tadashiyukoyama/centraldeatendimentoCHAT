@@ -10,7 +10,7 @@ Adotar uma cápsula local externa ao clone Git, inspirada na estrutura do OZ3D,
 com `.workspace`, `artifacts`, `private`, `runtime` e `worktrees`. O clone
 canônico permanece separado; nenhum dado privado ou runtime é publicado.
 
-O orçamento máximo é de **3 worktrees adicionais ativos**, além do clone
+O orçamento máximo é de **2 worktrees adicionais ativos**, além do clone
 canônico. O estado real é obtido do Git; o ledger local registra apenas a
 finalidade e o ciclo de vida. Não há exclusão automática.
 
@@ -23,7 +23,7 @@ processo destrutivo ou bloquear o checkout principal.
 
 ## Consequências
 
-- O Codex pode trabalhar no checkout principal e em três tarefas isoladas.
-- A quarta tarefa paralela precisa reutilizar um worktree limpo ou de decisão explícita.
+- O Codex pode trabalhar no checkout principal e em duas tarefas isoladas.
+- A terceira tarefa paralela precisa reutilizar um worktree limpo ou de decisão explícita.
 - Um worktree com mudanças não commitadas, PR aberta ou branch útil não pode ser removido.
 - O limite é operacional, não um limite de branches remotas ou commits históricos.

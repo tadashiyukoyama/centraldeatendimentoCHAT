@@ -1,52 +1,41 @@
-# Layout do projeto e da cápsula
+# Layout portátil do projeto e da cápsula
 
-## Cápsula local, fora do Git
-
-```text
-D:/dev/workspaces/centraldeatendimentoCHAT/
-├── .workspace/
-│   ├── project.json          identidade e caminhos locais
-│   ├── storage-policy.json   política de retenção e segredos
-│   └── worktrees.json        ledger de finalidade/ciclo de vida
-├── artifacts/                relatórios e entregáveis temporários
-├── private/
-│   ├── credentials/          chaves e certificados com ACL restrita
-│   ├── env/                  .env reais não versionados
-│   └── recovery/database/    dumps e checksums protegidos
-├── runtime/
-│   ├── data/postgres/        dados vivos do PostgreSQL local
-│   ├── data/redis/           dados vivos do Redis local
-│   ├── data/storage/         anexos do Active Storage local
-│   ├── cache/                cache descartável
-│   ├── logs/                 logs sanitizados
-│   ├── memory/short-term/    memória curta do Codex
-│   └── temp/                 temporários
-├── worktrees/                até 3 worktrees adicionais ativos
-└── <clone canônico>/         o Git do projeto
-```
-
-Nesta estação o clone canônico está em `D:/dev/workspaces/chatwoot`, conforme o
-manifesto local. A cápsula não precisa ser um subdiretório do Git. Isso evita
-que dados, segredos e worktrees sejam confundidos com código ou publicados no
-GitHub.
-
-## Dentro do clone Git
+O workspace físico é resolvido por `CENTRAL_ATENDIMENTO_WORKSPACE_ROOT`. A
+estrutura abaixo é relativa e não depende de uma letra de disco:
 
 ```text
-AGENTS.md                contrato de execução do Codex
-app/ config/ lib/        código Rails e configurações upstream
-app/javascript/          frontend Vue/Vite
-db/                      migrations e seeds
-docs/architecture/       arquitetura e decisões de alto nível
-docs/decisions/          ADRs versionadas
-docs/operations/         segredos, memória, runbook e estado operacional
-infra/compose/           Compose próprio local e de produção
-infra/env/               exemplos sanitizados de ambiente
-infra/proxy/             exemplo de proxy reverso
-scripts/                 verificações operacionais seguras
-spec/ tests/              testes upstream e do projeto
+<workspace-root>/
+├── .workspace/       identidade local, políticas e ledger
+├── artifacts/        relatórios e entregáveis temporários
+├── private/          credenciais, envs reais e recuperação do banco
+├── runtime/          dados locais, storage, cache, logs, temp e memória curta
+├── worktrees/        até 2 worktrees adicionais ativas
+├── server/           repositório Git do Chatwoot/projeto
+└── mobile/           reserva do futuro fork, sem clone nesta fase
 ```
 
-Nunca colocar `private/`, `runtime/`, `artifacts/` ou `worktrees/` dentro do
-clone. Se a organização física mudar, atualizar o manifesto local, este
-documento e o contrato do `AGENTS.md` na mesma tarefa.
+O servidor e o mobile são repositórios diferentes no mesmo workspace. O
+checkout canônico do servidor é `server/`; ele não entra na contagem de
+worktrees. `mobile/` contém somente um marcador e não possui `.git`.
+
+## Dentro de `server/`
+
+```text
+.workspace/           contrato portátil, políticas e templates locais
+AGENTS.md              contrato de trabalho do Codex
+app/ config/ lib/      código Rails e configurações upstream
+app/javascript/       frontend Vue/Vite
+db/                    migrations e seeds
+docs/architecture/     arquitetura, mobile e decisões de alto nível
+docs/decisions/        ADRs versionadas
+docs/operations/       runbooks, segredos, memória e estado atual
+infra/compose/         Compose próprio local e de produção
+infra/env/             exemplos sanitizados de ambiente
+infra/proxy/           exemplo de proxy reverso
+scripts/               verificações operacionais seguras
+spec/ tests/            testes upstream e do projeto
+```
+
+Não colocar `private/`, `runtime/`, `artifacts/` ou `worktrees/` dentro de
+`server/`. Não criar `.codex` em `server/`, `mobile/` ou `worktrees/`; a
+configuração do Codex permanece no `CODEX_HOME` existente no disco D:.

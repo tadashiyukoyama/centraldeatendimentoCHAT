@@ -9,7 +9,7 @@ ___
 
 Este repositório acompanha o Chatwoot OSS com uma camada de infraestrutura e
 governança própria. A arquitetura completa, banco, segredos, memória do Codex,
-limite de três worktrees e runbook estão em [`docs/architecture/`](./docs/architecture/),
+limite de duas worktrees e runbook estão em [`docs/architecture/`](./docs/architecture/),
 [`docs/operations/`](./docs/operations/) e [`AGENTS.md`](./AGENTS.md).
 
 O remote `upstream` aponta para `chatwoot/chatwoot`; o remote `origin` aponta

@@ -1,32 +1,33 @@
 [CmdletBinding()]
 param(
-  [int]$MaxAdditionalWorktrees = 3
+  [int]$MaxAdditionalWorktrees = -1
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'lib\WorkspaceContext.ps1')
+$context = Get-WorkspaceContext
 
-$canonical = (git rev-parse --show-toplevel).Trim()
-if (-not $canonical) {
-  throw 'Execute este script dentro de um clone Git.'
+if ($MaxAdditionalWorktrees -ge 0 -and $MaxAdditionalWorktrees -ne $context.maxAdditionalWorktrees) {
+  throw "O limite deve ser lido do manifesto portatil: $($context.maxAdditionalWorktrees)."
 }
 
-$canonicalPath = [System.IO.Path]::GetFullPath($canonical)
-$worktreePaths = @(git worktree list --porcelain | Where-Object { $_ -like 'worktree *' } | ForEach-Object {
-  [System.IO.Path]::GetFullPath($_.Substring(9).Trim())
-})
-
+$worktreePaths = @(Get-WorkspaceRegisteredWorktreePaths)
 $additional = @($worktreePaths | Where-Object {
-  -not [System.String]::Equals($_, $canonicalPath, [System.StringComparison]::OrdinalIgnoreCase)
+  -not (Test-WorkspaceSamePath $_ $context.canonicalServerRoot)
 })
 
-[pscustomobject]@{
-  canonical = $canonicalPath
-  maxAdditionalWorktrees = $MaxAdditionalWorktrees
+[pscustomobject]$result = [pscustomobject]@{
+  checkoutRoot = $context.checkoutRoot
+  canonicalServerRoot = $context.canonicalServerRoot
+  workspaceRoot = $context.workspaceRoot
+  isLinkedWorktree = $context.isLinkedWorktree
+  maxAdditionalWorktrees = $context.maxAdditionalWorktrees
   additionalActiveWorktrees = $additional.Count
-  availableSlots = [Math]::Max(0, $MaxAdditionalWorktrees - $additional.Count)
+  availableSlots = [Math]::Max(0, $context.maxAdditionalWorktrees - $additional.Count)
   paths = $additional
-} | ConvertTo-Json -Depth 4
+}
+$result | ConvertTo-Json -Depth 5
 
-if ($additional.Count -gt $MaxAdditionalWorktrees) {
-  throw "Orçamento excedido: $($additional.Count) worktrees adicionais ativos; máximo permitido: $MaxAdditionalWorktrees."
+if ($additional.Count -gt $context.maxAdditionalWorktrees) {
+  throw "Orcamento excedido: $($additional.Count) worktrees adicionais ativos; maximo permitido: $($context.maxAdditionalWorktrees)."
 }

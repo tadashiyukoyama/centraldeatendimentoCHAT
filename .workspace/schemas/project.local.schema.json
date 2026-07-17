@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://centraldeatendimentochat.example/schemas/project.local.schema.json",
+  "title": "Central de Atendimento CHAT local project manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "projectId",
+    "workspaceRoot",
+    "serverRoot",
+    "mobileRoot",
+    "runtimeRoot",
+    "privateRoot",
+    "artifactsRoot",
+    "worktreesRoot",
+    "origin",
+    "upstream",
+    "sha",
+    "maxAdditionalWorktrees"
+  ],
+  "properties": {
+    "projectId": { "const": "CENTRAL_ATENDIMENTO_CHAT" },
+    "workspaceRoot": { "const": "<absolute-local-workspace-root>" },
+    "serverRoot": { "const": "<absolute-local-workspace-root>/server" },
+    "mobileRoot": { "const": "<absolute-local-workspace-root>/mobile" },
+    "runtimeRoot": { "const": "<absolute-local-workspace-root>/runtime" },
+    "privateRoot": { "const": "<absolute-local-workspace-root>/private" },
+    "artifactsRoot": { "const": "<absolute-local-workspace-root>/artifacts" },
+    "worktreesRoot": { "const": "<absolute-local-workspace-root>/worktrees" },
+    "origin": { "const": "https://github.com/tadashiyukoyama/centraldeatendimentoCHAT.git" },
+    "upstream": { "const": "https://github.com/chatwoot/chatwoot.git" },
+    "sha": {
+      "type": "string",
+      "pattern": "^(?:<observed-sha>|[0-9a-f]{7,64})$"
+    },
+    "maxAdditionalWorktrees": {
+      "type": "integer",
+      "const": 2,
+      "minimum": 0
+    }
+  }
+}

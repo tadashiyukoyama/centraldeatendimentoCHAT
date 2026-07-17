@@ -1,0 +1,135 @@
+name: Central de Atendimento CHAT workspace foundation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  workspace-foundation:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python for JSON Schema
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install schema validator
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check jsonschema
+
+      - name: Configure repository remotes
+        shell: pwsh
+        run: |
+          $origin = 'https://github.com/tadashiyukoyama/centraldeatendimentoCHAT.git'
+          $upstream = 'https://github.com/chatwoot/chatwoot.git'
+          if (git config --get remote.origin.url) {
+            git remote set-url origin $origin
+          } else {
+            git remote add origin $origin
+          }
+          if (git config --get remote.upstream.url) {
+            git remote set-url upstream $upstream
+          } else {
+            git remote add upstream $upstream
+          }
+          git remote -v
+
+      - name: Validate versioned workspace contracts
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/validate-workspace-contracts.ps1
+
+      - name: Run PowerShell foundation tests
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/tests/workspace-foundation.Tests.ps1
+
+      - name: Build temporary capsule and validate canonical server
+        shell: pwsh
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $sourceRoot = (git rev-parse --show-toplevel).Trim()
+          $capsuleRoot = Join-Path $env:RUNNER_TEMP ('centraldeatendimentochat-capsule-' + [guid]::NewGuid().ToString('N'))
+          $serverRoot = Join-Path $capsuleRoot 'server'
+          $mobileRoot = Join-Path $capsuleRoot 'mobile'
+          $worktreesRoot = Join-Path $capsuleRoot 'worktrees'
+          $linkedRoot = Join-Path $worktreesRoot 'ci-linked'
+
+          New-Item -ItemType Directory -Force -Path @(
+            $capsuleRoot,
+            $mobileRoot,
+            (Join-Path $capsuleRoot 'artifacts'),
+            (Join-Path $capsuleRoot 'private\credentials'),
+            (Join-Path $capsuleRoot 'private\env'),
+            (Join-Path $capsuleRoot 'private\recovery\database'),
+            (Join-Path $capsuleRoot 'runtime\data\postgres'),
+            (Join-Path $capsuleRoot 'runtime\data\redis'),
+            (Join-Path $capsuleRoot 'runtime\data\storage'),
+            (Join-Path $capsuleRoot 'runtime\cache'),
+            (Join-Path $capsuleRoot 'runtime\logs'),
+            (Join-Path $capsuleRoot 'runtime\memory\short-term'),
+            (Join-Path $capsuleRoot 'runtime\temp'),
+            $worktreesRoot
+          ) | Out-Null
+          Set-Content -LiteralPath (Join-Path $mobileRoot 'README.md') -Value 'Reserved mobile root for CI.' -Encoding UTF8
+
+          git clone --no-local $sourceRoot $serverRoot
+          git -C $serverRoot remote set-url origin 'https://github.com/tadashiyukoyama/centraldeatendimentoCHAT.git'
+          if (git -C $serverRoot config --get remote.upstream.url) {
+            git -C $serverRoot remote set-url upstream 'https://github.com/chatwoot/chatwoot.git'
+          } else {
+            git -C $serverRoot remote add upstream 'https://github.com/chatwoot/chatwoot.git'
+          }
+          $env:CENTRAL_ATENDIMENTO_WORKSPACE_ROOT = $capsuleRoot
+
+          Push-Location $serverRoot
+          try {
+            pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-capsule.ps1
+            pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/rehydrate-workspace.ps1 -ReadOnly
+            pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/project-status.ps1
+            pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/check-worktree-budget.ps1
+            pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/disk-guard.ps1 -ReadOnly
+            pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/validate-local-boundaries.ps1
+          } finally {
+            Pop-Location
+          }
+
+          git -C $serverRoot worktree add --detach $linkedRoot HEAD
+          try {
+            Push-Location $linkedRoot
+            try {
+              pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-capsule.ps1
+              pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/rehydrate-workspace.ps1 -ReadOnly
+              pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/project-status.ps1
+              pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/check-worktree-budget.ps1
+              pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/disk-guard.ps1 -ReadOnly
+              pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/validate-local-boundaries.ps1
+            } finally {
+              Pop-Location
+            }
+
+            $serverStatus = (git -C $serverRoot status --porcelain | Out-String).Trim()
+            $linkedStatus = (git -C $linkedRoot status --porcelain | Out-String).Trim()
+            if ($serverStatus -or $linkedStatus) {
+              throw 'A validação da cápsula temporária deixou alterações não limpas.'
+            }
+          } finally {
+            git -C $serverRoot worktree remove $linkedRoot
+          }
+
+          if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+            $baseSha = $env:PR_BASE_SHA
+          } else {
+            $baseSha = (git -C $serverRoot rev-parse HEAD~1).Trim()
+          }
+          git -C $serverRoot diff --check "$baseSha..HEAD"
+          Remove-Item -LiteralPath $capsuleRoot -Recurse -Force

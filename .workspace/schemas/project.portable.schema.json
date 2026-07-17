@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://centraldeatendimentochat.example/schemas/project.portable.schema.json",
+  "title": "Central de Atendimento CHAT portable project manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "projectId",
+    "repository",
+    "upstreamRepository",
+    "defaultBranch",
+    "workspaceEnvironmentVariable",
+    "serverRelativePath",
+    "mobileRelativePath",
+    "runtimeRelativePath",
+    "privateRelativePath",
+    "artifactsRelativePath",
+    "worktreesRelativePath",
+    "futureMobileRepository",
+    "futureMobileUpstream",
+    "maxAdditionalWorktrees"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "projectId": { "const": "CENTRAL_ATENDIMENTO_CHAT" },
+    "repository": { "const": "tadashiyukoyama/centraldeatendimentoCHAT" },
+    "upstreamRepository": { "const": "chatwoot/chatwoot" },
+    "defaultBranch": { "const": "main" },
+    "workspaceEnvironmentVariable": { "const": "CENTRAL_ATENDIMENTO_WORKSPACE_ROOT" },
+    "serverRelativePath": { "const": "server" },
+    "mobileRelativePath": { "const": "mobile" },
+    "runtimeRelativePath": { "const": "runtime" },
+    "privateRelativePath": { "const": "private" },
+    "artifactsRelativePath": { "const": "artifacts" },
+    "worktreesRelativePath": { "const": "worktrees" },
+    "futureMobileRepository": { "const": "tadashiyukoyama/centraldeatendimentoCHAT-mobile" },
+    "futureMobileUpstream": { "const": "chatwoot/chatwoot-mobile-app" },
+    "maxAdditionalWorktrees": {
+      "type": "integer",
+      "const": 2,
+      "minimum": 0
+    }
+  }
+}
