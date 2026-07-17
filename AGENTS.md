@@ -1,4 +1,139 @@
-# Chatwoot Development Guidelines
+# Central de Atendimento CHAT — Contrato de trabalho do Codex
+
+Este bloco é a política específica do repositório `tadashiyukoyama/centraldeatendimentoCHAT` e complementa as diretrizes upstream do Chatwoot abaixo. O código foi originado de `chatwoot/chatwoot`; o remote `upstream` permanece apontando para a origem oficial e o remote `origin` será o repositório deste projeto.
+
+## 1. Escopo, identidade e fontes da verdade
+
+- Projeto: `CENTRAL_ATENDIMENTO_CHAT`.
+- Repositório canônico: `tadashiyukoyama/centraldeatendimentoCHAT`.
+- Origem upstream: `chatwoot/chatwoot`, branch `develop`.
+- Branch canônica deste projeto: `main`.
+- Stack preservada do Chatwoot: Rails, Vue/Vite, PostgreSQL com `pgvector`, Redis, Sidekiq e Active Storage.
+- Produção planejada: Docker Compose em host privado, OpenResty/Nginx na borda com TLS e app publicado apenas em `127.0.0.1:3000`.
+
+O clone canônico pode estar fora da cápsula local. Quando
+`CENTRAL_ATENDIMENTO_WORKSPACE_ROOT` estiver definida, consultar os manifests
+em `.workspace/` sob essa raiz. Sem a variável, operar apenas no repositório
+atual e não inventar caminhos externos.
+
+Fontes de verdade, nesta ordem:
+
+1. estado real do Git (`git status`, `git worktree list --porcelain`, SHA e remotes);
+2. código e migrations do clone canônico;
+3. Compose e runbooks versionados em `infra/` e `docs/`;
+4. manifestos locais em `.workspace/`, somente para identidade e política de armazenamento;
+5. estado efetivamente observado nos containers e no banco;
+6. memória curta e artifacts, que são auxiliares e nunca substituem documentação versionada.
+
+Merge no GitHub não prova deploy, documentação não prova execução e um nome de
+branch não substitui o SHA completo.
+
+## 2. Arquitetura que não pode ser alterada silenciosamente
+
+O núcleo deve continuar sendo o Chatwoot OSS. A topologia operacional é:
+
+- Rails web/Puma para HTTP, API, webhooks e interface;
+- Sidekiq para jobs assíncronos e filas;
+- PostgreSQL 16 com `pgvector` como banco oficial e fonte persistente;
+- Redis 7 como cache, pub/sub e backend de filas;
+- Active Storage em volume local no desenvolvimento e caminho persistente ou S3 compatível em produção;
+- OpenResty/Nginx externo como terminador TLS e proxy público;
+- Docker Compose para o ambiente local e para a instalação inicial de produção.
+
+Não introduzir MariaDB, MySQL, segundo banco, segundo proxy público ou outro
+runtime paralelo sem ADR aprovada e autorização do proprietário. O Compose
+oficial na raiz continua útil como referência upstream; os contratos do projeto
+ficam em `infra/compose/`.
+
+## 3. Cápsula local e limite de worktrees
+
+A cápsula local é externa ao Git e segue a estrutura:
+
+```text
+centraldeatendimentoCHAT/
+├── .workspace/       identidade, política e ledger local
+├── artifacts/        relatórios e entregáveis temporários
+├── private/          credenciais, envs reais e recuperação do banco
+├── runtime/          dados, storage, cache, logs, temp e memória curta
+├── worktrees/        worktrees adicionais autorizados
+└── <clone canônico>  código Git do projeto
+```
+
+O clone canônico não entra na contagem. O limite é de **3 worktrees adicionais
+ativos**. Antes de criar ou remover um worktree, executar
+`git worktree list --porcelain` e `pwsh -File scripts/check-worktree-budget.ps1`.
+
+O limite não bloqueia o Codex: permite o checkout principal mais três tarefas
+isoladas em paralelo. Ao atingir três, o Codex deve reutilizar um worktree limpo
+ou solicitar autorização para remover um worktree depois de verificar branch,
+commits úteis, PR, alterações não commitadas e processos ativos. Não apagar,
+prunar ou limpar automaticamente; alterações não commitadas sempre bloqueiam
+remoção.
+
+## 4. Segredos, banco e dados privados
+
+- Valores reais ficam na cápsula `private/env/` ou no secret store do provedor;
+- chaves e certificados ficam em `private/credentials/` com ACL restrita;
+- dumps do PostgreSQL ficam em `private/recovery/database/`, com checksum e retenção;
+- dados vivos locais ficam em `runtime/data/postgres`, `runtime/data/redis` e `runtime/data/storage`;
+- em produção, os equivalentes ficam em volumes dedicados do host, fora do clone;
+- o GitHub recebe somente exemplos sanitizados e nomes de variáveis;
+- nunca imprimir, versionar, colar em logs, screenshots, testes ou relatórios um segredo.
+
+A existência de uma credencial não autoriza seu uso. Não descriptografar cofres,
+materializar chaves privadas, conectar a produção, alterar credenciais ou
+restaurar banco sem tarefa e autorização explícitas.
+
+## 5. Memória curta, memória longa e atualização obrigatória
+
+**Memória curta do Codex:** `runtime/memory/short-term/`. Serve para o contexto
+temporário da tarefa e pode ser descartada após a reconciliação. Não é fonte de
+verdade, tem revisão padrão de 7 dias e não pode conter segredos.
+
+**Memória longa do projeto:** `docs/architecture/`, `docs/operations/`,
+`docs/decisions/` e o estado atual versionado. Decisões, contratos, invariantes,
+runbooks e fatos que precisam sobreviver à tarefa devem terminar nesses arquivos.
+
+O Codex é obrigado a atualizar a documentação versionada quando alterar:
+
+- arquitetura, topologia, serviços, portas, volumes ou caminhos de runtime;
+- banco, migrations, índices, política de backup ou restauração;
+- variáveis de ambiente, integração externa, autenticação ou segurança;
+- contrato público, comportamento operacional, CI/CD, release ou rollback;
+- política do Codex, worktrees, memória, armazenamento ou fontes da verdade;
+- estado atual após uma validação, release ou decisão que mude o runbook.
+
+Uma alteração puramente interna que não mude contrato, operação ou decisão pode
+ser documentada apenas no commit. Se código, infra e documento divergirem,
+registrar a divergência e reconciliar antes de declarar a tarefa concluída.
+
+## 6. Protocolo de execução
+
+Antes de escrever:
+
+1. ler este `AGENTS.md` e os documentos relevantes em `docs/`;
+2. confirmar raiz Git, branch, remotes, SHA e status inicial;
+3. consultar o orçamento de worktrees;
+4. buscar `upstream` somente quando a tarefa exigir sincronização;
+5. definir arquivos autorizados, riscos e testes antes da mudança;
+6. manter mudanças não relacionadas intactas.
+
+Para mudanças de banco, exigir backup válido, migration revisada, checksum,
+plano de rollback e autorização operacional. Para deploy, usar apenas o fluxo
+versionado e autorização explícita; o Codex não promove produção por SSH local.
+
+## 7. Critérios de aceite da tarefa
+
+- `git diff --check` sem erro;
+- documentação e exemplos de ambiente coerentes com a mudança;
+- Compose validado com `docker compose config` quando aplicável;
+- testes/lint adequados ao escopo, sem alegar sucesso de comandos não executados;
+- nenhum segredo ou artefato privado no diff;
+- worktree e branch deixados identificáveis, sem limpeza destrutiva.
+
+As instruções oficiais de estilo, testes, Enterprise overlay e frontend do
+Chatwoot continuam válidas nas seções seguintes.
+
 
 ## Build / Test / Lint
 
