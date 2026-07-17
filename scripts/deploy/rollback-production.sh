@@ -100,6 +100,8 @@ assert_icp
 run_compose config --quiet
 
 registry_token=$(cat)
+# The cleanup function is invoked indirectly by the EXIT trap.
+# shellcheck disable=SC2317
 cleanup_registry_auth() {
   docker logout ghcr.io >/dev/null 2>&1 || true
 }
