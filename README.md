@@ -5,6 +5,16 @@ ___
 
 # Chatwoot
 
+## Central de Atendimento CHAT
+
+Este repositório acompanha o Chatwoot OSS com uma camada de infraestrutura e
+governança própria. A arquitetura completa, banco, segredos, memória do Codex,
+limite de três worktrees e runbook estão em [`docs/architecture/`](./docs/architecture/),
+[`docs/operations/`](./docs/operations/) e [`AGENTS.md`](./AGENTS.md).
+
+O remote `upstream` aponta para `chatwoot/chatwoot`; o remote `origin` aponta
+para [`tadashiyukoyama/centraldeatendimentoCHAT`](https://github.com/tadashiyukoyama/centraldeatendimentoCHAT).
+
 The modern customer support platform, an open-source alternative to Intercom, Zendesk, Salesforce Service Cloud etc.
 
 <p>

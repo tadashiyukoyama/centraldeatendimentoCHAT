@@ -1,6 +1,6 @@
 # Central de Atendimento CHAT — Contrato de trabalho do Codex
 
-Este bloco é a política específica do repositório `tadashiyukoyama/centraldeatendimentoCHAT` e complementa as diretrizes upstream do Chatwoot abaixo. O código foi originado de `chatwoot/chatwoot`; o remote `upstream` permanece apontando para a origem oficial e o remote `origin` será o repositório deste projeto.
+Este bloco é a política específica do repositório `tadashiyukoyama/centraldeatendimentoCHAT` e complementa as diretrizes upstream do Chatwoot abaixo. O código foi originado de `chatwoot/chatwoot`; o remote `upstream` permanece apontando para a origem oficial e o remote `origin` aponta para o repositório deste projeto.
 
 ## 1. Escopo, identidade e fontes da verdade
 

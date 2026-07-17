@@ -3,11 +3,13 @@
 - Base: clone raso de `chatwoot/chatwoot`, branch upstream `develop`.
 - Branch local do projeto: `main`.
 - Remote upstream: `https://github.com/chatwoot/chatwoot.git`.
-- Remote origin: será configurado para `tadashiyukoyama/centraldeatendimentoCHAT` na publicação final.
+- Remote origin: `https://github.com/tadashiyukoyama/centraldeatendimentoCHAT`.
 - Infraestrutura própria: `infra/compose/`, `infra/env/` e `infra/proxy/`.
 - Banco oficial: PostgreSQL 16 com `pgvector`.
 - Cache e filas: Redis 7; jobs processados por Sidekiq.
 - Limite: 3 worktrees adicionais ativos, sem limpeza automática.
 
-Este arquivo descreve o estado do bootstrap. Após a primeira validação de
-containers, atualizar com SHA, imagens, portas, healthchecks e pendências reais.
+SHA arquitetural publicado: `0c40a6a` (histórico completo do upstream
+preservado). A validação de containers permanece pendente porque o Docker não
+está instalado nesta estação; não declarar healthchecks ou imagens executados
+até essa validação ocorrer.
