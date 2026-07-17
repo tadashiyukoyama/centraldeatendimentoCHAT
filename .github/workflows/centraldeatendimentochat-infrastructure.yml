@@ -73,7 +73,7 @@ jobs:
           assert 'PROD_EXPECTED_IP' in deploy_workflow
           assert 'deploy-production $IMAGE_TAG' in deploy_workflow
           assert '$PROD_DOMAIN $ICP_PANEL_DOMAIN $PROD_EXPECTED_IP' in deploy_workflow
-          assert 'PROD_EXPECTED_IP' in deploy_script
+          assert 'expected_public_ip=$4' in deploy_script
           assert 'readonly EXPECTED_PUBLIC_IP' not in deploy_script
           assert 'PROD_EXPECTED_IP:-' not in deploy_script
           assert 'validate_ipv4' in deploy_script
