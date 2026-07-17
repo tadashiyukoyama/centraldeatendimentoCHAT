@@ -114,8 +114,12 @@ function Assert-JsonSchema {
     return
   }
 
+  $validationErrorPreference = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
   $output = & $pythonCommand.Source -c $pythonValidator $SchemaPath $InstancePath $Label 2>&1
-  if ($LASTEXITCODE -ne 0) {
+  $validationExitCode = $LASTEXITCODE
+  $ErrorActionPreference = $validationErrorPreference
+  if ($validationExitCode -ne 0) {
     $message = (($output | Out-String).Trim())
     if ($message -match 'No module named .*jsonschema') {
       Assert-FallbackContract $SchemaPath $InstancePath $Label

@@ -394,6 +394,13 @@ try {
     }
     $remainingStatus = (& git -C $serverRoot status --porcelain 2>$null | Out-String).Trim()
     if (-not $remainingStatus) {
+      $pathsToNormalize = @(
+        Get-Item -LiteralPath $testRoot -Force -ErrorAction SilentlyContinue
+        Get-ChildItem -LiteralPath $testRoot -Force -Recurse -ErrorAction SilentlyContinue
+      )
+      foreach ($pathToNormalize in $pathsToNormalize) {
+        $pathToNormalize.Attributes = [System.IO.FileAttributes]::Normal
+      }
       Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
     } else {
       Write-Warning "Capsula de teste preservada para inspeção por conter alterações: $testRoot"
