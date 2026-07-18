@@ -154,6 +154,7 @@ create_database_backup() {
   trap 'rm -rf -- "$temp_dir"' RETURN
   temp_dump="$temp_dir/chatwoot.dump"
 
+  # shellcheck disable=SC2016
   if ! run_compose exec -T postgres sh -c 'pg_dump --format=custom --no-owner --no-acl -U "$POSTGRES_USER" -d "$POSTGRES_DB"' > "$temp_dump"; then
     echo 'Database backup failed: pg_dump did not complete.' >&2
     return 1
