@@ -61,7 +61,7 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         create(:message, conversation: conversation, content: 'Private note', message_type: :outgoing, private: true)
 
         expect(mock_llm_chat_service).to receive(:generate_response).with(
-          message_history: [{ content: 'Hello', role: 'user' }]
+          message_history: []
         ).and_return({ 'response' => 'Hey, welcome to Captain Specs' })
 
         described_class.perform_now(conversation, assistant)

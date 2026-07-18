@@ -19,9 +19,11 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
   def perform(tool_context, reason: nil, destination: nil)
     conversation = find_conversation(tool_context.state)
     return 'Conversation not found' unless conversation
-
     destination_key = normalize_destination(destination)
     return invalid_destination_message if invalid_destination?(destination, destination_key)
+
+    eligibility = Captain::Conversation::HandoffEligibility.new(conversation)
+    return eligibility.denied_message unless eligibility.allowed?
 
     log_handoff(conversation, reason, destination_key)
     trigger_handoff(conversation, reason, destination_key)

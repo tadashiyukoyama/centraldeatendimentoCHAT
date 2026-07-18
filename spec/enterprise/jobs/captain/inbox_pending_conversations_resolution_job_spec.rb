@@ -5,12 +5,46 @@ RSpec.describe Captain::InboxPendingConversationsResolutionJob, type: :job do
   let!(:resolvable_pending_conversation) { create(:conversation, inbox: inbox, last_activity_at: 2.hours.ago, status: :pending) }
   let!(:recent_pending_conversation) { create(:conversation, inbox: inbox, last_activity_at: 1.minute.ago, status: :pending) }
   let!(:open_conversation) { create(:conversation, inbox: inbox, last_activity_at: 1.hour.ago, status: :open) }
+  let!(:customer_message) do
+    create(:message, conversation: resolvable_pending_conversation, inbox: inbox, account: inbox.account, message_type: :incoming)
+  end
   let!(:captain_assistant) { create(:captain_assistant, account: inbox.account) }
 
   before do
     create(:captain_inbox, inbox: inbox, captain_assistant: captain_assistant)
     stub_const('Limits::BULK_ACTIONS_LIMIT', 3)
+    resolvable_pending_conversation.update!(last_activity_at: 2.hours.ago)
     inbox.reload
+  end
+
+  context 'when the latest public message is outbound' do
+    let!(:outbound_pending_conversation) do
+      create(:conversation, inbox: inbox, last_activity_at: 2.hours.ago, status: :pending)
+    end
+
+    before do
+      create(
+        :message,
+        conversation: outbound_pending_conversation,
+        inbox: inbox,
+        account: inbox.account,
+        message_type: :outgoing,
+        sender: create(:user, account: inbox.account),
+        content: 'Mensagem de template enviada pelo atendente'
+      )
+      outbound_pending_conversation.update!(last_activity_at: 2.hours.ago)
+    end
+
+    it 'leaves the conversation pending and does not evaluate it' do
+      expect(Captain::ConversationCompletionService).not_to receive(:new).with(
+        account: inbox.account,
+        conversation_display_id: outbound_pending_conversation.display_id
+      )
+
+      described_class.perform_now(inbox)
+
+      expect(outbound_pending_conversation.reload.status).to eq('pending')
+    end
   end
 
   it 'queues the job' do

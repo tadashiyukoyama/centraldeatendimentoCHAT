@@ -134,6 +134,22 @@ RSpec.describe MessageTemplates::HookExecutionService do
     end
   end
 
+  context 'when message is a private incoming note' do
+    it 'does not schedule captain response job' do
+      expect(Captain::Conversation::ResponseBuilderJob).not_to receive(:perform_later)
+
+      create(:message, conversation: conversation, message_type: :incoming, private: true, account: account)
+    end
+  end
+
+  context 'when message is not sent by a contact' do
+    it 'does not schedule captain response job' do
+      expect(Captain::Conversation::ResponseBuilderJob).not_to receive(:perform_later)
+
+      create(:message, conversation: conversation, message_type: :incoming, sender: create(:user, account: account), account: account)
+    end
+  end
+
   context 'when greeting and out of office messages with Captain enabled' do
     context 'when conversation is pending (Captain is handling)' do
       before do

@@ -282,6 +282,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
             service.send(:track_handoff_usage,
                          Captain::Tools::HandoffTool.new(assistant).name,
                          Captain::Tools::HandoffTool.new(assistant).name,
+                         'Conversation handed off to human support team',
                          Struct.new(:context).new({}))
             raise error
           end
@@ -572,7 +573,11 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
 
       service.send(:add_usage_metadata_callback, runner)
 
-      tool_complete_callback.call(Captain::Tools::HandoffTool.new(assistant).name, 'ok', context_wrapper)
+      tool_complete_callback.call(
+        Captain::Tools::HandoffTool.new(assistant).name,
+        'Conversation handed off to human support team',
+        context_wrapper
+      )
 
       expect(root_span).to receive(:set_attribute).with('langfuse.trace.metadata.credit_used', 'false')
       run_complete_callback.call('assistant', nil, context_wrapper)
@@ -594,7 +599,11 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       context_wrapper = Struct.new(:context).new({})
 
       expect(tool_complete_callback).not_to be_nil
-      tool_complete_callback.call(Captain::Tools::HandoffTool.new(assistant).name, 'ok', context_wrapper)
+      tool_complete_callback.call(
+        Captain::Tools::HandoffTool.new(assistant).name,
+        'Conversation handed off to human support team',
+        context_wrapper
+      )
 
       expect(context_wrapper.context[:captain_v2_handoff_tool_called]).to be true
     end
