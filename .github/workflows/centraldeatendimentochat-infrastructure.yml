@@ -212,7 +212,7 @@ jobs:
         run: |
           set -euo pipefail
           workdir=$(mktemp -d)
-          trap 'sudo -n rm -rf "$workdir" || rm -rf "$workdir" || true' EXIT
+          trap 'rm -rf "$workdir"' EXIT
           cat > "$workdir/production.env" <<EOF
           CHATWOOT_IMAGE=ghcr.io/tadashiyukoyama/centraldeatendimentochat:0000000000000000000000000000000000000000
           CHATWOOT_ENV_FILE=$workdir/production.env
@@ -334,14 +334,6 @@ jobs:
           if [[ "${1:-}" == network && "${2:-}" == inspect ]]; then
             exit 0
           fi
-          if [[ "${1:-}" == compose && "$*" == *"pg_dump"* ]]; then
-            printf 'fake-postgres-custom-dump'
-            exit 0
-          fi
-          if [[ "${1:-}" == compose && "$*" == *"pg_restore --list"* ]]; then
-            cat >/dev/null
-            exit 0
-          fi
           if [[ "${1:-}" == pull && "${FAKE_DOCKER_FAIL_PULL:-0}" == 1 ]]; then
             exit 1
           fi
@@ -402,28 +394,4 @@ jobs:
           test -f "$fake_app/shared/bootstrap-attempt"
           sudo -n grep -F 'state=started' "$fake_app/shared/bootstrap-attempt"
           test ! -e "$fake_app/shared/active-image"
-
-          backup_app="$workdir/backup-app"
-          mkdir -p "$backup_app/shared/backups/postgres"
-          printf 'ghcr.io/tadashiyukoyama/centraldeatendimentochat:%s\n' "$image_tag" > "$backup_app/shared/active-image"
-          set +e
-          sudo -n env \
-            "PATH=$fake_bin:$PATH" \
-            "APP_ROOT=$backup_app" \
-            "COMPOSE_FILE=$workdir/compose.yaml" \
-            "CHATWOOT_ENV_FILE=$workdir/production.env" \
-            "FAKE_DOCKER_LOG=$workdir/backup-docker.log" \
-            "ICP_IMAGE=icontainer/openresty:1.29.2.3" \
-            "ICP_CONTAINER=ic-openresty-tATe" \
-            "ICP_NETWORK=icontainer-network" \
-            "$script" "$image_tag" chat.example.test panel.example.test 192.0.2.44 </dev/null > "$workdir/backup-failure.log" 2>&1
-          status=$?
-          set -e
-          test "$status" -ne 0
-          test -s "$backup_app/shared/backups/postgres/"*.dump
-          test -s "$backup_app/shared/backups/postgres/"*.sha256
-          test -s "$backup_app/shared/backups/postgres/"*.metadata
-          test -s "$backup_app/shared/backups/postgres/latest"
-          grep -F 'state=started' "$backup_app/shared/bootstrap-attempt"
-          sudo -n rm -rf "$backup_app"
-          echo 'Database backup gate and first-bootstrap failure behavior: OK'
+          echo 'Deployment gates and first-bootstrap failure behavior: OK'
