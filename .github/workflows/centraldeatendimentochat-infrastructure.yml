@@ -178,7 +178,8 @@ jobs:
           assert 'backup_root="$APP_ROOT/shared/backups/postgres"' in deploy_script
           assert 'create_database_backup' in deploy_script
           assert 'pg_dump --format=custom --no-owner --no-acl' in deploy_script
-          assert 'pg_restore --list -' in deploy_script
+          assert 'pg_restore --list >/dev/null' in deploy_script
+          assert 'pg_restore --list -' not in deploy_script
           assert 'sha256sum' in deploy_script
           assert 'latest' in deploy_script
           assert 'chown root:root' in deploy_script

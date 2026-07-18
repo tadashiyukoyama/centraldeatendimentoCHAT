@@ -165,7 +165,7 @@ create_database_backup() {
     echo 'Database backup failed: the dump is empty.' >&2
     return 1
   fi
-  if ! run_compose exec -T postgres sh -c 'pg_restore --list - >/dev/null' < "$temp_dump"; then
+  if ! run_compose exec -T postgres sh -c 'pg_restore --list >/dev/null' < "$temp_dump"; then
     echo 'Database backup failed: pg_restore validation did not complete.' >&2
     return 1
   fi
