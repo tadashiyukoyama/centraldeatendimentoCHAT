@@ -20,8 +20,14 @@ class Captain::Conversation::HandoffEligibility
   private
 
   def latest_customer_message
-    messages = Captain::Conversation::MessageContextWindow.new(@conversation).perform
-    messages.reverse.find { |message| message.incoming? && message.sender_type == 'Contact' }
+    message = Captain::Conversation::MessageContextWindow.new(@conversation)
+      .perform
+      .reject(&:activity?)
+      .last
+
+    return unless message&.incoming? && message.sender_type == 'Contact'
+
+    message
   end
 
   def explicit_handoff_signal?
