@@ -25,6 +25,11 @@
   description: 'Add a label to a conversation'
   icon: 'tag'
 
+- id: classify_lead
+  title: 'Classify Lead'
+  description: 'Apply the canonical lead classification to a conversation'
+  icon: 'tag'
+
 - id: faq_lookup
   title: 'FAQ Lookup'
   description: 'Search FAQ responses using semantic similarity'
@@ -37,5 +42,5 @@
 
 - id: handoff
   title: 'Handoff to Human'
-  description: 'Hand off the conversation to a human agent'
+  description: 'Hand off the conversation to the owner or a department'
   icon: 'user-switch'

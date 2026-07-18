@@ -10,6 +10,7 @@ module Concerns::Agentable
       tools: agent_tools,
       model: agent_model,
       temperature: temperature.presence&.to_f || DEFAULT_TEMPERATURE,
+      params: agent_provider_params,
       response_schema: agent_response_schema
     )
   end
@@ -39,6 +40,12 @@ module Concerns::Agentable
   end
 
   private
+
+  def agent_provider_params
+    return {} unless agent_model.to_s.start_with?('gpt-5')
+
+    { reasoning_effort: 'low' }
+  end
 
   def agent_name
     raise NotImplementedError, "#{self.class} must implement agent_name"
