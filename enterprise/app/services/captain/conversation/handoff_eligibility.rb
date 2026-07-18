@@ -1,5 +1,5 @@
 class Captain::Conversation::HandoffEligibility
-  HUMAN_REQUEST_PATTERN = %r{
+  HUMAN_REQUEST_PATTERN = /
     \b(?:
       falar com (?:um|uma )?(?:humano|atendente|pessoa|algu[eé]m)
       | atendimento humano
@@ -7,11 +7,11 @@ class Captain::Conversation::HandoffEligibility
       | transfer(?:ir|a)
       | especialista
     )\b
-  }ix
-  DEPARTMENT_PATTERN = %r{
+  /ix
+  DEPARTMENT_PATTERN = /
     \b(?:financeiro|contas? a pagar|recursos? humanos?|rh|ger[eê]ncia|representante|suporte)\b
-  }ix
-  COMMERCIAL_SIGNAL_PATTERN = %r{
+  /ix
+  COMMERCIAL_SIGNAL_PATTERN = /
     \b(?:
       pre[cç]o
       | valor
@@ -24,7 +24,7 @@ class Captain::Conversation::HandoffEligibility
       | adquirir
       | or[cç]amento
     )\b
-  }ix
+  /ix
 
   DENIED_MESSAGE = 'Handoff is not appropriate for the latest customer message. Reply to the customer and keep the conversation with Captain.'.freeze
 
