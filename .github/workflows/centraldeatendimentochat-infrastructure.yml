@@ -35,6 +35,7 @@ jobs:
           deploy_workflow = Path('.github/workflows/deploy-production.yml').read_text()
           deploy_script = Path('scripts/deploy/deploy-production.sh').read_text()
           rollback_script = Path('scripts/deploy/rollback-production.sh').read_text()
+          deployment_doc = Path('docs/operations/PRODUCTION-DEPLOYMENT.md').read_text()
           gateway_script = Path('scripts/deploy/ssh-gateway.sh').read_text()
           manifest_path = Path('.workspace/project.portable.json')
           schema_path = Path('.workspace/schemas/project.portable.schema.json')
@@ -171,8 +172,15 @@ jobs:
           assert not contract_matches(expected_contract, equal_contract + '\nextra-path ' + 'e' * 64)
           assert not contract_matches(expected_contract, equal_contract.replace('deploy-production.sh ', 'arbitrary/path '))
           assert 'bootstrap-attempt' in deploy_script
+          assert 'state=completed' in deploy_script
           assert 'Incomplete first deployment detected: manual audit is required before retry.' in deploy_script
           assert 'run_compose stop rails sidekiq postgres redis' in deploy_script
+          assert 'backup_root="$APP_ROOT/shared/backups/postgres"' in deploy_script
+          assert 'create_database_backup' in deploy_script
+          assert 'pg_dump --format=custom --no-owner --no-acl' in deploy_script
+          assert 'pg_restore --list -' in deploy_script
+          assert 'sha256sum' in deploy_script
+          assert 'latest' in deploy_script
           assert 'chown root:root' in deploy_script
           assert 'chmod 600' in deploy_script
           assert 'write_active_image' in deploy_script
@@ -181,7 +189,8 @@ jobs:
           marker_creation = deploy_script.index('write_bootstrap_marker started')
           postgres_start = deploy_script.index('run_compose up -d postgres redis')
           migration = deploy_script.index('db:chatwoot_prepare')
-          assert domain_gate < marker_creation < postgres_start < migration
+          backup = deploy_script.rindex('create_database_backup')
+          assert domain_gate < backup < marker_creation < postgres_start < migration
           assert deploy_script.index('docker pull "$image"') < marker_creation
           assert deploy_script.index('docker logout ghcr.io') < marker_creation
           assert deploy_workflow.index('Preflight immutable image and public ingress') < deploy_workflow.index('Install production environment file')
@@ -192,6 +201,7 @@ jobs:
           assert '--insecure' not in deploy_script
           assert '--insecure' not in rollback_script
           assert 'Subsequent deployment blocked: database backup gate is not configured.' in deploy_script
+          assert 'shared/backups/postgres/' in deployment_doc
           print('Infrastructure and portable workspace contracts: OK')
           PY
 
@@ -234,7 +244,7 @@ jobs:
 
           active_root="$workdir/active"
           mkdir -p "$active_root/shared"
-          touch "$active_root/shared/active-image"
+          printf 'ghcr.io/tadashiyukoyama/centraldeatendimentochat:%s\n' "$image_tag" > "$active_root/shared/active-image"
           set +e
           output=$(APP_ROOT="$active_root" "$script" "$image_tag" example.invalid panel.invalid 192.0.2.44 </dev/null 2>&1)
           status=$?

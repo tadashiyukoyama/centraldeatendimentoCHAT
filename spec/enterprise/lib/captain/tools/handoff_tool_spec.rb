@@ -12,17 +12,24 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
 
   describe '#description' do
     it 'returns the correct description' do
-      expect(tool.description).to eq('Hand off the conversation to a human agent when unable to assist further')
+      expect(tool.description).to eq('Hand off the conversation to the owner or a department')
     end
   end
 
   describe '#parameters' do
-    it 'returns the correct parameters' do
+    it 'exposes the reason parameter' do
       expect(tool.parameters).to have_key(:reason)
       expect(tool.parameters[:reason].name).to eq(:reason)
       expect(tool.parameters[:reason].type).to eq('string')
       expect(tool.parameters[:reason].description).to eq('The reason why handoff is needed (optional)')
       expect(tool.parameters[:reason].required).to be false
+    end
+
+    it 'exposes the destination parameter' do
+      expect(tool.parameters).to have_key(:destination)
+      expect(tool.parameters[:destination].name).to eq(:destination)
+      expect(tool.parameters[:destination].type).to eq('string')
+      expect(tool.parameters[:destination].required).to be false
     end
   end
 
@@ -81,7 +88,7 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
           reason = 'Customer needs help'
           expect(tool).to receive(:log_tool_usage).with(
             'tool_handoff',
-            { conversation_id: conversation.id, reason: reason }
+            { conversation_id: conversation.id, reason: reason, destination: 'human_support' }
           )
 
           tool.perform(tool_context, reason: reason)
@@ -102,7 +109,7 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
         it 'logs tool usage with default reason' do
           expect(tool).to receive(:log_tool_usage).with(
             'tool_handoff',
-            { conversation_id: conversation.id, reason: 'Agent requested handoff' }
+            { conversation_id: conversation.id, reason: 'Agent requested handoff', destination: 'human_support' }
           )
 
           tool.perform(tool_context)
@@ -169,6 +176,33 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
         result = tool.perform(tool_context, reason: 'Test')
         expect(result).to eq('Conversation not found')
       end
+    end
+  end
+
+  describe 'department and owner routing' do
+    let!(:team) { create(:team, account: account, name: 'financeiro') }
+
+    it 'assigns a department and leaves the conversation open for a human' do
+      result = tool.perform(tool_context, reason: 'Customer asked about an invoice', destination: 'financeiro')
+
+      expect(result).to include('financeiro')
+      expect(conversation.reload).to have_attributes(status: 'open', team_id: team.id, assignee_id: nil)
+      expect(Message.last.content).to include('Destino: financeiro')
+    end
+
+    it 'assigns the first account administrator for owner handoff' do
+      admin = create(:user, account: account, role: :administrator)
+
+      tool.perform(tool_context, reason: 'Customer requested a demo', destination: 'owner')
+
+      expect(conversation.reload).to have_attributes(status: 'open', team_id: nil, assignee_id: admin.id)
+    end
+
+    it 'rejects unknown destinations without changing the conversation' do
+      result = tool.perform(tool_context, destination: 'unknown')
+
+      expect(result).to start_with('Invalid destination')
+      expect(conversation.reload).to have_attributes(status: 'open', team_id: nil, assignee_id: nil)
     end
   end
 
