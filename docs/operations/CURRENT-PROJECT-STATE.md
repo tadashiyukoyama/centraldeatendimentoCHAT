@@ -68,6 +68,17 @@ do `git-common-dir`. Os scripts em `scripts/` usam o contexto centralizado em
 `chatwoot/chatwoot-mobile-app`. O mobile não foi baixado, não possui `.git`,
 dependências ou build nesta fase.
 
+## Estado de runtime atual
+
+O runtime de produção foi reconciliado com a VPS e está documentado em
+[`docs/operations/PRODUCTION-RUNTIME-STATE.md`](PRODUCTION-RUNTIME-STATE.md).
+O release implantado é o commit `6e6027945f37461751603b9e80f5d43beb233774`,
+referenciado no GitHub pela tag `production-vps-20260718`. O modo Enterprise
+self-hosted está ativo na configuração persistida da VPS.
+
+O bloco histórico abaixo descreve a fase de fundação anterior e não deve ser
+interpretado como o estado atual da produção.
+
 ## Estado de runtime desta fase
 
 Docker não está instalado e não foi instalado. Não foram executados Compose,
