@@ -11,6 +11,8 @@ account = Account.find(Integer(ENV.fetch('CAPTAIN_ACCOUNT_ID')))
 assistant = account.captain_assistants.order(:id).first or raise 'Captain assistant not found'
 document_id = Integer(ENV.fetch('CAPTAIN_DOCUMENT_ID'))
 
+# FAQ answers are prose; keep each answer as one persisted string.
+# rubocop:disable Layout/LineLength
 approved = {
   4 => {
     question: 'O que é o AI Food Manager?',
@@ -89,6 +91,7 @@ approved = {
     answer: 'Podem ser avaliados horários e regras por unidade ou evento, setores e responsáveis, tom de voz e prompts, campos adicionais, automações de campanhas e integrações externas. Cada item precisa ser confirmado tecnicamente e incluído no escopo antes de ser apresentado como disponível.'
   }
 }.freeze
+# rubocop:enable Layout/LineLength
 
 responses = assistant.responses.where(documentable_type: 'Captain::Document', documentable_id: document_id).index_by(&:id)
 missing = approved.keys - responses.keys

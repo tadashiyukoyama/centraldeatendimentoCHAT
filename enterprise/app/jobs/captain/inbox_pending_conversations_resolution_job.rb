@@ -61,10 +61,8 @@ class Captain::InboxPendingConversationsResolutionJob < ApplicationJob
   end
 
   def waiting_for_customer_response?(conversation)
-    last_message = Captain::Conversation::MessageContextWindow.new(conversation)
-      .perform
-      .reject(&:activity?)
-      .last
+    context_window = Captain::Conversation::MessageContextWindow.new(conversation)
+    last_message = context_window.perform.reject(&:activity?).last
 
     last_message&.incoming? && last_message.sender_type == 'Contact'
   end

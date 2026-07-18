@@ -168,7 +168,14 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
         before do
           conversation.messages.delete_all
           create(:message, conversation: conversation, inbox: inbox, account: account, message_type: :incoming, content: 'Quero saber o preço')
-          create(:message, conversation: conversation, inbox: inbox, account: account, message_type: :outgoing, content: 'Vou verificar isso para você')
+          create(
+            :message,
+            conversation: conversation,
+            inbox: inbox,
+            account: account,
+            message_type: :outgoing,
+            content: 'Vou verificar isso para você'
+          )
         end
 
         it 'refuses the handoff because the latest public message is not from the customer' do

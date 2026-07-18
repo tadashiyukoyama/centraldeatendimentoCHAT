@@ -5,7 +5,7 @@ RSpec.describe Captain::InboxPendingConversationsResolutionJob, type: :job do
   let!(:resolvable_pending_conversation) { create(:conversation, inbox: inbox, last_activity_at: 2.hours.ago, status: :pending) }
   let!(:recent_pending_conversation) { create(:conversation, inbox: inbox, last_activity_at: 1.minute.ago, status: :pending) }
   let!(:open_conversation) { create(:conversation, inbox: inbox, last_activity_at: 1.hour.ago, status: :open) }
-  let!(:customer_message) do
+  let(:customer_message) do
     create(:message, conversation: resolvable_pending_conversation, inbox: inbox, account: inbox.account, message_type: :incoming)
   end
   let!(:captain_assistant) { create(:captain_assistant, account: inbox.account) }
@@ -14,6 +14,7 @@ RSpec.describe Captain::InboxPendingConversationsResolutionJob, type: :job do
     create(:captain_inbox, inbox: inbox, captain_assistant: captain_assistant)
     stub_const('Limits::BULK_ACTIONS_LIMIT', 3)
     resolvable_pending_conversation.update!(last_activity_at: 2.hours.ago)
+    customer_message
     inbox.reload
   end
 

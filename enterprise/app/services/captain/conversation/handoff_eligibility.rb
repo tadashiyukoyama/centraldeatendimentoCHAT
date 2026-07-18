@@ -1,7 +1,30 @@
 class Captain::Conversation::HandoffEligibility
-  HUMAN_REQUEST_PATTERN = /\b(?:falar com (?:um|uma )?(?:humano|atendente|pessoa|algu[eé]m)|atendimento humano|me transf|transfer(?:ir|a)|especialista)\b/i
-  DEPARTMENT_PATTERN = /\b(?:financeiro|contas? a pagar|recursos? humanos?|rh|ger[eê]ncia|representante|suporte)\b/i
-  COMMERCIAL_SIGNAL_PATTERN = /\b(?:pre[cç]o|valor|plano|proposta|contrat(?:ar|a[cç][aã]o)|demo(?:nstra[cç][aã]o)?|comprar|assinar|adquirir|or[cç]amento)\b/i
+  HUMAN_REQUEST_PATTERN = %r{
+    \b(?:
+      falar com (?:um|uma )?(?:humano|atendente|pessoa|algu[eé]m)
+      | atendimento humano
+      | me transf
+      | transfer(?:ir|a)
+      | especialista
+    )\b
+  }ix
+  DEPARTMENT_PATTERN = %r{
+    \b(?:financeiro|contas? a pagar|recursos? humanos?|rh|ger[eê]ncia|representante|suporte)\b
+  }ix
+  COMMERCIAL_SIGNAL_PATTERN = %r{
+    \b(?:
+      pre[cç]o
+      | valor
+      | plano
+      | proposta
+      | contrat(?:ar|a[cç][aã]o)
+      | demo(?:nstra[cç][aã]o)?
+      | comprar
+      | assinar
+      | adquirir
+      | or[cç]amento
+    )\b
+  }ix
 
   DENIED_MESSAGE = 'Handoff is not appropriate for the latest customer message. Reply to the customer and keep the conversation with Captain.'.freeze
 
@@ -20,10 +43,8 @@ class Captain::Conversation::HandoffEligibility
   private
 
   def latest_customer_message
-    message = Captain::Conversation::MessageContextWindow.new(@conversation)
-      .perform
-      .reject(&:activity?)
-      .last
+    context_window = Captain::Conversation::MessageContextWindow.new(@conversation)
+    message = context_window.perform.reject(&:activity?).last
 
     return unless message&.incoming? && message.sender_type == 'Contact'
 

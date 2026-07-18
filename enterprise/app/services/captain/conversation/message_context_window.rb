@@ -7,9 +7,8 @@ class Captain::Conversation::MessageContextWindow
 
   def perform
     messages = @conversation.messages
-                               .where(private: false, message_type: MESSAGE_TYPES)
-                               .reorder(created_at: :asc, id: :asc)
-                               .to_a
+    messages = messages.where(private: false, message_type: MESSAGE_TYPES)
+    messages = messages.reorder(created_at: :asc, id: :asc).to_a
 
     boundary_index = messages.rindex { |message| resolution_activity?(message) }
     return messages if boundary_index.nil?
