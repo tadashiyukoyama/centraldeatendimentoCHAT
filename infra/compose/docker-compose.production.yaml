@@ -42,6 +42,8 @@ services:
     logging: *default-logging
     security_opt:
       - no-new-privileges:true
+    extra_hosts:
+      - 'hub.2.chatwoot.com:127.0.0.1'
     networks:
       - private
 
@@ -66,6 +68,8 @@ services:
     logging: *default-logging
     security_opt:
       - no-new-privileges:true
+    extra_hosts:
+      - 'hub.2.chatwoot.com:127.0.0.1'
     networks:
       - private
 

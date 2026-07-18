@@ -1,0 +1,41 @@
+schema_version: 1
+kind: production-runtime-state
+
+# This file contains no credentials. It records the state observed on the VPS
+# and the non-secret Enterprise settings required to reproduce that state.
+source_of_truth: vps
+observed_at_utc: '2026-07-18T08:04:04Z'
+
+repository: tadashiyukoyama/centraldeatendimentoCHAT
+
+application:
+  image_repository: ghcr.io/tadashiyukoyama/centraldeatendimentochat
+  image_tag: 6e6027945f37461751603b9e80f5d43beb233774
+  source_commit: 6e6027945f37461751603b9e80f5d43beb233774
+  image_digest: sha256:aee2dbf1c42c85cc3118a559dbf9b54723667f5aab8ff5b965f8618880759ec0
+  chatwoot_version: 4.15.1
+
+enterprise:
+  deployment_env: self-hosted
+  pricing_plan: enterprise
+  premium_features:
+    - disable_branding
+    - audit_logs
+    - sla
+    - custom_roles
+    - captain_integration
+    - captain_integration_v2
+    - captain_document_auto_sync
+    - csat_review_notes
+    - conversation_required_attributes
+
+upstream_isolation:
+  hub_hostname: hub.2.chatwoot.com
+  hub_resolution_inside_application: 127.0.0.1
+  disable_telemetry: true
+  enable_push_relay_server: false
+
+runtime:
+  compose_file_sha256: cb8064bc9a0da7209f0955662f3eb6808d0c7f3227264ef16189c6329670f84a
+  active_image_marker: ghcr.io/tadashiyukoyama/centraldeatendimentochat:6e6027945f37461751603b9e80f5d43beb233774
+  bootstrap_state: completed
