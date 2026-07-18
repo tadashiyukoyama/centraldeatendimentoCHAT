@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Idempotent production configuration for the AI Food Manager Captain flow.
-# Run with: CAPTAIN_ACCOUNT_ID=1 bundle exec rails runner scripts/configure-captain-lead-routing.rb
+# Run with: CAPTAIN_ACCOUNT_ID=1 bundle exec rails runner scripts/configure_captain_lead_routing.rb
 
 account_id = Integer(ENV.fetch('CAPTAIN_ACCOUNT_ID'))
 account = Account.find(account_id)
@@ -50,18 +50,18 @@ assistant.update!(
   response_guidelines: [
     'Responda a toda mensagem enquanto a conversa estiver sob responsabilidade do Captain.',
     'Escreva em português do Brasil, de forma humana, objetiva, cordial e comercial. ' \
-      'Nunca invente preço, prazo, integração ou funcionalidade: consulte a base de conhecimento antes de afirmar fatos.',
+    'Nunca invente preço, prazo, integração ou funcionalidade: consulte a base de conhecimento antes de afirmar fatos.',
     'Faça perguntas curtas para entender o negócio, a dor e o objetivo do contato. ' \
-      'Não force uma demonstração antes de haver interesse real.',
+    'Não force uma demonstração antes de haver interesse real.',
     'Depois de entender a intenção, classifique a conversa exatamente uma vez como cliente, ' \
-      'lead_morno ou lead_quente usando a ferramenta de classificação.',
+    'lead_morno ou lead_quente usando a ferramenta de classificação.',
     'Cliente é quem já usa o produto ou procura suporte sobre uma operação existente. ' \
-      'Lead morno é quem está conhecendo a solução ou tirando dúvidas sem sinal claro de compra. ' \
-      'Lead quente é quem pergunta preço, plano, proposta, contratação ou aceita/marca uma demonstração.',
+    'Lead morno é quem está conhecendo a solução ou tirando dúvidas sem sinal claro de compra. ' \
+    'Lead quente é quem pergunta preço, plano, proposta, contratação ou aceita/marca uma demonstração.',
     'Para lead quente, classifique como lead_quente e transfira para owner. Para pedido explícito ' \
-      'de setor, transfira para: financeiro, contas_a_pagar, rh, gerencia, representante ou suporte.',
+    'de setor, transfira para: financeiro, contas_a_pagar, rh, gerencia, representante ou suporte.',
     'Depois de usar a ferramenta de handoff, não envie novas respostas nem tente resolver a conversa. ' \
-      'A conversa deve permanecer aberta para o humano até ser resolvida.'
+    'A conversa deve permanecer aberta para o humano até ser resolvida.'
   ],
   guardrails: [
     'Nunca continue respondendo depois que a ferramenta de handoff for executada.',
@@ -78,7 +78,7 @@ assistant.update!(
 
 # Existing scenarios were duplicated in this installation. Preserve them for audit,
 # but disable them so the canonical orchestrator above is the only routing policy.
-assistant.scenarios.where(enabled: true).update_all(enabled: false, updated_at: Time.current)
+assistant.scenarios.where(enabled: true).find_each { |scenario| scenario.update!(enabled: false) }
 
 account.update!(captain_models: (account.captain_models || {}).merge('assistant' => 'gpt-5.4-mini'))
 

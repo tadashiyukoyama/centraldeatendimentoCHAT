@@ -21,22 +21,12 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
     return 'Conversation not found' unless conversation
 
     destination_key = normalize_destination(destination)
-    if destination.present? && !DESTINATIONS.key?(destination_key)
-      return "Invalid destination. Use one of: #{DESTINATIONS.keys.join(', ')}"
-    end
+    return invalid_destination_message if invalid_destination?(destination, destination_key)
 
-    # Log the handoff with reason
-    log_tool_usage('tool_handoff', {
-                     conversation_id: conversation.id,
-                     reason: reason || 'Agent requested handoff',
-                     destination: destination_key.presence || 'human_support'
-                   })
-
-    # Use existing handoff mechanism from ResponseBuilderJob
+    log_handoff(conversation, reason, destination_key)
     trigger_handoff(conversation, reason, destination_key)
 
-    destination_name = DESTINATIONS[destination_key] || 'human support team'
-    "Conversation handed off to #{destination_name}#{" (Reason: #{reason})" if reason}"
+    handoff_response(destination_key, reason)
   rescue StandardError => e
     ChatwootExceptionTracker.new(e).capture_exception
     'Failed to handoff conversation'
@@ -46,6 +36,28 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
 
   def normalize_destination(destination)
     destination.to_s.strip.downcase.tr(' ', '_')
+  end
+
+  def invalid_destination?(destination, destination_key)
+    destination.present? && !DESTINATIONS.key?(destination_key)
+  end
+
+  def invalid_destination_message
+    "Invalid destination. Use one of: #{DESTINATIONS.keys.join(', ')}"
+  end
+
+  def log_handoff(conversation, reason, destination_key)
+    log_tool_usage('tool_handoff', {
+                     conversation_id: conversation.id,
+                     reason: reason || 'Agent requested handoff',
+                     destination: destination_key.presence || 'human_support'
+                   })
+  end
+
+  def handoff_response(destination_key, reason)
+    destination_name = DESTINATIONS[destination_key] || 'human support team'
+    response = "Conversation handed off to #{destination_name}"
+    reason ? "#{response} (Reason: #{reason})" : response
   end
 
   def trigger_handoff(conversation, reason, destination)
@@ -97,5 +109,4 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
 
     ::MessageTemplates::Template::OutOfOffice.perform_if_applicable(conversation)
   end
-
 end

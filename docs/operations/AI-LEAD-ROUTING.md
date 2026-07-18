@@ -2,7 +2,7 @@
 
 Este documento define o comportamento padrão do Captain para o AI Food Manager
 Pro nos canais conectados à conta. A configuração de produção é aplicada de
-forma idempotente por `scripts/configure-captain-lead-routing.rb`.
+forma idempotente por `scripts/configure_captain_lead_routing.rb`.
 
 ## Modelo e esforço
 
@@ -55,7 +55,7 @@ O código precisa ser incluído em uma imagem versionada e promovido pelo fluxo
 de release autorizado. Depois que essa imagem estiver ativa, executar:
 
 ```bash
-CAPTAIN_ACCOUNT_ID=1 bundle exec rails runner scripts/configure-captain-lead-routing.rb
+CAPTAIN_ACCOUNT_ID=1 bundle exec rails runner scripts/configure_captain_lead_routing.rb
 ```
 
 A execução deve informar somente IDs, nomes de equipes/etiquetas e o modelo;

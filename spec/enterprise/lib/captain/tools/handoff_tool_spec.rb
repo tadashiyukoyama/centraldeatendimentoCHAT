@@ -17,12 +17,15 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
   end
 
   describe '#parameters' do
-    it 'returns the correct parameters' do
+    it 'exposes the reason parameter' do
       expect(tool.parameters).to have_key(:reason)
       expect(tool.parameters[:reason].name).to eq(:reason)
       expect(tool.parameters[:reason].type).to eq('string')
       expect(tool.parameters[:reason].description).to eq('The reason why handoff is needed (optional)')
       expect(tool.parameters[:reason].required).to be false
+    end
+
+    it 'exposes the destination parameter' do
       expect(tool.parameters).to have_key(:destination)
       expect(tool.parameters[:destination].name).to eq(:destination)
       expect(tool.parameters[:destination].type).to eq('string')
