@@ -68,6 +68,54 @@ jobs:
           assert 'ref: ${{ inputs.image_tag }}' in deploy_workflow
           assert 'git merge-base --is-ancestor "$IMAGE_TAG" origin/main' in deploy_workflow
           assert 'git hash-object scripts/deploy/deploy-production.sh' in deploy_workflow
+          pinning_start = deploy_workflow.index('- name: Prepare pinned SSH host key')
+          pinning_end = deploy_workflow.index('- name: Verify remote production contract', pinning_start)
+          pinning = deploy_workflow[pinning_start:pinning_end]
+          assert '-T 15' in pinning
+          assert '-t ed25519' in pinning
+          assert 'mapfile -t fingerprints' in pinning
+          assert "awk '{print $2}'" in pinning
+          assert 'sort -u' in pinning
+          assert 'PROD_SSH_HOST_KEY' in pinning
+          assert 'install -m 600 "$scan_file" "$known_hosts_file"' in pinning
+          assert 'ssh-keyscan -p' not in pinning
+          assert "awk 'NR == 1" not in pinning
+          assert 'cp "$scan_file" "$known_hosts_file"' not in pinning
+          assert 'StrictHostKeyChecking=no' not in pinning
+
+          def pinned_ed25519(records, expected):
+              fingerprints = sorted({fingerprint for key_type, fingerprint in records if key_type == 'ssh-ed25519'})
+              return len(fingerprints) == 1 and fingerprints[0] == expected
+
+          expected_fingerprint = 'SHA256:ed25519'
+          mixed_order = [
+              ('ssh-rsa', 'SHA256:rsa'),
+              ('ecdsa-sha2-nistp256', 'SHA256:ecdsa'),
+              ('ssh-ed25519', expected_fingerprint),
+          ]
+          ed25519_first = [
+              ('ssh-ed25519', expected_fingerprint),
+              ('ssh-rsa', 'SHA256:rsa'),
+              ('ecdsa-sha2-nistp256', 'SHA256:ecdsa'),
+          ]
+          assert pinned_ed25519(mixed_order, expected_fingerprint)
+          assert pinned_ed25519(ed25519_first, expected_fingerprint)
+          assert not pinned_ed25519(mixed_order, 'SHA256:wrong')
+          assert not pinned_ed25519([], expected_fingerprint)
+          assert not pinned_ed25519(
+              [('ssh-ed25519', expected_fingerprint), ('ssh-ed25519', 'SHA256:other')],
+              expected_fingerprint,
+          )
+          assert pinned_ed25519(
+              [('ssh-ed25519', expected_fingerprint), ('ssh-ed25519', expected_fingerprint)],
+              expected_fingerprint,
+          )
+
+          def known_hosts_only_ed25519(records):
+              return bool(records) and all(key_type == 'ssh-ed25519' for key_type, _ in records)
+
+          assert known_hosts_only_ed25519([('ssh-ed25519', expected_fingerprint)])
+          assert not known_hosts_only_ed25519(mixed_order)
           assert 'PROD_EXPECTED_IP: ${{ vars.PROD_EXPECTED_IP }}' in deploy_workflow
           assert 'docker buildx imagetools inspect' in deploy_workflow
           assert 'PROD_EXPECTED_IP' in deploy_workflow

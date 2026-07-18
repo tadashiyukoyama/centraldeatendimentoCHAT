@@ -70,10 +70,35 @@ jobs:
           test -n "$PROD_HOST"
           test -n "$PROD_PORT"
           test -n "$PROD_SSH_HOST_KEY"
-          ssh-keyscan -p "$PROD_PORT" "$PROD_HOST" > "$RUNNER_TEMP/prod-host-key.scan" 2>/dev/null
-          actual=$(ssh-keygen -lf "$RUNNER_TEMP/prod-host-key.scan" -E sha256 | awk 'NR == 1 {print $2}')
-          test "$actual" = "$PROD_SSH_HOST_KEY"
-          cp "$RUNNER_TEMP/prod-host-key.scan" "$RUNNER_TEMP/prod-known-hosts"
+          [[ "$PROD_SSH_HOST_KEY" =~ ^SHA256:[A-Za-z0-9+/=]+$ ]]
+          scan_file="$RUNNER_TEMP/prod-host-key.ed25519.scan"
+          known_hosts_file="$RUNNER_TEMP/prod-known-hosts"
+          ssh-keyscan \
+            -T 15 \
+            -t ed25519 \
+            -p "$PROD_PORT" \
+            "$PROD_HOST" \
+            > "$scan_file" \
+            2>/dev/null
+          test -s "$scan_file"
+          awk 'NF < 3 || $2 != "ssh-ed25519" {invalid=1} END {exit (!NR || invalid)}' "$scan_file"
+          mapfile -t fingerprints < <(
+            ssh-keygen -lf "$scan_file" -E sha256 |
+              awk '{print $2}' |
+              sort -u
+          )
+          if (( ${#fingerprints[@]} != 1 )); then
+            echo "Expected exactly one unique ED25519 host-key fingerprint; observed ${#fingerprints[@]}." >&2
+            exit 1
+          fi
+          actual_fingerprint=${fingerprints[0]}
+          if [[ "$actual_fingerprint" != "$PROD_SSH_HOST_KEY" ]]; then
+            echo "Pinned ED25519 SSH host-key fingerprint mismatch." >&2
+            echo "Expected: $PROD_SSH_HOST_KEY" >&2
+            echo "Observed: $actual_fingerprint" >&2
+            exit 1
+          fi
+          install -m 600 "$scan_file" "$known_hosts_file"
 
       - name: Verify remote production contract
         env:
@@ -227,4 +252,4 @@ jobs:
 
       - name: Remove transient SSH material
         if: always()
-        run: rm -f "$RUNNER_TEMP/prod-key" "$RUNNER_TEMP/prod-host-key.scan" "$RUNNER_TEMP/prod-known-hosts"
+        run: rm -f "$RUNNER_TEMP/prod-key" "$RUNNER_TEMP/prod-host-key.ed25519.scan" "$RUNNER_TEMP/prod-known-hosts"
