@@ -172,6 +172,7 @@ jobs:
           assert not contract_matches(expected_contract, equal_contract + '\nextra-path ' + 'e' * 64)
           assert not contract_matches(expected_contract, equal_contract.replace('deploy-production.sh ', 'arbitrary/path '))
           assert 'bootstrap-attempt' in deploy_script
+          assert 'state=completed' in deploy_script
           assert 'Incomplete first deployment detected: manual audit is required before retry.' in deploy_script
           assert 'run_compose stop rails sidekiq postgres redis' in deploy_script
           assert 'backup_root="$APP_ROOT/shared/backups/postgres"' in deploy_script

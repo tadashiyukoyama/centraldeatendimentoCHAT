@@ -80,8 +80,10 @@ if [[ -e "$active_image_file" ]]; then
   fi
 fi
 if [[ -e "$bootstrap_attempt_file" ]]; then
-  echo 'Incomplete first deployment detected: manual audit is required before retry.' >&2
-  exit 79
+  if [[ ! -f "$bootstrap_attempt_file" ]] || ! grep -Fxq 'state=completed' "$bootstrap_attempt_file"; then
+    echo 'Incomplete first deployment detected: manual audit is required before retry.' >&2
+    exit 79
+  fi
 fi
 
 readonly image="$IMAGE_REPOSITORY:$image_tag"
