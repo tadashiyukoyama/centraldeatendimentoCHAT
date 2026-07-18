@@ -212,7 +212,7 @@ jobs:
         run: |
           set -euo pipefail
           workdir=$(mktemp -d)
-          trap 'rm -rf "$workdir"' EXIT
+          trap 'sudo -n rm -rf "$workdir" || rm -rf "$workdir" || true' EXIT
           cat > "$workdir/production.env" <<EOF
           CHATWOOT_IMAGE=ghcr.io/tadashiyukoyama/centraldeatendimentochat:0000000000000000000000000000000000000000
           CHATWOOT_ENV_FILE=$workdir/production.env
