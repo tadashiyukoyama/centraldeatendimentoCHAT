@@ -68,18 +68,21 @@ Internet -> OpenResty/Nginx :443
 
 O banco oficial é PostgreSQL 16 com `pgvector`, nome padrão
 `chatwoot_production` em produção e `chatwoot_dev` em desenvolvimento. O
-diretório de dados vivo não é backup: backups SQL e seus checksums ficam em
-`private/recovery/database/` localmente e em armazenamento privado equivalente
-no host de produção.
+diretório de dados vivo não é backup: localmente, dumps e checksums ficam em
+`private/recovery/database/`; no host de produção, o gate de deploy grava
+backups PostgreSQL custom-format em
+`/opt/central-atendimento/shared/backups/postgres/`, fora do clone e fora dos
+volumes Docker.
 
 Antes de qualquer migration de produção:
 
 1. verificar o SHA da imagem e a lista de migrations;
 2. criar dump consistente com checksum;
-3. testar restauração em ambiente isolado quando for uma mudança de risco;
-4. aplicar migration por janela autorizada;
-5. validar `/health`, jobs e uma operação funcional;
-6. registrar SHA, backup, resultado e rollback em `docs/operations/`.
+3. validar o arquivo com `pg_restore --list`;
+4. testar restauração em ambiente isolado quando for uma mudança de risco;
+5. aplicar migration por janela autorizada;
+6. validar `/health`, jobs e uma operação funcional;
+7. registrar SHA, backup, resultado e rollback em `docs/operations/`.
 
 Rollback de aplicação troca somente a imagem quando o schema continuar
 compatível. Rollback de schema exige procedimento separado e backup validado.

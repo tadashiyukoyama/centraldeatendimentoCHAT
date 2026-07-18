@@ -58,7 +58,9 @@ do `git-common-dir`. Os scripts em `scripts/` usam o contexto centralizado em
   ou armazenamento S3 compatível.
 - Segredos reais: `private/env` e `private/credentials`, ou secret store do
   provedor.
-- Dumps e recuperação: `private/recovery/database`.
+- Dumps locais e recuperação: `private/recovery/database`; no host de produção,
+  o gate usa `/opt/central-atendimento/shared/backups/postgres/`, fora do clone
+  e dos volumes Docker.
 - Nenhum desses valores é versionado ou impresso pelo Codex.
 
 ## Mobile

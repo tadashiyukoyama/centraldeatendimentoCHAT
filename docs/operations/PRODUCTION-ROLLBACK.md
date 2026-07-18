@@ -1,6 +1,6 @@
 # Production application rollback
 
-Rollback is image-only in the initial deployment phase. It restores only a previously recorded application image; it does not revert migrations or PostgreSQL schema changes. The first deployment has no previous application image for rollback. Database backup and database restoration are intentionally not configured because the first deployment creates an empty database and production has no real data yet.
+Rollback is image-only for the application image. It restores only a previously recorded application image; it does not revert migrations or PostgreSQL schema changes and it does not restore database rows. The first deployment has no previous application image for rollback. Subsequent deployments require the deploy gate to create a validated PostgreSQL backup before changing application state.
 
 ## Procedure
 
@@ -14,10 +14,14 @@ Rollback is image-only in the initial deployment phase. It restores only a previ
 
 ## Limits
 
-This procedure does not revert schema changes. A failed first bootstrap is not an image rollback: it preserves `bootstrap-attempt`, database and storage, stops project services, and requires manual audit plus explicit authorization before retry. Before real operations, database backup, migration compatibility, restore testing and a separate data-recovery runbook are mandatory.
+This procedure does not revert schema changes. A failed first bootstrap is not an image rollback: it preserves `bootstrap-attempt`, database and storage, stops project services, and requires manual audit plus explicit authorization before retry. A later application rollback must be evaluated against the schema version because the image-only action cannot undo a migration.
 
-There is no permanent authorization to operate without backups. The first-deploy empty-database exception is the only exception documented for this phase.
+The deploy gate stores validated local recovery artifacts in
+`/opt/central-atendimento/shared/backups/postgres/`. Those artifacts are not
+automatically restored by rollback and are not an off-site backup. A separate
+data-recovery runbook and restore drill are still required before treating the
+VPS copy as a complete backup strategy.
 
-BACKUP DE BANCO: NÃO CONFIGURADO
-MOTIVO: PRIMEIRA IMPLANTAÇÃO SEM DADOS REAIS
-OBRIGATÓRIO ANTES DA OPERAÇÃO REAL: SIM
+BACKUP DE BANCO: GATE CONFIGURADO NO DEPLOY POSTERIOR
+VALIDACAO: PG_DUMP CUSTOM + PG_RESTORE LIST + SHA-256
+RESTAURACAO AUTOMATICA: NAO
