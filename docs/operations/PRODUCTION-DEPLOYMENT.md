@@ -31,7 +31,9 @@ The domain must be created through the ICP panel as a dedicated subdomain. TLS m
 3. `deploy-production.yml` runs only through `workflow_dispatch` and requires an explicit full SHA.
 4. The workflow checks out `inputs.image_tag`, proves that commit is present, proves it is an ancestor of `origin/main`, and verifies the deployment scripts are the blobs from that same commit.
 5. Before sending the environment file or token, the runner calculates the five contract hashes from the selected commit and calls the restricted `verify-contract` action. A mismatch aborts with `Production contract mismatch: remote root-owned files do not match the selected commit.` The workflow never updates root-owned files automatically.
-6. The runner verifies the SSH host key and uses the restricted deploy key.
+6. The runner pins the audited ED25519 SSH host key with `ssh-keyscan -t
+   ed25519`. It requires exactly one unique fingerprint, places only the
+   validated ED25519 line in `known_hosts`, and uses the restricted deploy key.
 7. Before any mutating SSH command, the runner validates the immutable image exists in GHCR, validates `PROD_EXPECTED_IP`, checks that `PROD_DOMAIN` resolves exclusively to it, and performs strict HTTPS checks for the Chatwoot and ICP panel domains. HTTP 200-599 is accepted because the application may not be active yet; status 000 or invalid TLS blocks the operation.
 8. The environment file is sent over the authenticated SSH channel and stored with mode 0600; its value is never printed.
 9. The deploy command receives exactly four arguments: image SHA, Chatwoot domain, ICP panel domain and expected IPv4. The gateway rejects missing or extra arguments.
@@ -64,6 +66,30 @@ The image-only policy is allowed only for the first empty-database bootstrap. It
 ## Remote contract pinning
 
 The restricted SSH gateway exposes only the fixed-path `verify-contract` read action for contract inspection. It hashes the deployed root-owned deploy, rollback, environment-install, Compose and gateway files and accepts no user-supplied path, glob or shell. The workflow compares all five values with the selected commit before it sends any environment file or registry token. Installing the exact root-owned blobs is a separate administrative gate after merge; this workflow never performs that installation.
+
+## SSH host-key pinning
+
+The production workflow validates only the audited ED25519 host key. It calls
+`ssh-keyscan -t ed25519`, requires exactly one unique SHA-256 fingerprint, and
+compares it with `PROD_SSH_HOST_KEY`. The resulting `known_hosts` file contains
+only the validated `ssh-ed25519` line. The workflow does not depend on the
+order in which RSA, ECDSA, or ED25519 keys might otherwise be returned, and a
+mismatch stops the job before remote SSH, environment transfer, or registry
+token handling.
+
+The variable is not changed to accommodate a scan result. Any mismatch must
+be independently audited; no fallback accepts an arbitrary or unvalidated
+fingerprint.
+
+The incident recorded for this contract is:
+
+```text
+Run: 29632260934
+Failure: Prepare pinned SSH host key
+Persistent state started: NO
+VPS altered: NO
+Rerun: NO
+```
 
 ## Failed first bootstrap
 
