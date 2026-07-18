@@ -425,4 +425,5 @@ jobs:
           test -s "$backup_app/shared/backups/postgres/"*.metadata
           test -s "$backup_app/shared/backups/postgres/latest"
           grep -F 'state=started' "$backup_app/shared/bootstrap-attempt"
+          sudo -n rm -rf "$backup_app"
           echo 'Database backup gate and first-bootstrap failure behavior: OK'
