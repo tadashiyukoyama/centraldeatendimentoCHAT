@@ -74,8 +74,8 @@ dependências ou build nesta fase.
 
 O runtime de produção foi reconciliado com a VPS e está documentado em
 [`docs/operations/PRODUCTION-RUNTIME-STATE.md`](PRODUCTION-RUNTIME-STATE.md).
-O release implantado é o commit `6e6027945f37461751603b9e80f5d43beb233774`,
-referenciado no GitHub pela tag `production-vps-20260718`. O modo Enterprise
+O release implantado é o commit `c1862b9e18a46490cb1911cd071dc2c33d75b161`,
+referenciado no GHCR pela tag imutável do mesmo SHA. O modo Enterprise
 self-hosted está ativo na configuração persistida da VPS.
 
 O bloco histórico abaixo descreve a fase de fundação anterior e não deve ser

@@ -16,9 +16,9 @@ checkout posterior. A referência exata está em
 | Item | Valor observado |
 | --- | --- |
 | Repositório | `tadashiyukoyama/centraldeatendimentoCHAT` |
-| Commit da aplicação | `6e6027945f37461751603b9e80f5d43beb233774` |
-| Tag da imagem | `6e6027945f37461751603b9e80f5d43beb233774` |
-| Digest da imagem | `sha256:aee2dbf1c42c85cc3118a559dbf9b54723667f5aab8ff5b965f8618880759ec0` |
+| Commit da aplicação | `c1862b9e18a46490cb1911cd071dc2c33d75b161` |
+| Tag da imagem | `c1862b9e18a46490cb1911cd071dc2c33d75b161` |
+| Digest da imagem | `sha256:11a6475bda29f40f1d1ff876ba00dde32ccdace42e0ba9445731898996715723` |
 | Chatwoot | `4.15.1` |
 | Estado do bootstrap | `completed` |
 
@@ -26,6 +26,21 @@ O commit implantado já existe no GitHub e é ancestral de `main`. A `main`
 continua sem reescrita: ela contém correções posteriores de infraestrutura que
 ainda não fazem parte da imagem implantada. A referência do release da VPS é
 o commit acima, não o ponteiro móvel de `main`.
+
+## Gate de backup PostgreSQL
+
+O diretório reservado do gate foi criado antes do deploy com `root:root` e
+modo `0700`. O deploy criou e validou um dump PostgreSQL em formato custom do
+estado anterior, executou `pg_restore --list` lendo pelo stdin e confirmou o
+checksum SHA-256 antes de iniciar as operações stateful.
+
+| Item | Valor observado |
+| --- | --- |
+| Diretório | `/opt/central-atendimento/shared/backups/postgres/` |
+| Arquivo | `chatwoot-20260718T174043Z-6e6027945f37461751603b9e80f5d43beb233774.dump` |
+| SHA-256 | `dd04e908cd3a864fdcac176bde568892ccda98e52d5a957849896495e27546c3` |
+| Permissão do arquivo | `root:root`, `0600` |
+| Validação | `pg_restore --list` + `sha256sum -c` |
 
 ## Enterprise self-hosted
 
