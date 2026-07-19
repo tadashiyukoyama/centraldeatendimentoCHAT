@@ -97,7 +97,10 @@ class Captain::Assistant::AgentRunnerService
     {
       'response' => 'conversation_handoff',
       'reasoning' => "Error occurred: #{error_message}",
-      'handoff_tool_called' => @handoff_tool_called
+      'handoff_tool_called' => @handoff_tool_called,
+      'error' => true,
+      'action_source' => 'error',
+      'action_reason' => 'agent_generation_failed'
     }
   end
 

@@ -200,6 +200,20 @@ RSpec.describe Concerns::Agentable do
     end
   end
 
+  describe '#agent_provider_params' do
+    it 'disables reasoning for tool-enabled GPT-5 requests on Chat Completions' do
+      allow(dummy_instance).to receive(:agent_model).and_return('gpt-5.4-mini')
+
+      expect(dummy_instance.send(:agent_provider_params)).to eq(reasoning_effort: 'none')
+    end
+
+    it 'returns no provider override for non-GPT-5 models' do
+      allow(dummy_instance).to receive(:agent_model).and_return('gpt-4.1')
+
+      expect(dummy_instance.send(:agent_provider_params)).to eq({})
+    end
+  end
+
   describe 'required methods' do
     let(:incomplete_class) do
       Class.new do

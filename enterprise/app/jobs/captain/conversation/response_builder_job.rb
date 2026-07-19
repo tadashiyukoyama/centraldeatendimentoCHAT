@@ -62,6 +62,12 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   end
 
   def process_response
+    # Provider errors are internal failures, not customer-visible handoff requests.
+    if generation_error_response?
+      process_generation_error
+      return
+    end
+
     # Check V2 before V1: error_response can set both signals at once when HandoffTool
     # fired before the runner errored. V2 must win — running V1 on top would duplicate
     # OOO and re-dispatch the bot_handoff event.
@@ -97,6 +103,10 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
 
   def v1_handoff_requested?
     legacy_v1_handoff_token? || classifier_v1_handoff_requested?
+  end
+
+  def generation_error_response?
+    @response&.dig('error') == true || @response&.dig('action_source') == 'error'
   end
 
   def classifier_v1_handoff_requested?
@@ -160,8 +170,30 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
     @response ||= {}
     @response['action_source'] ||= 'error'
     @response['action_reason'] ||= error_action_reason(error)
-    process_v1_handoff if conversation_pending?
+    if captain_v2_enabled?
+      process_generation_error
+    else
+      process_v1_handoff if conversation_pending?
+    end
     true
+  end
+
+  def process_generation_error
+    return unless conversation_pending?
+
+    I18n.with_locale(@assistant.account.locale) do
+      create_outgoing_message(
+        'Captain could not generate a response automatically. Human follow-up is required.',
+        private_note: true
+      )
+      @conversation.bot_handoff!
+    end
+  rescue StandardError => e
+    # Do not hide the original provider failure or create a second public message.
+    Rails.logger.error(
+      "[CAPTAIN][ResponseBuilderJob] Failed to record generation error handoff for " \
+      "account=#{account.id} conversation=#{@conversation.display_id}: #{e.message}"
+    )
   end
 
   def log_error(error)

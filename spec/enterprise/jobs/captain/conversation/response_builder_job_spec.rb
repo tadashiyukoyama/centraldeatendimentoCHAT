@@ -423,6 +423,25 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         account.reload
         expect(account.usage_limits[:captain][:responses][:consumed]).to eq(1)
       end
+
+      it 'does not send a public handoff when the agent provider fails' do
+        allow(mock_agent_runner_service).to receive(:generate_response).and_return(
+          'response' => 'conversation_handoff',
+          'reasoning' => 'Error occurred: provider rejected the request',
+          'handoff_tool_called' => false,
+          'error' => true,
+          'action_source' => 'error',
+          'action_reason' => 'agent_generation_failed'
+        )
+
+        described_class.perform_now(conversation, assistant)
+
+        conversation.reload
+        expect(conversation.status).to eq('open')
+        expect(conversation.messages.outgoing.where(private: false)).to be_empty
+        expect(conversation.messages.outgoing.where(private: true).last.content)
+          .to eq('Captain could not generate a response automatically. Human follow-up is required.')
+      end
     end
 
     context 'when captain_v2 handoff tool fires during agent execution' do
