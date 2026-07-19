@@ -1,4 +1,6 @@
 class Instagram::BaseSendService < Base::SendOnChannelService
+  STANDARD_MESSAGING_WINDOW = 24.hours
+
   pattr_initialize [:message!]
 
   private
@@ -82,6 +84,13 @@ class Instagram::BaseSendService < Base::SendOnChannelService
     return attachment.file_type if %w[image audio video file].include? attachment.file_type
 
     'file'
+  end
+
+  def human_agent_tag_required?(config_key)
+    return false unless GlobalConfig.get(config_key)[config_key]
+
+    last_incoming_message = message.conversation.messages.incoming.order(created_at: :desc).first
+    last_incoming_message.present? && last_incoming_message.created_at < STANDARD_MESSAGING_WINDOW.ago
   end
 
   # Methods to be implemented by child classes
