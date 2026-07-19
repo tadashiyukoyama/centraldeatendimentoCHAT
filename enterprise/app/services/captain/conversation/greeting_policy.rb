@@ -21,15 +21,14 @@ class Captain::Conversation::GreetingPolicy
   end
 
   def public_customer_messages
-    Captain::Conversation::MessageContextWindow.new(@conversation).perform.filter_map do |message|
-      message if message.incoming? && message.sender_type == 'Contact'
+    Captain::Conversation::MessageContextWindow.new(@conversation).perform.select do |message|
+      message.incoming? && message.sender_type == 'Contact'
     end
   end
 
   def normalized_content(message)
-    ActiveSupport::Inflector.transliterate(message.content_for_llm.to_s)
-                              .downcase
-                              .gsub(/[^a-z0-9\s]/, ' ')
-                              .squish
+    ActiveSupport::Inflector.transliterate(
+      message.content_for_llm.to_s
+    ).downcase.gsub(/[^a-z0-9\s]/, ' ').squish
   end
 end
