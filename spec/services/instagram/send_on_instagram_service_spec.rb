@@ -185,4 +185,29 @@ describe Instagram::SendOnInstagramService do
       end
     end
   end
+
+  describe '#message_params' do
+    before do
+      InstallationConfig.where(name: 'ENABLE_INSTAGRAM_CHANNEL_HUMAN_AGENT').first_or_create(value: true)
+      GlobalConfig.clear_cache
+    end
+
+    it 'does not use the HUMAN_AGENT tag inside the standard messaging window' do
+      message = create(:message, message_type: 'outgoing', inbox: instagram_inbox, account: account, conversation: conversation)
+
+      params = described_class.new(message: message).send(:message_params)
+
+      expect(params).not_to include(:messaging_type, :tag)
+    end
+
+    it 'uses the HUMAN_AGENT tag only after the standard messaging window' do
+      create(:message, message_type: 'incoming', inbox: instagram_inbox, account: account, conversation: conversation,
+                       created_at: 25.hours.ago)
+      message = create(:message, message_type: 'outgoing', inbox: instagram_inbox, account: account, conversation: conversation)
+
+      params = described_class.new(message: message).send(:message_params)
+
+      expect(params).to include(messaging_type: 'MESSAGE_TAG', tag: 'HUMAN_AGENT')
+    end
+  end
 end
