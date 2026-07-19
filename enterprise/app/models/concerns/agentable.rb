@@ -44,7 +44,12 @@ module Concerns::Agentable
   def agent_provider_params
     return {} unless agent_model.to_s.start_with?('gpt-5')
 
-    { reasoning_effort: 'low' }
+    # Captain uses function tools through the Chat Completions adapter in the
+    # current ai-agents/RubyLLM stack. OpenAI rejects reasoning_effort=low for
+    # gpt-5.4-mini on that endpoint when tools are present. `none` keeps the
+    # configured model and makes the tool-enabled request valid until Captain
+    # is migrated to the Responses API.
+    { reasoning_effort: 'none' }
   end
 
   def agent_name

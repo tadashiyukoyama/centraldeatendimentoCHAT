@@ -62,41 +62,47 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   end
 
   def process_response
+    # Provider errors are internal failures, not customer-visible handoff requests.
+    return process_generation_error if generation_error_response?
+    return process_handoff_response if v2_handoff_tool_fired?
+    return process_v1_handoff if v1_handoff_requested? && conversation_pending?
+
+    process_standard_response if conversation_pending?
+  end
+
+  def process_handoff_response
     # Check V2 before V1: error_response can set both signals at once when HandoffTool
     # fired before the runner errored. V2 must win — running V1 on top would duplicate
     # OOO and re-dispatch the bot_handoff event.
-    if v2_handoff_tool_fired?
-      if conversation_pending?
-        # HandoffTool flipped the flag without committing — its perform returned a
-        # failure string (e.g. "Conversation not found") before bot_handoff! ran. Fall
-        # back to a full V1 handoff so the customer still ends up with a human.
-        process_v1_handoff
-      else
-        # HandoffTool already opened the conversation inside the agent loop. All that's
-        # left is the customer-facing follow-up message.
-        process_v2_handoff
-      end
-      capture_assistant_session(result_message: @handoff_message, credits_consumed: 0.0)
-    elsif v1_handoff_requested?
-      # V1 only signals via the response string — no state has been touched yet. If
-      # the conversation isn't pending anymore, a human took over mid-run; bail out
-      # rather than posting a stale handoff message on top of their reply.
-      return unless conversation_pending?
-
+    if conversation_pending?
+      # HandoffTool flipped the flag without committing — its perform returned a
+      # failure string (e.g. "Conversation not found") before bot_handoff! ran. Fall
+      # back to a full V1 handoff so the customer still ends up with a human.
       process_v1_handoff
-    elsif conversation_pending?
-      message = nil
-      ActiveRecord::Base.transaction do
-        message = create_messages
-        Rails.logger.info("[CAPTAIN][ResponseBuilderJob] Incrementing response usage for #{account.id}")
-        account.increment_response_usage
-      end
-      capture_assistant_session(result_message: message, credits_consumed: 1.0)
+    else
+      # HandoffTool already opened the conversation inside the agent loop. All that's
+      # left is the customer-facing follow-up message.
+      process_v2_handoff
     end
+    capture_assistant_session(result_message: @handoff_message, credits_consumed: 0.0)
+  end
+
+  def process_standard_response
+    message = nil
+    ActiveRecord::Base.transaction do
+      message = create_messages
+      Rails.logger.info("[CAPTAIN][ResponseBuilderJob] Incrementing response usage for #{account.id}")
+      account.increment_response_usage
+    end
+    capture_assistant_session(result_message: message, credits_consumed: 1.0)
   end
 
   def v1_handoff_requested?
     legacy_v1_handoff_token? || classifier_v1_handoff_requested?
+  end
+
+  def generation_error_response?
+    @response&.dig('error') == true || @response&.dig('action_source') == 'error'
   end
 
   def classifier_v1_handoff_requested?
@@ -160,8 +166,30 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
     @response ||= {}
     @response['action_source'] ||= 'error'
     @response['action_reason'] ||= error_action_reason(error)
-    process_v1_handoff if conversation_pending?
+    if captain_v2_enabled?
+      process_generation_error
+    elsif conversation_pending?
+      process_v1_handoff
+    end
     true
+  end
+
+  def process_generation_error
+    return unless conversation_pending?
+
+    I18n.with_locale(@assistant.account.locale) do
+      create_outgoing_message(
+        'Captain could not generate a response automatically. Human follow-up is required.',
+        private_note: true
+      )
+      @conversation.bot_handoff!
+    end
+  rescue StandardError => e
+    # Do not hide the original provider failure or create a second public message.
+    Rails.logger.error(
+      '[CAPTAIN][ResponseBuilderJob] Failed to record generation error handoff for ' \
+      "account=#{account.id} conversation=#{@conversation.display_id}: #{e.message}"
+    )
   end
 
   def log_error(error)

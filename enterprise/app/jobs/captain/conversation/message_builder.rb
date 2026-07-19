@@ -35,12 +35,13 @@ module Captain::Conversation::MessageBuilder
     raise ArgumentError, 'Message content cannot be blank' if content.blank?
   end
 
-  def create_outgoing_message(message_content, agent_name: nil, preserve_waiting_since: false)
+  def create_outgoing_message(message_content, agent_name: nil, preserve_waiting_since: false, private_note: false)
     additional_attrs = {}
     additional_attrs[:agent_name] = agent_name if agent_name.present?
 
     @conversation.messages.create!(
       message_type: :outgoing,
+      private: private_note,
       account_id: account.id,
       inbox_id: inbox.id,
       sender: @assistant,
