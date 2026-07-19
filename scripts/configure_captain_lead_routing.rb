@@ -100,7 +100,7 @@ assistant.update!(
       explícito. Para lead_quente, use owner; para pedido explícito, use
       financeiro, contas_a_pagar, rh, gerencia, representante ou suporte.
     GUIDELINE
-    <<~GUIDELINE.squish,
+    <<~GUIDELINE.squish
       Depois que a ferramenta de handoff concluir a transferência, não envie outra
       resposta e não tente continuar a conversa. O humano deve assumir até
       resolver ou reabrir a conversa para a automação.

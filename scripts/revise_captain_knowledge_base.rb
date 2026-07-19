@@ -15,7 +15,7 @@ require 'yaml'
 account = Account.find(Integer(ENV.fetch('CAPTAIN_ACCOUNT_ID')))
 assistant = account.captain_assistants.order(:id).first or raise 'Captain assistant not found'
 document = assistant.documents.find(Integer(ENV.fetch('CAPTAIN_DOCUMENT_ID')))
-source_path = Rails.root.join('config', 'captain', 'knowledge', 'aifood_manager_faqs.yml')
+source_path = Rails.root.join('config/captain/knowledge/aifood_manager_faqs.yml')
 source = YAML.safe_load_file(source_path, permitted_classes: [], aliases: false)
 definitions = source.fetch('definitions')
 
@@ -51,5 +51,5 @@ puts({
   source: source_path.to_s,
   approved_ids: managed_ids,
   approved_count: managed_ids.length,
-  pending_count: existing.count { |record| !managed_ids.include?(record.id) }
+  pending_count: existing.count { |record| managed_ids.exclude?(record.id) }
 }.to_json)
