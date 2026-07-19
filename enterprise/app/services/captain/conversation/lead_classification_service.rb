@@ -24,8 +24,8 @@ class Captain::Conversation::LeadClassificationService
   end
 
   def perform(classification: nil)
-    normalized_classification = normalize(classification)
-    source = 'model'
+    normalized_classification = safe_classification(classification)
+    source = @classification_source || 'model'
 
     if normalized_classification.blank?
       normalized_classification = fallback_classification
@@ -35,12 +35,14 @@ class Captain::Conversation::LeadClassificationService
     ensure_label!(normalized_classification)
     apply_classification!(normalized_classification)
 
+    effective_classification = @effective_classification || normalized_classification
+
     Rails.logger.info(
       "[CAPTAIN][LeadClassification] conversation=#{@conversation.display_id} " \
-      "classification=#{normalized_classification} source=#{source}"
+      "classification=#{effective_classification} source=#{source}"
     )
 
-    normalized_classification
+    effective_classification
   end
 
   private
@@ -60,6 +62,22 @@ class Captain::Conversation::LeadClassificationService
     'lead_morno'
   end
 
+  def safe_classification(classification)
+    heuristic = fallback_classification
+    if %w[cliente lead_quente].include?(heuristic)
+      @classification_source = 'heuristic'
+      return heuristic
+    end
+
+    if classification.to_s.strip.casecmp('cliente').zero?
+      @classification_source = 'heuristic'
+      return heuristic
+    end
+
+    @classification_source = normalize(classification).present? ? 'model' : 'heuristic'
+    normalize(classification)
+  end
+
   def latest_customer_message
     @conversation.messages
                  .where(message_type: :incoming, private: false, sender_type: 'Contact')
@@ -76,7 +94,21 @@ class Captain::Conversation::LeadClassificationService
 
   def apply_classification!(classification)
     @conversation.reload
-    labels = (@conversation.label_list - CLASSIFICATIONS) + [classification]
+    current = current_classification
+    effective_classification = monotonic_classification(current, classification)
+    labels = (@conversation.label_list - CLASSIFICATIONS) + [effective_classification]
     @conversation.update_labels(labels) unless labels == @conversation.label_list
+    @effective_classification = effective_classification
+  end
+
+  def current_classification
+    CLASSIFICATIONS.find { |classification| @conversation.label_list.include?(classification) }
+  end
+
+  def monotonic_classification(current, requested)
+    return current if %w[cliente lead_quente].include?(current)
+    return 'lead_quente' if current == 'lead_morno' && requested == 'lead_quente'
+
+    requested
   end
 end

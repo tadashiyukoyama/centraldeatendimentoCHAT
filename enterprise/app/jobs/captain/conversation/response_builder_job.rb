@@ -14,6 +14,7 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
 
     return unless conversation_pending?
 
+    Captain::Conversation::OriginResolver.new(conversation).perform
     Current.executed_by = @assistant
 
     if captain_v2_enabled?
