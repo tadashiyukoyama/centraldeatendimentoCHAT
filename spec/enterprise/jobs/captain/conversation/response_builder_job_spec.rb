@@ -406,6 +406,18 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         expect(conversation.messages.last.content).to eq('Hey, welcome to Captain V2')
       end
 
+      it 'persists the model classification before delivering the response' do
+        allow(mock_agent_runner_service).to receive(:generate_response).and_return(
+          'response' => 'Vamos entender melhor sua necessidade.',
+          'classification' => 'lead_morno'
+        )
+
+        described_class.perform_now(conversation, assistant)
+
+        expect(conversation.reload.label_list).to include('lead_morno')
+        expect(conversation.messages.outgoing.last.content).to eq('Vamos entender melhor sua necessidade.')
+      end
+
       it 'increments usage response' do
         described_class.perform_now(conversation, assistant)
         account.reload

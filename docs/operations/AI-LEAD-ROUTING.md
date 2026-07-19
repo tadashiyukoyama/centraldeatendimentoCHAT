@@ -29,6 +29,13 @@ forma idempotente por `scripts/configure_captain_lead_routing.rb`.
    - `lead_quente`: pergunta por preço, plano, proposta, contratação ou aceita
      uma demonstração.
 
+   A obrigatoriedade não depende somente do prompt. O schema estruturado exige
+   o campo `classification` e o `ResponseBuilderJob` persiste a etiqueta no
+   servidor antes de enviar a resposta ou concluir um handoff. Se o modelo não
+   retornar uma classificação válida, o servidor usa a última mensagem pública
+   do contato para aplicar um fallback determinístico; uma nota privada,
+   template, resumo ou mensagem humana nunca é usada como entrada desse fallback.
+
 4. Para `lead_quente`, o Captain chama o handoff com destino `owner`. A
    conversa fica aberta e atribuída ao primeiro administrador da conta.
 5. Quando a pessoa pede um setor, o Captain chama o handoff com um destes

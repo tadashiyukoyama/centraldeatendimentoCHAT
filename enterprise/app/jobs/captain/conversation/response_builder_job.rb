@@ -41,6 +41,7 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
     )
     classify_v1_response_action(message_history) if conversation_pending?
     repair_v1_false_promise_response(message_history) if conversation_pending?
+    apply_lead_classification
     process_response
   end
 
@@ -50,7 +51,14 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
     @response = runner_service.generate_response(message_history: message_history)
     @run_result = runner_service.last_run_result
 
+    apply_lead_classification
     process_response
+  end
+
+  def apply_lead_classification
+    Captain::Conversation::LeadClassificationService.new(conversation: @conversation).perform(
+      classification: @response['classification']
+    )
   end
 
   def process_response
