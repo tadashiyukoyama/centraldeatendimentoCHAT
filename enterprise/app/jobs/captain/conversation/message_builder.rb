@@ -2,11 +2,10 @@ module Captain::Conversation::MessageBuilder
   private
 
   def collect_previous_messages
-    @conversation
-      .messages
-      .where(message_type: [:incoming, :outgoing])
-      .where(private: false)
-      .map do |message|
+    messages = Captain::Conversation::MessageContextWindow.new(@conversation).perform
+    messages = messages.select { |message| message.incoming? || message.outgoing? }
+
+    messages.map do |message|
       message_hash = {
         content: prepare_multimodal_message_content(message),
         role: determine_role(message)

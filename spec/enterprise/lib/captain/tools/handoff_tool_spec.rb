@@ -35,6 +35,10 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
 
   describe '#perform' do
     context 'when conversation exists' do
+      before do
+        create(:message, conversation: conversation, inbox: inbox, account: account, message_type: :incoming, content: 'Preciso de suporte')
+      end
+
       context 'with reason provided' do
         it 'creates a private note with reason and hands off conversation' do
           reason = 'Customer needs specialized support'
@@ -141,6 +145,46 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
           expect(exception_tracker).to receive(:capture_exception)
 
           tool.perform(tool_context, reason: 'Test')
+        end
+      end
+
+      context 'when the latest customer message is only a greeting' do
+        before do
+          conversation.messages.delete_all
+          create(:message, conversation: conversation, inbox: inbox, account: account, message_type: :incoming, content: 'Olá')
+        end
+
+        it 'refuses the handoff without changing the conversation' do
+          expect do
+            result = tool.perform(tool_context, reason: 'Greeting')
+            expect(result).to eq(Captain::Conversation::HandoffEligibility::DENIED_MESSAGE)
+          end.not_to change(Message, :count)
+
+          expect(conversation.reload.status).to eq('open')
+        end
+      end
+
+      context 'when a previous customer message had a commercial signal but the latest message is outgoing' do
+        before do
+          conversation.messages.delete_all
+          create(:message, conversation: conversation, inbox: inbox, account: account, message_type: :incoming, content: 'Quero saber o preço')
+          create(
+            :message,
+            conversation: conversation,
+            inbox: inbox,
+            account: account,
+            message_type: :outgoing,
+            content: 'Vou verificar isso para você'
+          )
+        end
+
+        it 'refuses the handoff because the latest public message is not from the customer' do
+          expect do
+            result = tool.perform(tool_context, reason: 'Stale commercial context')
+            expect(result).to eq(Captain::Conversation::HandoffEligibility::DENIED_MESSAGE)
+          end.not_to change(Message, :count)
+
+          expect(conversation.reload.status).to eq('open')
         end
       end
     end

@@ -57,6 +57,14 @@ class Captain::InboxPendingConversationsResolutionJob < ApplicationJob
     inbox.conversations.pending
          .where('last_activity_at < ?', auto_resolve_cutoff_time)
          .limit(Limits::BULK_ACTIONS_LIMIT)
+         .select { |conversation| waiting_for_customer_response?(conversation) }
+  end
+
+  def waiting_for_customer_response?(conversation)
+    context_window = Captain::Conversation::MessageContextWindow.new(conversation)
+    last_message = context_window.perform.reject(&:activity?).last
+
+    last_message&.incoming? && last_message.sender_type == 'Contact'
   end
 
   def still_resolvable_after_evaluation?(conversation)

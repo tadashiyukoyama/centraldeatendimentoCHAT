@@ -23,6 +23,9 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
     destination_key = normalize_destination(destination)
     return invalid_destination_message if invalid_destination?(destination, destination_key)
 
+    eligibility = Captain::Conversation::HandoffEligibility.new(conversation)
+    return eligibility.denied_message unless eligibility.allowed?
+
     log_handoff(conversation, reason, destination_key)
     trigger_handoff(conversation, reason, destination_key)
 

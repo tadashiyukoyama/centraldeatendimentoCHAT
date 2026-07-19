@@ -50,7 +50,11 @@ module Enterprise::MessageTemplates::HookExecutionService
   end
 
   def should_process_captain_response?
-    conversation.pending? && message.incoming? && inbox.captain_assistant.present?
+    conversation.pending? && respondable_customer_message? && inbox.captain_assistant.present?
+  end
+
+  def respondable_customer_message?
+    message.incoming? && !message.private? && message.sender_type == 'Contact'
   end
 
   def perform_handoff
