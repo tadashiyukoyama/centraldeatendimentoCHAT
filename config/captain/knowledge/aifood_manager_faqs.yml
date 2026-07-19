@@ -1,0 +1,236 @@
+version: 1
+source: AIFOODMANAGER Dossie completo de funcionalidades
+definitions:
+  - key: product_overview
+    legacy_ids: [4]
+    question: O que é o AI Food Manager?
+    answer: >-
+      O AI Food Manager é uma plataforma para centralizar atendimento, reservas,
+      mesas, fila, clientes, eventos, conteúdo do site e automações de canais em
+      uma operação única para negócios de alimentação.
+
+  - key: main_features
+    legacy_ids: [5]
+    question: Quais são as principais funcionalidades do AI Food Manager?
+    answer: >-
+      O produto reúne painel web, mapa de mesas, reservas, fila de espera,
+      clientes, eventos, conteúdo público e central multicanal com IA e
+      atendimento humano. WhatsApp Meta, Instagram, Telegram, chat do site,
+      automações e aplicativo móvel dependem do escopo, das credenciais, das
+      permissões e da validação de cada ambiente.
+
+  - key: operational_benefit
+    legacy_ids: [6]
+    question: Como o AI Food Manager melhora a operação de um restaurante?
+    answer: >-
+      Ele centraliza os canais de atendimento, organiza reservas, mesas e filas
+      e mantém o histórico do cliente em um único contexto. Isso reduz a perda
+      de informação entre WhatsApp, Instagram, site e equipe, sem substituir as
+      regras reais configuradas para cada unidade.
+
+  - key: table_map
+    legacy_ids: [7]
+    question: Como funciona o mapa de mesas?
+    answer: >-
+      Quando configurado, o mapa permite criar o salão, cadastrar mesas com
+      capacidade e formato, posicioná-las e acompanhar estados como disponível,
+      ocupada ou bloqueada. A implantação também pode habilitar junção,
+      separação e alocação de reservas conforme as regras do salão.
+
+  - key: reservation_rules
+    legacy_ids: [8]
+    question: Quais regras podem ser aplicadas às reservas?
+    answer: >-
+      O módulo pode considerar horário de funcionamento, dias fechados,
+      antecedência mínima, datas bloqueadas, capacidade do salão e conflitos de
+      horário ou mesa. As regras exatas são definidas no onboarding; o
+      atendimento não deve prometer horário ou capacidade sem consultar a
+      configuração oficial.
+
+  - key: central
+    legacy_ids: [9]
+    question: Como funciona a central de atendimento do AI Food Manager?
+    answer: >-
+      A central reúne conversas dos canais configurados e permite respostas,
+      histórico, notas internas, etiquetas, prioridade, responsável e
+      transferência para uma pessoa ou setor. A disponibilidade de cada canal e
+      a entrega das respostas dependem da integração e das políticas do provedor.
+
+  - key: captain_assistant
+    legacy_ids: [10]
+    question: O que é o assistente de IA do AI Food Manager?
+    answer: >-
+      O assistente de IA atende a conversa enquanto ela está sob sua
+      responsabilidade, consulta a base aprovada, responde em linguagem natural,
+      classifica o contato e pode transferir para um humano ou setor quando há
+      motivo claro. Depois de uma transferência concluída, ele deixa de responder
+      até que a conversa seja reaberta para a automação.
+
+  - key: instagram
+    legacy_ids: [11]
+    question: Como o Instagram pode ser integrado ao sistema?
+    answer: >-
+      O Instagram pode receber e enviar mensagens diretas pela integração da
+      Meta e manter o histórico na mesma central. A operação depende de conta,
+      permissões, token, webhook, janela de mensagens e validação da Meta.
+
+  - key: implementation
+    legacy_ids: [12]
+    question: Como funciona a contratação e a implantação?
+    answer: >-
+      A implantação começa pelo diagnóstico do negócio, canais, unidades,
+      horários e regras. Depois são configurados o ambiente, os usuários, os
+      módulos, as integrações e os testes; personalizações e canais externos só
+      são apresentados como ativos depois de serem validados.
+
+  - key: multichannel
+    legacy_ids: [15]
+    question: Como funciona o atendimento multicanal?
+    answer: >-
+      As conversas dos canais ativos ficam agrupadas com histórico, status,
+      responsáveis, etiquetas e notas internas. A equipe ou o assistente pode
+      responder enquanto tem responsabilidade pela conversa, e o atendimento
+      pode ser transferido para o responsável ou setor adequado.
+
+  - key: departments
+    legacy_ids: [16]
+    question: Quais setores de atendimento podem ser usados?
+    answer: >-
+      Nesta implantação podem ser usados financeiro, contas a pagar, recursos
+      humanos, gerência, representante e suporte, além da transferência para o
+      responsável principal. A transferência só deve ocorrer quando o cliente
+      pedir o setor ou houver um sinal explícito que justifique a ação.
+
+  - key: website_chat
+    legacy_ids: [17]
+    question: Como funciona o chat do site?
+    answer: >-
+      Com o widget instalado e o domínio validado, o chat mantém a sessão,
+      registra o histórico e encaminha a conversa para a central. Ele pode
+      orientar sobre informações públicas e encaminhar para uma pessoa quando a
+      solicitação exigir atendimento humano ou dado que não esteja confirmado.
+
+  - key: website_integration
+    legacy_ids: [18]
+    question: Como o chat é integrado ao site?
+    answer: >-
+      O widget pode ser instalado em um site novo ou existente e receber a
+      identidade visual, o tom de voz e as regras do negócio. O domínio, o
+      histórico, o realtime e a entrega de mensagens precisam ser validados no
+      ambiente antes do uso comercial.
+
+  - key: instagram_comment_campaign
+    legacy_ids: [19]
+    question: Como funciona a automação de comentários do Instagram para DM?
+    answer: >-
+      Uma campanha configurada pode observar comentários que correspondam a
+      palavras-chave e iniciar uma mensagem direta ou uma conversa no Instagram.
+      O fluxo depende da conta, da publicação, das permissões e das políticas da
+      Meta e deve ser testado com os dados reais da campanha.
+
+  - key: instagram_campaign_setup
+    legacy_ids: [20]
+    question: O que é necessário para configurar uma campanha do Instagram?
+    answer: >-
+      É preciso selecionar a conta e a unidade corretas, configurar palavra-chave
+      e correspondência, informar a publicação quando aplicável e validar as
+      permissões da Meta. O histórico da campanha deve registrar se o envio foi
+      feito, falhou, foi duplicado ou ignorado.
+
+  - key: whatsapp_requirements
+    legacy_ids: [21]
+    question: O que é necessário para configurar o WhatsApp Meta?
+    answer: >-
+      A integração normalmente exige número elegível, Phone Number ID, WhatsApp
+      Business Account ID, token de acesso, URL de webhook, verify token e
+      segredo do aplicativo. Os valores devem vir do painel da Meta, ser mantidos
+      em segredo e ser validados com recebimento, envio, janela de atendimento e
+      templates aprovados.
+
+  - key: meta_channel_contract
+    legacy_ids: [22]
+    question: Como WhatsApp Meta e Instagram se integram à plataforma?
+    answer: >-
+      Os dois canais usam a central para normalizar contatos, conversas e
+      mensagens, mantendo histórico, status e diagnóstico de entrega. Cada canal
+      ainda precisa de suas próprias credenciais, permissões, webhooks e
+      validação da Meta; um canal ativo não garante que o outro esteja ativo.
+
+  - key: telegram
+    legacy_ids: [23]
+    question: Como o Telegram pode ser utilizado pelo gerente?
+    answer: >-
+      Quando configurado, o Telegram funciona como canal executivo para avisos,
+      tarefas, conteúdo, agenda e relatórios, com menus e comandos guiados. O
+      conjunto de ações depende do bot, das permissões e dos módulos efetivamente
+      implantados.
+
+  - key: telegram_admin
+    legacy_ids: [24]
+    question: Quais funções administrativas podem ser oferecidas pelo Telegram?
+    answer: >-
+      Dependendo da implantação, o gerente pode acompanhar alertas e tarefas,
+      consultar informações, revisar conteúdo e confirmar alterações antes da
+      publicação. Nenhuma ação administrativa deve ser considerada ativa sem a
+      configuração e a permissão correspondentes.
+
+  - key: contract_scope
+    legacy_ids: [27]
+    question: O que pode estar incluído na contratação?
+    answer: >-
+      O plano pode incluir módulos de atendimento e operação definidos no
+      onboarding, configuração, integrações, testes, orientação e suporte.
+      WhatsApp Meta, Instagram, chat do site, automações e personalizações
+      dependem do escopo contratado, da aprovação das plataformas externas e da
+      validação de cada canal.
+
+  - key: meta_number
+    legacy_ids: [28]
+    question: Como funciona a ativação de um número Meta?
+    answer: >-
+      Pode ser usado um número novo ou existente, desde que ele seja elegível e
+      validado pela Meta. A ativação envolve conta comercial, Phone Number ID,
+      token, webhook e aprovações; a posse do número e os requisitos comerciais
+      continuam vinculados à conta do cliente e às políticas da Meta.
+
+  - key: delivery_stages
+    legacy_ids: [29]
+    question: Quais etapas fazem parte da entrega?
+    answer: >-
+      As etapas são diagnóstico, configuração, integração, personalização e
+      go-live controlado. O aceite deve verificar entrada e saída de mensagens,
+      reservas quando contratadas, handoff, alertas, publicação e treinamento.
+
+  - key: customization
+    legacy_ids: [30]
+    question: Que tipos de personalização podem ser avaliados?
+    answer: >-
+      Podem ser avaliados horários e regras por unidade ou evento, setores,
+      responsáveis, tom de voz, campos adicionais, campanhas e integrações
+      externas. Cada item precisa ser confirmado tecnicamente e incluído no
+      escopo antes de ser apresentado como disponível.
+
+  - key: unsupported_transactional_modules
+    question: O AI Food Manager já possui estoque, compras, caixa, cozinha, delivery ou PDV?
+    answer: >-
+      Não como módulos transacionais confirmados neste escopo. O dossiê do
+      produto identifica estoque, compras, caixa, cozinha, delivery e PDV como
+      customizações ou integrações a serem avaliadas, não como funcionalidades
+      que o atendimento possa prometer como prontas.
+
+  - key: knowledge_boundary
+    question: Como o assistente responde sem inventar informações?
+    answer: >-
+      O assistente deve consultar as respostas aprovadas e os documentos válidos
+      antes de afirmar fatos sobre o produto. Se a informação não estiver
+      confirmada, ele deve explicar a limitação e encaminhar para uma pessoa
+      quando necessário, sem inventar preço, estoque, integração, prazo ou
+      funcionalidade.
+
+  - key: lead_handoff
+    question: Quando a conversa é transferida para uma pessoa ou setor?
+    answer: >-
+      A transferência ocorre quando o cliente pede atendimento humano, aceita
+      uma oferta de especialista, solicita um setor ou demonstra intenção clara
+      de compra, como preço, proposta ou demonstração. Depois que a transferência
+      é concluída, o assistente deixa de responder e a equipe assume o histórico.

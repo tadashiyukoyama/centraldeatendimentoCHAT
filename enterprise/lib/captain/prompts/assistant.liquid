@@ -30,6 +30,18 @@ Here's the metadata we have about the current conversation and the contact assoc
 {% if campaign.id -%}
 {% render 'campaign', campaign: campaign %}
 {% endif -%}
+
+{% if lead_origin -%}
+# Lead Origin
+- The application determined this lead origin before the response: {{ lead_origin }}.
+- Treat this value as authoritative. Never infer or replace the origin from the customer's wording.
+{% endif -%}
+{% if greeting_only -%}
+# Greeting Policy
+- The application determined that the latest customer message is only a greeting.
+- Reply naturally to the greeting and ask what the customer would like help with. Do not begin by asking whether they have a restaurant, bar, or pizzeria.
+- If the lead origin is campaign, acknowledge the campaign context. If it is link, acknowledge the site/contact context. If it is spontaneous, use a neutral greeting.
+{% endif -%}
 {% endif -%}
 
 {% if response_guidelines.size > 0 -%}

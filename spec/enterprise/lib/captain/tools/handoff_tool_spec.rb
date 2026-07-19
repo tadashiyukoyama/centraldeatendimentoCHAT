@@ -164,6 +164,37 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
         end
       end
 
+      context 'when the customer accepts the previous Captain handoff offer' do
+        before do
+          conversation.messages.delete_all
+          create(
+            :message,
+            conversation: conversation,
+            inbox: inbox,
+            account: account,
+            message_type: :outgoing,
+            sender: assistant,
+            content: 'Se quiser, posso te colocar com um especialista.'
+          )
+          create(
+            :message,
+            conversation: conversation,
+            inbox: inbox,
+            account: account,
+            message_type: :incoming,
+            sender: contact,
+            content: 'Ok, pode ser'
+          )
+        end
+
+        it 'allows the handoff and changes the conversation status' do
+          result = tool.perform(tool_context, reason: 'Customer accepted specialist handoff', destination: 'owner')
+
+          expect(result).to include('owner')
+          expect(conversation.reload.status).to eq('open')
+        end
+      end
+
       context 'when a previous customer message had a commercial signal but the latest message is outgoing' do
         before do
           conversation.messages.delete_all

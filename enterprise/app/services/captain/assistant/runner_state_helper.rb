@@ -24,7 +24,11 @@ module Captain::Assistant::RunnerStateHelper
     }
     state[:source] = @source if @source.present?
 
-    build_conversation_state(state) if @conversation
+    if @conversation
+      state[:lead_origin] = Captain::Conversation::OriginResolver.new(@conversation).perform
+      state[:greeting_only] = Captain::Conversation::GreetingPolicy.new(@conversation).greeting_only?
+      build_conversation_state(state)
+    end
     state
   end
 
