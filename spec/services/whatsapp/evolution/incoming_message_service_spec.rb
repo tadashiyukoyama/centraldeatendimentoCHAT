@@ -58,6 +58,7 @@ RSpec.describe Whatsapp::Evolution::IncomingMessageService do
       outgoing_echo: false,
       provisioning: provisioning
     )
+    allow(scoped_service).to receive(:messages_data).and_return([{ id: 'message-id' }])
     allow(Whatsapp::MessageDedupLock).to receive(:new)
       .with("evolution:#{inbox.id}:message-id")
       .and_return(lock)

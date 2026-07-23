@@ -130,10 +130,7 @@ class Whatsapp::Evolution::WebhookProcessor
 
   def process_message_status
     data = payload.fetch('data', {})
-    message_id = data['keyId'] || data['messageId'] || data.dig('key', 'id')
-    return :ignored if message_id.blank?
-
-    message = provisioning.inbox&.messages&.find_by(source_id: message_id)
+    message = message_for_status(data)
     return :ignored unless message
 
     status = normalized_message_status(data['status'])
@@ -141,6 +138,13 @@ class Whatsapp::Evolution::WebhookProcessor
 
     message.update!(status: status)
     :processed
+  end
+
+  def message_for_status(data)
+    message_id = data['keyId'] || data['messageId'] || data.dig('key', 'id')
+    return if message_id.blank?
+
+    provisioning.inbox&.messages&.find_by(source_id: message_id)
   end
 
   def normalized_message_status(value)
