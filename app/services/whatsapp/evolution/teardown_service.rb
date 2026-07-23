@@ -14,22 +14,30 @@ class Whatsapp::Evolution::TeardownService
 
     return true unless provisioning.mark_deleting!
 
-    client = Whatsapp::Evolution::ApiClient.new(provisioning: provisioning)
-    ignore_missing_instance { client.logout }
-    ignore_missing_instance { client.delete_instance }
+    delete_remote_instance
     provisioning.mark_deleted!
     true
   rescue StandardError => e
-    provisioning&.record_teardown_failure!(
-      code: e.respond_to?(:code) ? e.code : 'teardown_failed',
-      message: e.is_a?(Whatsapp::Evolution::ApiClient::Error) ? e.message : 'Evolution teardown failed'
-    )
+    record_teardown_failure(e)
     raise
   end
 
   private
 
   attr_reader :provisioning
+
+  def delete_remote_instance
+    client = Whatsapp::Evolution::ApiClient.new(provisioning: provisioning)
+    ignore_missing_instance { client.logout }
+    ignore_missing_instance { client.delete_instance }
+  end
+
+  def record_teardown_failure(error)
+    provisioning&.record_teardown_failure!(
+      code: error.respond_to?(:code) ? error.code : 'teardown_failed',
+      message: error.is_a?(Whatsapp::Evolution::ApiClient::Error) ? error.message : 'Evolution teardown failed'
+    )
+  end
 
   def ignore_missing_instance
     yield
