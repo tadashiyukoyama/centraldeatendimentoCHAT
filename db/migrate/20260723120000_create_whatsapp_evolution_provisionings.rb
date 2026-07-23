@@ -47,9 +47,12 @@ class CreateWhatsappEvolutionProvisionings < ActiveRecord::Migration[7.1]
 
   def create_events_table
     create_table :whatsapp_evolution_events do |t|
-      t.references :provisioning, null: false,
-                   foreign_key: { to_table: :whatsapp_evolution_provisionings },
-                   index: true
+      t.references(
+        :provisioning,
+        null: false,
+        foreign_key: { to_table: :whatsapp_evolution_provisionings },
+        index: true
+      )
       t.string :event_key, null: false
       t.string :event_type, null: false
       t.integer :status, null: false, default: 0

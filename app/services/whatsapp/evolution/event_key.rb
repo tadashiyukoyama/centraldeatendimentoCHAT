@@ -21,14 +21,18 @@ class Whatsapp::Evolution::EventKey
     data = payload['data']
     return unless data.is_a?(Hash)
 
-    data.dig('key', 'id') || data['keyId'] || data['messageId'] || data['id']
+    identifier = data.dig('key', 'id') || data['keyId'] || data['messageId'] || data['id']
+    return unless identifier
+    return [identifier, data['status']].compact.join(':') if event_type == 'messages_update'
+
+    identifier
   end
 
   def connection_identifier
     return unless event_type == 'connection_update'
 
     data = payload['data'].to_h
-    [data['state'], data['wuid'], data['profileName']].compact.join(':').presence
+    [data['state'], data['wuid'], data['profileName'], payload['date_time']].compact.join(':').presence
   end
 
   def payload_digest

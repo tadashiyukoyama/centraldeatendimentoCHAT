@@ -88,6 +88,7 @@ class Whatsapp::Evolution::MessageNormalizer
 
   def normalized_content
     return ['text', { text: { body: raw_message['conversation'] } }] if raw_message['conversation'].present?
+
     extended_text = raw_message.dig('extendedTextMessage', 'text')
     return ['text', { text: { body: extended_text } }] if extended_text.present?
 

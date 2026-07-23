@@ -7,6 +7,8 @@ class Whatsapp::Evolution::QrCode
     return if value.blank?
 
     encoded = value.to_s.delete_prefix(DATA_URL_PREFIX)
+    raise ArgumentError if encoded.bytesize > maximum_encoded_bytes
+
     decoded = Base64.strict_decode64(encoded)
     raise ArgumentError if decoded.bytesize > MAX_BYTES
     raise ArgumentError unless decoded.start_with?(PNG_SIGNATURE)
@@ -17,5 +19,9 @@ class Whatsapp::Evolution::QrCode
       'Evolution QR Code response is invalid',
       code: 'invalid_qr_code'
     )
+  end
+
+  def self.maximum_encoded_bytes
+    ((MAX_BYTES * 4) / 3) + 4
   end
 end

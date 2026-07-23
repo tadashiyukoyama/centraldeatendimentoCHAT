@@ -17,4 +17,16 @@ RSpec.describe Whatsapp::Evolution::QrCode do
       'Evolution QR Code response is invalid'
     )
   end
+
+  it 'rejects oversized encoded content before decoding it' do
+    stub_const('Whatsapp::Evolution::QrCode::MAX_BYTES', 8)
+    encoded = Base64.strict_encode64(png + ('a' * 16))
+
+    expect do
+      described_class.normalize(encoded)
+    end.to raise_error(
+      Whatsapp::Evolution::ApiClient::Error,
+      'Evolution QR Code response is invalid'
+    )
+  end
 end

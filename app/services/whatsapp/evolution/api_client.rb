@@ -57,16 +57,16 @@ class Whatsapp::Evolution::ApiClient
     )
   end
 
-  def send_media(number:, media:, media_type:, mime_type:, caption: nil, file_name: nil)
+  def send_media(number:, media:, media_type:, **metadata)
     request(
       :post,
       "/message/sendMedia/#{escaped_instance_name}",
       body: {
         number: normalized_number(number),
         mediatype: media_type,
-        mimetype: mime_type,
-        caption: caption,
-        fileName: file_name,
+        mimetype: metadata.fetch(:mime_type),
+        caption: metadata[:caption],
+        fileName: metadata[:file_name],
         media: media
       }.compact
     )
@@ -94,9 +94,7 @@ class Whatsapp::Evolution::ApiClient
     raise_http_error!(response) unless response.success?
 
     parsed_response(response)
-  rescue Whatsapp::Evolution::Configuration::ConfigurationError
-    raise
-  rescue Error
+  rescue Whatsapp::Evolution::Configuration::ConfigurationError, Error
     raise
   rescue StandardError
     raise Error.new(
@@ -123,6 +121,7 @@ class Whatsapp::Evolution::ApiClient
 
   def authentication_key(global_key)
     return Whatsapp::Evolution::Configuration.api_key if global_key
+
     if provisioning&.instance_token.blank?
       raise Error.new(
         'Evolution instance credential is unavailable',

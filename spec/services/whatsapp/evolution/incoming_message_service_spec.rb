@@ -32,4 +32,36 @@ RSpec.describe Whatsapp::Evolution::IncomingMessageService do
 
     expect(result).to be_nil
   end
+
+  it 'scopes message deduplication lookup to the Evolution inbox' do
+    inbox = create(:inbox)
+    local_message = create(:message, account: inbox.account, inbox: inbox, source_id: 'shared-id')
+    create(:message, source_id: 'shared-id')
+    scoped_service = described_class.new(
+      inbox: inbox,
+      params: {},
+      outgoing_echo: false,
+      provisioning: provisioning
+    )
+
+    result = scoped_service.send(:find_message_by_source_id, 'shared-id')
+
+    expect(result).to eq(local_message)
+  end
+
+  it 'names the concurrent deduplication lock by provider and inbox' do
+    inbox = create(:inbox)
+    lock = instance_double(Whatsapp::MessageDedupLock, acquire!: true)
+    scoped_service = described_class.new(
+      inbox: inbox,
+      params: { messages: [{ id: 'message-id' }] },
+      outgoing_echo: false,
+      provisioning: provisioning
+    )
+    allow(Whatsapp::MessageDedupLock).to receive(:new)
+      .with("evolution:#{inbox.id}:message-id")
+      .and_return(lock)
+
+    expect(scoped_service.send(:lock_message_source_id!)).to be(true)
+  end
 end

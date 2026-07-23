@@ -4,7 +4,14 @@ RSpec.describe Whatsapp::Evolution::WebhookProcessor do
   let(:provisioning) { create(:whatsapp_evolution_provisioning) }
 
   it 'maps Evolution delivery acknowledgements to the Chatwoot message status' do
-    message = create(:message, source_id: 'evolution-message-id', status: :sent)
+    inbox = attach_inbox(provisioning)
+    message = create(
+      :message,
+      account: provisioning.account,
+      inbox: inbox,
+      source_id: 'evolution-message-id',
+      status: :sent
+    )
     event = provisioning.events.create!(
       event_key: SecureRandom.hex,
       event_type: 'messages_update'
@@ -25,7 +32,14 @@ RSpec.describe Whatsapp::Evolution::WebhookProcessor do
   end
 
   it 'ignores unknown statuses without changing the message' do
-    message = create(:message, source_id: 'evolution-message-id', status: :sent)
+    inbox = attach_inbox(provisioning)
+    message = create(
+      :message,
+      account: provisioning.account,
+      inbox: inbox,
+      source_id: 'evolution-message-id',
+      status: :sent
+    )
     event = provisioning.events.create!(
       event_key: SecureRandom.hex,
       event_type: 'messages_update'
@@ -43,6 +57,28 @@ RSpec.describe Whatsapp::Evolution::WebhookProcessor do
 
     expect(event.reload).to be_ignored
     expect(message.reload).to be_sent
+  end
+
+  it 'does not update a message from another inbox with the same provider identifier' do
+    attach_inbox(provisioning)
+    foreign_message = create(:message, source_id: 'shared-message-id', status: :sent)
+    event = provisioning.events.create!(
+      event_key: SecureRandom.hex,
+      event_type: 'messages_update'
+    )
+    payload = {
+      event: 'messages.update',
+      instance: provisioning.instance_name,
+      data: {
+        keyId: foreign_message.source_id,
+        status: 'DELIVERY_ACK'
+      }
+    }
+
+    described_class.new(event: event, payload: payload).perform
+
+    expect(event.reload).to be_ignored
+    expect(foreign_message.reload).to be_sent
   end
 
   it 'fetches the connected identity when the connection webhook omits wuid' do
@@ -130,5 +166,19 @@ RSpec.describe Whatsapp::Evolution::WebhookProcessor do
     )
     expect(event.reload).to be_failed
     expect(event.attempts).to eq(1)
+  end
+
+  def attach_inbox(provisioning)
+    provisioning.update!(status: :connected)
+    channel = build(
+      :channel_whatsapp,
+      account: provisioning.account,
+      provider: 'evolution',
+      provider_config: { 'evolution_provisioning_id' => provisioning.id }
+    )
+    channel.evolution_provisioning_validation_id = provisioning.id
+    channel.save!
+    provisioning.update!(whatsapp_channel: channel)
+    create(:inbox, account: provisioning.account, channel: channel)
   end
 end

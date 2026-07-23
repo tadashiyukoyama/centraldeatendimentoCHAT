@@ -15,7 +15,6 @@ class Whatsapp::EvolutionEvent < ApplicationRecord
   }
 
   validates :event_key, :event_type, presence: true
-  validates :event_key, uniqueness: true
 
   def record_failure!(error)
     update!(
