@@ -63,6 +63,15 @@ Falha parcial após a criação remota aciona compensação de exclusão. Cancel
 operação remove a instância remota. Provisionamentos sem conexão expiram em 15
 minutos e são recolhidos pelo job horário.
 
+Webhooks de QR ou conexão podem chegar antes de a chamada de criação da
+instância retornar. As transições concorrentes são serializadas pelo bloqueio
+otimista e pelo lock da linha do provisionamento. A resposta da criação só pode
+avançar `provisioning` para `waiting_qr`; ela nunca pode rebaixar
+`connecting`, `connected` ou qualquer estado terminal já registrado por um
+webhook. Se a criação falhar de forma incerta, a persistência do erro é
+best-effort e não pode impedir a compensação remota nem substituir a exceção
+original.
+
 ## Persistência
 
 `whatsapp_evolution_provisionings` mantém o vínculo operacional:
