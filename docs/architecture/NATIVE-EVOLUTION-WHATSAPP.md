@@ -117,6 +117,9 @@ Eventos aceitos:
 
 A versão inicial normaliza texto, imagem, vídeo, áudio, documento, sticker e
 localização em conversas individuais. Mídia é obtida sob demanda pelo backend.
+O payload é rejeitado antes da decodificação quando excede
+`MAXIMUM_FILE_UPLOAD_SIZE` e ainda passa pelas validações normais de
+`Attachment`.
 Grupos, broadcasts, newsletters e tipos desconhecidos são ignorados de forma
 explícita; nunca são convertidos em texto inventado.
 

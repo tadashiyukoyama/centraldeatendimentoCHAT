@@ -98,11 +98,11 @@ class Whatsapp::Evolution::ApiClient
     raise
   rescue Error
     raise
-  rescue StandardError => e
+  rescue StandardError
     raise Error.new(
       'Evolution API is unavailable',
       code: 'evolution_unavailable'
-    ) from e
+    )
   end
 
   def request_options(body:, global_key:)
@@ -116,13 +116,19 @@ class Whatsapp::Evolution::ApiClient
       verify: true
     }
     options[:body] = body.to_json if body
-    options[:basic_auth] = Whatsapp::Evolution::Configuration.basic_auth if Whatsapp::Evolution::Configuration.basic_auth
+    basic_auth = Whatsapp::Evolution::Configuration.basic_auth
+    options[:basic_auth] = basic_auth if basic_auth
     options
   end
 
   def authentication_key(global_key)
     return Whatsapp::Evolution::Configuration.api_key if global_key
-    raise Error.new('Evolution instance credential is unavailable', code: 'missing_instance_credential') if provisioning&.instance_token.blank?
+    if provisioning&.instance_token.blank?
+      raise Error.new(
+        'Evolution instance credential is unavailable',
+        code: 'missing_instance_credential'
+      )
+    end
 
     provisioning.instance_token
   end
@@ -148,7 +154,12 @@ class Whatsapp::Evolution::ApiClient
 
   def normalized_number(number)
     digits = number.to_s.gsub(/\D/, '')
-    raise Error.new('WhatsApp destination number is invalid', code: 'invalid_destination') unless digits.match?(/\A\d{6,15}\z/)
+    unless digits.match?(/\A\d{6,15}\z/)
+      raise Error.new(
+        'WhatsApp destination number is invalid',
+        code: 'invalid_destination'
+      )
+    end
 
     digits
   end

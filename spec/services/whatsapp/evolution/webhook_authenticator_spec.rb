@@ -1,7 +1,13 @@
 require 'rails_helper'
 
 RSpec.describe Whatsapp::Evolution::WebhookAuthenticator do
-  let(:provisioning) { build(:whatsapp_evolution_provisioning, instance_name: 'cw-a1-test', webhook_secret: 'webhook-secret') }
+  let(:provisioning) do
+    build(
+      :whatsapp_evolution_provisioning,
+      instance_name: 'cw-a1-test',
+      webhook_secret: 'webhook-secret'
+    )
+  end
   let(:payload) { { 'instance' => 'cw-a1-test', 'event' => 'connection.update' } }
   let(:claims) do
     {

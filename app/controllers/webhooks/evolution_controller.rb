@@ -9,7 +9,7 @@ class Webhooks::EvolutionController < ActionController::API
     ).verify!
 
     event = create_event(provisioning, payload)
-    Webhooks::EvolutionEventsJob.perform_later(event.id, payload) if event.previously_new_record?
+    enqueue_event(event, payload)
     head :accepted
   rescue ActiveRecord::RecordNotFound
     head :not_found
@@ -38,5 +38,20 @@ class Webhooks::EvolutionController < ActionController::API
     provisioning.events.create_or_find_by!(event_key: event_key) do |event|
       event.event_type = normalized_event_name(payload['event'])
     end
+  end
+
+  def enqueue_event(event, payload)
+    should_enqueue = event.with_lock do
+      next false unless event.pending? || event.failed?
+
+      event.update!(status: :queued)
+      true
+    end
+    return unless should_enqueue
+
+    Webhooks::EvolutionEventsJob.perform_later(event.id, payload)
+  rescue StandardError
+    event.update!(status: :pending) if event&.queued?
+    raise
   end
 end

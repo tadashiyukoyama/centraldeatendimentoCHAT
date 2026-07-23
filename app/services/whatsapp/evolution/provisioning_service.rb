@@ -29,7 +29,10 @@ class Whatsapp::Evolution::ProvisioningService
 
   def validate!
     Whatsapp::Evolution::Configuration.validate!
-    raise ActiveRecord::RecordInvalid, account.whatsapp_evolution_provisionings.new(inbox_name: inbox_name) if inbox_name.blank?
+    if inbox_name.blank?
+      invalid_provisioning = account.whatsapp_evolution_provisionings.new(inbox_name: inbox_name)
+      raise ActiveRecord::RecordInvalid, invalid_provisioning
+    end
     raise ArgumentError, 'Inbox name is too long' if inbox_name.length > 100
   end
 

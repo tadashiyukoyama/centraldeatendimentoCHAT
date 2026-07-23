@@ -45,11 +45,26 @@ class Whatsapp::Evolution::Configuration
 
     def validate_url!(value, variable_name)
       uri = URI.parse(value)
-      valid_scheme = Rails.env.production? ? uri.scheme == 'https' : %w[http https].include?(uri.scheme)
-      valid = valid_scheme && uri.host.present? && uri.userinfo.blank? && uri.query.blank? && uri.fragment.blank?
-      raise ConfigurationError, "#{variable_name} must be a valid #{Rails.env.production? ? 'HTTPS ' : ''}URL" unless valid
+      return if valid_url?(uri)
+
+      scheme_requirement = Rails.env.production? ? 'HTTPS ' : ''
+      raise ConfigurationError, "#{variable_name} must be a valid #{scheme_requirement}URL"
     rescue URI::InvalidURIError
       raise ConfigurationError, "#{variable_name} must be a valid URL"
+    end
+
+    def valid_url?(uri)
+      valid_scheme?(uri) &&
+        uri.host.present? &&
+        uri.userinfo.blank? &&
+        uri.query.blank? &&
+        uri.fragment.blank?
+    end
+
+    def valid_scheme?(uri)
+      return uri.scheme == 'https' if Rails.env.production?
+
+      %w[http https].include?(uri.scheme)
     end
 
     def validate_basic_auth!

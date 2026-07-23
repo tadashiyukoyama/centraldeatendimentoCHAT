@@ -38,7 +38,7 @@ class Whatsapp::Evolution::EventKey
   def deep_sort(value)
     case value
     when Hash
-      value.keys.sort.to_h { |key| [key, deep_sort(value[key])] }
+      value.keys.sort.index_with { |key| deep_sort(value[key]) }
     when Array
       value.map { |item| deep_sort(item) }
     else

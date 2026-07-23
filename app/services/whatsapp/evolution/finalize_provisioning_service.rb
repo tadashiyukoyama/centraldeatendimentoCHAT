@@ -10,7 +10,7 @@ class Whatsapp::Evolution::FinalizeProvisioningService
     provisioning.with_lock do
       if provisioning.whatsapp_channel_id.present?
         provisioning.update!(connected_attributes)
-        return provisioning.inbox
+        next provisioning.inbox
       end
 
       ActiveRecord::Base.transaction do

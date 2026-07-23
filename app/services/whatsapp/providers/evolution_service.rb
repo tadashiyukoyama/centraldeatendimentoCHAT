@@ -34,7 +34,7 @@ class Whatsapp::Providers::EvolutionService < Whatsapp::Providers::BaseService
   end
 
   def validate_provider_config?
-    return false unless provisioning.present?
+    return false if provisioning.blank?
     return false unless provisioning.account_id == whatsapp_channel.account_id
     return false unless provisioning.connected?
 

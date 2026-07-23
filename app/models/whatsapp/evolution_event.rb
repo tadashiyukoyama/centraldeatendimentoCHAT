@@ -7,10 +7,11 @@ class Whatsapp::EvolutionEvent < ApplicationRecord
 
   enum status: {
     pending: 0,
-    processing: 1,
-    processed: 2,
-    ignored: 3,
-    failed: 4
+    queued: 1,
+    processing: 2,
+    processed: 3,
+    ignored: 4,
+    failed: 5
   }
 
   validates :event_key, :event_type, presence: true

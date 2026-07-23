@@ -59,6 +59,23 @@ RSpec.describe 'Webhooks::EvolutionController', type: :request do
     expect(Webhooks::EvolutionEventsJob).to have_received(:perform_later).once
   end
 
+  it 'allows a failed event to be queued again on provider redelivery' do
+    post "/webhooks/evolution/#{provisioning.public_id}",
+         params: payload,
+         headers: { 'Authorization' => "Bearer #{token}" },
+         as: :json
+    provisioning.events.last.update!(status: :failed)
+
+    post "/webhooks/evolution/#{provisioning.public_id}",
+         params: payload,
+         headers: { 'Authorization' => "Bearer #{token}" },
+         as: :json
+
+    expect(response).to have_http_status(:accepted)
+    expect(Webhooks::EvolutionEventsJob).to have_received(:perform_later).twice
+    expect(provisioning.events.last).to be_queued
+  end
+
   it 'rejects an invalid signature without exposing details' do
     post "/webhooks/evolution/#{provisioning.public_id}",
          params: payload,

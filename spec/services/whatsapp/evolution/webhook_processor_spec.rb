@@ -99,4 +99,36 @@ RSpec.describe Whatsapp::Evolution::WebhookProcessor do
     expect(sync).to have_received(:perform)
     expect(event.reload).to be_ignored
   end
+
+  it 'commits the attempt and failed state before propagating a processing error' do
+    event = provisioning.events.create!(
+      event_key: SecureRandom.hex,
+      event_type: 'messages_upsert',
+      status: :queued
+    )
+    payload = {
+      event: 'messages.upsert',
+      instance: provisioning.instance_name,
+      data: {}
+    }
+    sync = instance_double(Whatsapp::Evolution::ConnectionSyncService)
+    error = Whatsapp::Evolution::ApiClient::Error.new(
+      'Evolution API is unavailable',
+      code: 'evolution_unavailable'
+    )
+
+    allow(Whatsapp::Evolution::ConnectionSyncService).to receive(:new)
+      .with(provisioning: provisioning)
+      .and_return(sync)
+    allow(sync).to receive(:perform).and_raise(error)
+
+    expect do
+      described_class.new(event: event, payload: payload).perform
+    end.to raise_error(
+      Whatsapp::Evolution::ApiClient::Error,
+      'Evolution API is unavailable'
+    )
+    expect(event.reload).to be_failed
+    expect(event.attempts).to eq(1)
+  end
 end

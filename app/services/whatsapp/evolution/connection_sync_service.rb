@@ -7,26 +7,11 @@ class Whatsapp::Evolution::ConnectionSyncService
   end
 
   def perform
-    if provisioning.whatsapp_channel_id.present? && provisioning.connected?
-      return Result.new(provisioning: provisioning, qr_code: nil)
-    end
+    return connected_result if channel_already_connected?
 
     fail_expired_provisioning! if provisioning.expired?
-    state_response = client.connection_state
-    state = extract_state(state_response)
-
-    if state == 'open'
-      finalize_connected_instance
-      Result.new(provisioning: provisioning.reload, qr_code: nil)
-    else
-      provisioning.update!(status: state == 'connecting' ? :connecting : :waiting_qr, last_seen_at: Time.current)
-      connect_response = client.connect
-      qr_code = connect_response.dig('base64') || connect_response.dig('qrcode', 'base64')
-      Result.new(
-        provisioning: provisioning.reload,
-        qr_code: Whatsapp::Evolution::QrCode.normalize(qr_code)
-      )
-    end
+    state = extract_state(client.connection_state)
+    state == 'open' ? finalize_connection : refresh_qr_code(state)
   rescue Whatsapp::Evolution::ApiClient::Error => e
     provisioning.record_failure!(code: e.code, message: e.message)
     raise
@@ -36,8 +21,34 @@ class Whatsapp::Evolution::ConnectionSyncService
 
   attr_reader :provisioning, :client
 
+  def channel_already_connected?
+    provisioning.whatsapp_channel_id.present? && provisioning.connected?
+  end
+
+  def connected_result
+    Result.new(provisioning: provisioning, qr_code: nil)
+  end
+
   def extract_state(response)
     response.dig('instance', 'state') || response['state']
+  end
+
+  def finalize_connection
+    finalize_connected_instance
+    Result.new(provisioning: provisioning.reload, qr_code: nil)
+  end
+
+  def refresh_qr_code(state)
+    provisioning.update!(
+      status: state == 'connecting' ? :connecting : :waiting_qr,
+      last_seen_at: Time.current
+    )
+    connect_response = client.connect
+    qr_code = connect_response['base64'] || connect_response.dig('qrcode', 'base64')
+    Result.new(
+      provisioning: provisioning.reload,
+      qr_code: Whatsapp::Evolution::QrCode.normalize(qr_code)
+    )
   end
 
   def finalize_connected_instance

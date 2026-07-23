@@ -88,9 +88,8 @@ class Whatsapp::Evolution::MessageNormalizer
 
   def normalized_content
     return ['text', { text: { body: raw_message['conversation'] } }] if raw_message['conversation'].present?
-    if raw_message.dig('extendedTextMessage', 'text').present?
-      return ['text', { text: { body: raw_message.dig('extendedTextMessage', 'text') } }]
-    end
+    extended_text = raw_message.dig('extendedTextMessage', 'text')
+    return ['text', { text: { body: extended_text } }] if extended_text.present?
 
     media_key = MEDIA_TYPES.keys.find { |candidate| raw_message[candidate].present? }
     return normalize_media(media_key) if media_key

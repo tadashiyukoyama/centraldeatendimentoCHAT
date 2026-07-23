@@ -1,7 +1,13 @@
 require 'rails_helper'
 
 RSpec.describe Whatsapp::Evolution::ApiClient do
-  let(:provisioning) { build(:whatsapp_evolution_provisioning, instance_name: 'cw-a1-test', instance_token: 'instance-key') }
+  let(:provisioning) do
+    build(
+      :whatsapp_evolution_provisioning,
+      instance_name: 'cw-a1-test',
+      instance_token: 'instance-key'
+    )
+  end
   let(:valid_env) do
     {
       EVOLUTION_API_ENABLED: 'true',
@@ -30,7 +36,11 @@ RSpec.describe Whatsapp::Evolution::ApiClient do
                   )
                 )
               )
-              .to_return(status: 201, body: { qrcode: { base64: 'qr-data' } }.to_json, headers: { 'Content-Type' => 'application/json' })
+              .to_return(
+                status: 201,
+                body: { qrcode: { base64: 'qr-data' } }.to_json,
+                headers: { 'Content-Type' => 'application/json' }
+              )
 
     with_modified_env valid_env do
       expect(described_class.new(provisioning: provisioning).create_instance.dig('qrcode', 'base64')).to eq('qr-data')
@@ -44,7 +54,11 @@ RSpec.describe Whatsapp::Evolution::ApiClient do
                 headers: { 'apikey' => 'instance-key' },
                 body: { number: '5511999999999', text: 'Hello' }
               )
-              .to_return(status: 201, body: { key: { id: 'message-id' } }.to_json, headers: { 'Content-Type' => 'application/json' })
+              .to_return(
+                status: 201,
+                body: { key: { id: 'message-id' } }.to_json,
+                headers: { 'Content-Type' => 'application/json' }
+              )
 
     with_modified_env valid_env do
       result = described_class.new(provisioning: provisioning).send_text(number: '+55 11 99999-9999', text: 'Hello')

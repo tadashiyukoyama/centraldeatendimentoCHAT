@@ -2,6 +2,13 @@ class Api::V1::Accounts::Whatsapp::EvolutionProvisioningsController < Api::V1::A
   before_action :authorize_inbox_creation!
   before_action :set_provisioning, except: :create
 
+  def show
+    result = Whatsapp::Evolution::ConnectionSyncService.new(provisioning: @provisioning).perform
+    render json: response_payload(result.provisioning, result.qr_code)
+  rescue Whatsapp::Evolution::ApiClient::Error, ActiveRecord::RecordInvalid, ArgumentError => e
+    render json: { error: safe_error_message(e), status: @provisioning.reload.status }, status: :unprocessable_entity
+  end
+
   def create
     result = Whatsapp::Evolution::ProvisioningService.new(
       account: Current.account,
@@ -11,13 +18,6 @@ class Api::V1::Accounts::Whatsapp::EvolutionProvisioningsController < Api::V1::A
   rescue Whatsapp::Evolution::Configuration::ConfigurationError, Whatsapp::Evolution::ApiClient::Error,
          ActiveRecord::RecordInvalid, ArgumentError => e
     render json: { error: safe_error_message(e) }, status: :unprocessable_entity
-  end
-
-  def show
-    result = Whatsapp::Evolution::ConnectionSyncService.new(provisioning: @provisioning).perform
-    render json: response_payload(result.provisioning, result.qr_code)
-  rescue Whatsapp::Evolution::ApiClient::Error, ActiveRecord::RecordInvalid, ArgumentError => e
-    render json: { error: safe_error_message(e), status: @provisioning.reload.status }, status: :unprocessable_entity
   end
 
   def reconnect

@@ -6,16 +6,27 @@ class Whatsapp::Evolution::WebhookProcessor
   end
 
   def perform
+    processing_error = nil
+
     event.with_lock do
-      return if event.processed? || event.ignored?
+      next if event.processed? || event.ignored?
 
       event.update!(status: :processing, attempts: event.attempts + 1)
-      outcome = process_event
-      event.update!(status: outcome, processed_at: Time.current)
+      begin
+        outcome = process_event
+        event.update!(
+          status: outcome,
+          processed_at: Time.current,
+          last_error_class: nil,
+          last_error_message: nil
+        )
+      rescue StandardError => e
+        event.record_failure!(e)
+        processing_error = e
+      end
     end
-  rescue StandardError => e
-    event.record_failure!(e)
-    raise
+
+    raise processing_error if processing_error
   end
 
   private
@@ -29,7 +40,7 @@ class Whatsapp::Evolution::WebhookProcessor
       :processed
     when 'connection_update'
       process_connection_update
-    when 'messages_upsert'
+    when 'messages_upsert', 'send_message'
       process_message
     when 'messages_update'
       process_message_status
@@ -58,23 +69,38 @@ class Whatsapp::Evolution::WebhookProcessor
   end
 
   def finalize_connected_instance(data)
-    connected_number = data['wuid']
-    profile_name = data['profileName']
-    profile_picture_url = data['profilePictureUrl']
-
-    if connected_number.blank?
-      instance = Whatsapp::Evolution::ApiClient.new(provisioning: provisioning).fetch_instance || {}
-      connected_number = instance['ownerJid'] || instance['owner'] || instance.dig('instance', 'ownerJid')
-      profile_name ||= instance['profileName'] || instance.dig('instance', 'profileName')
-      profile_picture_url ||= instance['profilePictureUrl'] || instance.dig('instance', 'profilePictureUrl')
-    end
-
+    attributes = complete_connection_attributes(connection_attributes(data))
     Whatsapp::Evolution::FinalizeProvisioningService.new(
       provisioning: provisioning,
-      connected_number: connected_number,
-      profile_name: profile_name,
-      profile_picture_url: profile_picture_url
+      **attributes
     ).perform
+  end
+
+  def connection_attributes(data)
+    {
+      connected_number: data['wuid'],
+      profile_name: data['profileName'],
+      profile_picture_url: data['profilePictureUrl']
+    }
+  end
+
+  def complete_connection_attributes(attributes)
+    return attributes if attributes[:connected_number].present?
+
+    instance = Whatsapp::Evolution::ApiClient.new(provisioning: provisioning).fetch_instance || {}
+    {
+      connected_number: instance_owner(instance),
+      profile_name: attributes[:profile_name] || instance_attribute(instance, 'profileName'),
+      profile_picture_url: attributes[:profile_picture_url] || instance_attribute(instance, 'profilePictureUrl')
+    }
+  end
+
+  def instance_owner(instance)
+    instance['ownerJid'] || instance['owner'] || instance.dig('instance', 'ownerJid')
+  end
+
+  def instance_attribute(instance, key)
+    instance[key] || instance.dig('instance', key)
   end
 
   def process_message
