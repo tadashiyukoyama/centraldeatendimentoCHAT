@@ -78,6 +78,21 @@ O release implantado é o commit `c1862b9e18a46490cb1911cd071dc2c33d75b161`,
 referenciado no GHCR pela tag imutável do mesmo SHA. O modo Enterprise
 self-hosted está ativo na configuração persistida da VPS.
 
+## WhatsApp nativo por QR Code
+
+A integração nativa com Evolution API está em implementação na branch
+`feat/native-evolution-whatsapp-channel`, baseada em
+`b0366a92dbe5c8176a4c03f7cab05d2fd2ce9ae0`. O contrato prevê uma instalação
+multi-instância em domínio HTTPS dedicado, com PostgreSQL e Redis exclusivos da
+Evolution e criação integral da caixa pelo Chatwoot.
+
+Neste estado documental, a mudança ainda não prova merge, migration, instalação
+da Evolution, alteração da VPS ou deploy. A arquitetura e o futuro gate
+operacional estão em:
+
+- [`docs/architecture/NATIVE-EVOLUTION-WHATSAPP.md`](../architecture/NATIVE-EVOLUTION-WHATSAPP.md);
+- [`docs/operations/EVOLUTION-NATIVE-WHATSAPP.md`](EVOLUTION-NATIVE-WHATSAPP.md).
+
 O bloco histórico abaixo descreve a fase de fundação anterior e não deve ser
 interpretado como o estado atual da produção.
 

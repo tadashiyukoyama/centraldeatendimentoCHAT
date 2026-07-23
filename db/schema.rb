@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_13_184351) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_23_120000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1461,6 +1461,46 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_13_184351) do
     t.index ["uid", "provider"], name: "index_users_on_uid_and_provider", unique: true
   end
 
+  create_table "whatsapp_evolution_events", force: :cascade do |t|
+    t.bigint "provisioning_id", null: false
+    t.string "event_key", null: false
+    t.string "event_type", null: false
+    t.integer "status", default: 0, null: false
+    t.integer "attempts", default: 0, null: false
+    t.string "last_error_class"
+    t.text "last_error_message"
+    t.datetime "processed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_key"], name: "index_whatsapp_evolution_events_on_event_key", unique: true
+    t.index ["provisioning_id"], name: "index_whatsapp_evolution_events_on_provisioning_id"
+  end
+
+  create_table "whatsapp_evolution_provisionings", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "whatsapp_channel_id"
+    t.string "public_id", null: false
+    t.string "inbox_name", null: false
+    t.string "instance_name", null: false
+    t.text "instance_token", null: false
+    t.text "webhook_secret", null: false
+    t.integer "status", default: 0, null: false
+    t.string "connected_number"
+    t.string "profile_name"
+    t.string "profile_picture_url"
+    t.string "last_error_code"
+    t.text "last_error_message"
+    t.datetime "last_seen_at"
+    t.datetime "expires_at", null: false
+    t.integer "lock_version", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_whatsapp_evolution_provisionings_on_account_id"
+    t.index ["instance_name"], name: "index_whatsapp_evolution_provisionings_on_instance_name", unique: true
+    t.index ["public_id"], name: "index_whatsapp_evolution_provisionings_on_public_id", unique: true
+    t.index ["whatsapp_channel_id"], name: "index_whatsapp_evolution_provisionings_on_whatsapp_channel_id", unique: true
+  end
+
   create_table "webhooks", force: :cascade do |t|
     t.integer "account_id"
     t.integer "inbox_id"
@@ -1494,6 +1534,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_13_184351) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
   add_foreign_key "user_sessions", "users"
+  add_foreign_key "whatsapp_evolution_events", "whatsapp_evolution_provisionings", column: "provisioning_id"
+  add_foreign_key "whatsapp_evolution_provisionings", "accounts"
+  add_foreign_key "whatsapp_evolution_provisionings", "channel_whatsapp", column: "whatsapp_channel_id"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").
       after(:insert).

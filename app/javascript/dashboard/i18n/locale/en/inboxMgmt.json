@@ -249,6 +249,8 @@
           "TWILIO": "Twilio",
           "WHATSAPP_CLOUD": "WhatsApp Cloud",
           "WHATSAPP_CLOUD_DESC": "Quick setup through Meta",
+          "EVOLUTION": "WhatsApp via QR Code",
+          "EVOLUTION_DESC": "Connect a WhatsApp number securely by scanning a QR Code",
           "TWILIO_DESC": "Connect via Twilio credentials",
           "360_DIALOG": "360Dialog"
         },
@@ -294,6 +296,27 @@
           "WEBHOOK_VERIFICATION_TOKEN": "Webhook Verification Token"
         },
         "SUBMIT_BUTTON": "Create WhatsApp Channel",
+        "EVOLUTION": {
+          "TITLE": "Connect WhatsApp via QR Code",
+          "DESCRIPTION": "Name the inbox and scan the QR Code with the WhatsApp account that this team will use. Credentials remain on the server and are never shown in the browser.",
+          "CREATE": "Generate QR Code",
+          "SCAN_TITLE": "Scan this QR Code in WhatsApp",
+          "STATUS_TITLE": "Connection status",
+          "QR_ALT": "WhatsApp connection QR Code",
+          "CANCEL": "Cancel connection",
+          "ERROR": "We could not connect this WhatsApp account.",
+          "CANCEL_ERROR": "We could not safely remove the pending WhatsApp connection.",
+          "STATUS": {
+            "PROVISIONING": "Preparing a secure WhatsApp session…",
+            "WAITING_QR": "Open WhatsApp, go to Linked devices, and scan the QR Code.",
+            "CONNECTING": "WhatsApp is confirming the connection…",
+            "CONNECTED": "WhatsApp connected successfully.",
+            "DISCONNECTED": "WhatsApp is disconnected.",
+            "FAILED": "The connection failed or expired. Cancel it and generate a new QR Code.",
+            "DELETING": "Removing the WhatsApp connection…",
+            "DELETED": "The WhatsApp connection was removed."
+          }
+        },
         "EMBEDDED_SIGNUP": {
           "TITLE": "Quick setup with Meta",
           "DESC": "Use the WhatsApp Embedded Signup flow to quickly connect new numbers. You will be redirected to Meta to log into your WhatsApp Business account. Having admin access will help make the setup smooth and easy.",

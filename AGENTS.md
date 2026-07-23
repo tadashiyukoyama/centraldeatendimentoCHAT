@@ -120,6 +120,12 @@ Uma alteração puramente interna que não mude contrato, operação ou decisão
 ser documentada apenas no commit. Se código, infra e documento divergirem,
 registrar a divergência e reconciliar antes de declarar a tarefa concluída.
 
+Integrações de transporte devem permanecer modulares e server-side. Para o
+provedor Evolution, a integração Chatwoot embutida na Evolution permanece
+desativada; tokens, QR Codes, nomes internos de instância e payloads brutos não
+entram no navegador, `provider_config`, logs, artifacts ou memória do Codex.
+Mudanças nesse limite exigem revisão de arquitetura e segurança.
+
 ## 6. Protocolo de execução
 
 Antes de escrever:
