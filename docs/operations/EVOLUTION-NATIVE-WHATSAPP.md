@@ -2,10 +2,11 @@
 
 ## Estado
 
-O código desta integração foi preparado em branch isolada. Este documento não
-prova instalação da Evolution API, migration executada, configuração da VPS ou
-deploy. Esses fatos só podem ser declarados após os respectivos gates e
-evidências operacionais.
+O código desta integração foi incorporado pela PR `#15` e está no release
+`7fc8a3a64569a9654eadab0632e6678a24f458b6`, implantado pelo workflow
+`30051773036`. O deploy comprovou os gates de aplicação, migration,
+healthcheck, backup e ingress; este documento ainda não prova conexão de um
+número de teste, criação de caixa por QR ou troca de mensagens.
 
 Arquitetura canônica:
 [`docs/architecture/NATIVE-EVOLUTION-WHATSAPP.md`](../architecture/NATIVE-EVOLUTION-WHATSAPP.md).

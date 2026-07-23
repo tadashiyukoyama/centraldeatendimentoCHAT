@@ -5,9 +5,10 @@ artefato atualmente em execução. Ele não contém credenciais.
 
 ## Fonte de verdade atual
 
-Durante a reconciliação de 18 de julho de 2026, a VPS foi tratada como fonte
-de verdade operacional. A imagem em execução foi confirmada contra o SHA que o
-Rails expõe internamente e contra o digest local do container.
+Durante a reconciliação de 23 de julho de 2026, o workflow versionado tratou a
+VPS como fonte de verdade operacional. A imagem foi selecionada pelo SHA
+imutável, e o deploy validou a revisão, o contrato remoto, o backup, a
+migration e os healthchecks públicos antes de concluir.
 
 O estado não deve ser obtido por `latest`, por uma tag mutável ou por um
 checkout posterior. A referência exata está em
@@ -16,16 +17,15 @@ checkout posterior. A referência exata está em
 | Item | Valor observado |
 | --- | --- |
 | Repositório | `tadashiyukoyama/centraldeatendimentoCHAT` |
-| Commit da aplicação | `c1862b9e18a46490cb1911cd071dc2c33d75b161` |
-| Tag da imagem | `c1862b9e18a46490cb1911cd071dc2c33d75b161` |
-| Digest da imagem | `sha256:11a6475bda29f40f1d1ff876ba00dde32ccdace42e0ba9445731898996715723` |
+| Commit da aplicação | `7fc8a3a64569a9654eadab0632e6678a24f458b6` |
+| Tag da imagem | `7fc8a3a64569a9654eadab0632e6678a24f458b6` |
+| Digest da imagem | `sha256:cb1be78ea355453281c9e67589cffcce620c41cd7222d25d50ff5a5db54f7f18` |
 | Chatwoot | `4.15.1` |
 | Estado do bootstrap | `completed` |
 
-O commit implantado já existe no GitHub e é ancestral de `main`. A `main`
-continua sem reescrita: ela contém correções posteriores de infraestrutura que
-ainda não fazem parte da imagem implantada. A referência do release da VPS é
-o commit acima, não o ponteiro móvel de `main`.
+O commit implantado é o merge squash da PR `#15`, existe no GitHub e é o
+ponteiro atual de `main`. A referência do release da VPS continua sendo o
+commit acima e o digest correspondente, não uma tag móvel.
 
 ## Gate de backup PostgreSQL
 
@@ -37,10 +37,10 @@ checksum SHA-256 antes de iniciar as operações stateful.
 | Item | Valor observado |
 | --- | --- |
 | Diretório | `/opt/central-atendimento/shared/backups/postgres/` |
-| Arquivo | `chatwoot-20260718T174043Z-6e6027945f37461751603b9e80f5d43beb233774.dump` |
-| SHA-256 | `dd04e908cd3a864fdcac176bde568892ccda98e52d5a957849896495e27546c3` |
-| Permissão do arquivo | `root:root`, `0600` |
-| Validação | `pg_restore --list` + `sha256sum -c` |
+| Workflow | `30051773036` |
+| Estado do gate | aprovado antes das operações stateful |
+| Armazenamento | `/opt/central-atendimento/shared/backups/postgres/` |
+| Validação | `pg_dump` custom + `pg_restore --list` + SHA-256, conforme o script versionado |
 
 ## Enterprise self-hosted
 

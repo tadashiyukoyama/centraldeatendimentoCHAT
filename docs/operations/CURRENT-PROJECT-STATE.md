@@ -8,12 +8,13 @@ qualquer valor copiado neste documento.
 
 - Repositório canônico: `tadashiyukoyama/centraldeatendimentoCHAT`.
 - Upstream: `chatwoot/chatwoot`.
-- Base autorizada: `4b195fd4d985377c92d7732040e96913d8c485a6`.
-- Branch da correção: `ops/consolidate-workspace-and-mobile-foundation`.
-- PR: `#1`, mantida como draft.
+- Base operacional atual: `main` em `7fc8a3a64569a9654eadab0632e6678a24f458b6`.
+- Correção Evolution: branch `agent/evolution-webhook-concurrency-sanitization`;
+  PR `#15`, squash merge confirmado.
+- Deploy de produção: workflow `30051773036`, com `headSha` igual ao SHA acima.
 - HEAD e status devem ser obtidos por `git rev-parse HEAD` e `git status`.
-- O HEAD esperado antes desta correção era
-  `c0cbd4bf39eb7f8772c88514b4a3fe1b6aa430de`.
+- O HEAD da branch de implementação antes do merge foi
+  `c2f669641e736f373e62df31941cb982bfa0b247`.
 
 ## Cápsula física portátil
 
@@ -74,21 +75,24 @@ dependências ou build nesta fase.
 
 O runtime de produção foi reconciliado com a VPS e está documentado em
 [`docs/operations/PRODUCTION-RUNTIME-STATE.md`](PRODUCTION-RUNTIME-STATE.md).
-O release implantado é o commit `c1862b9e18a46490cb1911cd071dc2c33d75b161`,
-referenciado no GHCR pela tag imutável do mesmo SHA. O modo Enterprise
-self-hosted está ativo na configuração persistida da VPS.
+O release implantado é o commit `7fc8a3a64569a9654eadab0632e6678a24f458b6`,
+referenciado no GHCR pela tag imutável do mesmo SHA e pelo digest
+`sha256:cb1be78ea355453281c9e67589cffcce620c41cd7222d25d50ff5a5db54f7f18`.
+O modo Enterprise self-hosted permanece ativo na configuração persistida da
+VPS.
 
 ## WhatsApp nativo por QR Code
 
-A integração nativa com Evolution API está em implementação na branch
-`feat/native-evolution-whatsapp-channel`, baseada em
-`b0366a92dbe5c8176a4c03f7cab05d2fd2ce9ae0`. O contrato prevê uma instalação
-multi-instância em domínio HTTPS dedicado, com PostgreSQL e Redis exclusivos da
-Evolution e criação integral da caixa pelo Chatwoot.
+A integração nativa com Evolution API foi incorporada pela PR `#15`, cujo
+commit de merge em `main` é `7fc8a3a64569a9654eadab0632e6678a24f458b6`.
+O contrato prevê uma instalação multi-instância em domínio HTTPS dedicado, com
+PostgreSQL e Redis exclusivos da Evolution e criação integral da caixa pelo
+Chatwoot.
 
-Neste estado documental, a mudança ainda não prova merge, migration, instalação
-da Evolution, alteração da VPS ou deploy. A arquitetura e o futuro gate
-operacional estão em:
+O deploy prova a revisão da aplicação, a migration/healthcheck do Chatwoot e a
+saúde pública do Chatwoot e do ICP, mas não prova conexão de número, criação de
+caixa por QR ou troca de mensagens. A arquitetura e o gate operacional estão
+em:
 
 - [`docs/architecture/NATIVE-EVOLUTION-WHATSAPP.md`](../architecture/NATIVE-EVOLUTION-WHATSAPP.md);
 - [`docs/operations/EVOLUTION-NATIVE-WHATSAPP.md`](EVOLUTION-NATIVE-WHATSAPP.md).
@@ -111,23 +115,22 @@ interpretado como o estado atual da produção.
 
 ## Estado de runtime desta fase
 
-Docker não está instalado e não foi instalado. Não foram executados Compose,
-containers locais, migrations, banco local, healthchecks, acesso a VPS ou
-deploy. A infraestrutura versionada continua sendo contrato, não evidência de
-execução.
+Docker e Ruby/Bundler não estão disponíveis neste Windows workspace. Não foram
+executados containers locais nem testes backend locais. O acesso à VPS, o
+deploy versionado, as migrations e os healthchecks foram executados pelo
+workflow `30051773036`; não houve uso de número real ou cliente no smoke.
 
 ## Diagnóstico frontend
 
-O run remoto anterior da PR, `29563348750`, terminou com `frontend-tests`
-falhando no job `87830390554`. A falha é determinística no mock de
+O run remoto da PR `30045609092` terminou com `frontend-tests` falhando no job
+`89335907435`. A falha é determinística no mock de
 `dashboard/composables/store`: o teste fornece `useMapGetter`, mas
 `useAccount.js` importa `useStore` pela cadeia usada por
 `useChannelConfig.js`. O resultado observado foi 2 testes falhos, 376 de 377
 arquivos aprovados e 3738 de 3740 testes aprovados. `lint-frontend` passou.
 
-O run automático mais recente da PR, `29567520103`, reproduziu exatamente os
-mesmos 2 testes falhos, com 376 de 377 arquivos e 3738 de 3740 testes
-aprovados. O erro terminal continua sendo a ausência de `useStore` no mock de
+Esse run reproduziu 2 testes falhos, com 377 arquivos e 3740 testes no total.
+O erro terminal continua sendo a ausência de `useStore` no mock de
 `dashboard/composables/store`; o sourcemap ausente de
 `@chatwoot/prosemirror-schema` permanece ancillary. Nenhum arquivo de produto
 foi alterado para obter essa evidência.
