@@ -28,6 +28,10 @@ Atualizar no mesmo change set quando houver alteração de arquitetura,
 infraestrutura, banco/migration, env, segurança, integração externa, release,
 rollback, layout da cápsula, orçamento de worktrees ou contrato do Codex.
 
+Para integrações de canais, isso inclui obrigatoriamente endpoints, eventos,
+autenticação, segredo, ciclo de vida, capacidades do provedor, limites do
+transporte e procedimento de smoke/rollback.
+
 Para código sem mudança de comportamento operacional, a atualização documental
 pode ser dispensada, mas o commit deve deixar claro por que não há contrato novo.
 

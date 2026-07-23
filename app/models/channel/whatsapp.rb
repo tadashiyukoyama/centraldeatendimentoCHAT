@@ -23,9 +23,10 @@ class Channel::Whatsapp < ApplicationRecord
 
   self.table_name = 'channel_whatsapp'
   EDITABLE_ATTRS = [:phone_number, :provider, { provider_config: {} }].freeze
+  attr_accessor :evolution_provisioning_validation_id
 
   # default at the moment is 360dialog lets change later.
-  PROVIDERS = %w[default whatsapp_cloud].freeze
+  PROVIDERS = %w[default whatsapp_cloud evolution].freeze
   before_validation :ensure_webhook_verify_token
 
   validates :provider, inclusion: { in: PROVIDERS }
@@ -65,6 +66,8 @@ class Channel::Whatsapp < ApplicationRecord
   def provider_service
     if provider == 'whatsapp_cloud'
       Whatsapp::Providers::WhatsappCloudService.new(whatsapp_channel: self)
+    elsif provider == 'evolution'
+      Whatsapp::Providers::EvolutionService.new(whatsapp_channel: self)
     else
       Whatsapp::Providers::Whatsapp360DialogService.new(whatsapp_channel: self)
     end
@@ -156,7 +159,11 @@ class Channel::Whatsapp < ApplicationRecord
   end
 
   def teardown_webhooks
-    Whatsapp::WebhookTeardownService.new(self).perform
+    if provider == 'evolution'
+      Whatsapp::Evolution::TeardownService.new(self).perform
+    else
+      Whatsapp::WebhookTeardownService.new(self).perform
+    end
   end
 
   def should_auto_setup_webhooks?

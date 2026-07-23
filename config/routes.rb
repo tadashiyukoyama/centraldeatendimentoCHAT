@@ -356,6 +356,12 @@ Rails.application.routes.draw do
 
           namespace :whatsapp do
             resource :authorization, only: [:create]
+            resources :evolution_provisionings, only: [:create, :show, :destroy], param: :public_id do
+              member do
+                post :reconnect
+                post :disconnect
+              end
+            end
           end
 
           resources :webhooks, only: [:index, :create, :update, :destroy]
@@ -641,6 +647,7 @@ Rails.application.routes.draw do
   post 'webhooks/sms/:phone_number', to: 'webhooks/sms#process_payload'
   get 'webhooks/whatsapp/:phone_number', to: 'webhooks/whatsapp#verify'
   post 'webhooks/whatsapp/:phone_number', to: 'webhooks/whatsapp#process_payload'
+  post 'webhooks/evolution/:public_id', to: 'webhooks/evolution#process_payload'
   get 'webhooks/instagram', to: 'webhooks/instagram#verify'
   post 'webhooks/instagram', to: 'webhooks/instagram#events'
   post 'webhooks/tiktok', to: 'webhooks/tiktok#events'

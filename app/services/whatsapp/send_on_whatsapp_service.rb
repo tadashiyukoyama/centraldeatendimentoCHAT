@@ -6,7 +6,15 @@ class Whatsapp::SendOnWhatsappService < Base::SendOnChannelService
   end
 
   def perform_reply
-    should_send_template_message = template_params.present? || !message.conversation.can_reply?
+    if template_params.present? && !channel.provider_service.supports_templates?
+      message.update!(status: :failed, external_error: 'Templates are not supported by this WhatsApp provider')
+      return
+    end
+
+    should_send_template_message =
+      template_params.present? ||
+      (channel.provider_service.session_window_enforced? && !message.conversation.can_reply?)
+
     if should_send_template_message
       send_template_message
     else

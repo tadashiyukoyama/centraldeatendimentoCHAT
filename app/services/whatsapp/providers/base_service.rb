@@ -11,6 +11,14 @@
 class Whatsapp::Providers::BaseService
   pattr_initialize [:whatsapp_channel!]
 
+  def supports_templates?
+    true
+  end
+
+  def session_window_enforced?
+    true
+  end
+
   def send_message(_phone_number, _message)
     raise 'Overwrite this method in child class'
   end

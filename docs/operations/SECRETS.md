@@ -12,6 +12,16 @@
 | Dump e checksum | `private/recovery/database/` | armazenamento privado de backup |
 | Exemplo de configuração | `infra/env/*.example` | não usar diretamente em produção |
 
+## Segredos da Evolution API
+
+- A chave global fica somente no env privado do Chatwoot.
+- Token de instância e segredo de webhook ficam em colunas criptografadas no
+  PostgreSQL do Chatwoot.
+- O `provider_config` guarda apenas a referência ao provisionamento.
+- QR Code, pairing code, `apikey`, segredo JWT e mídia em base64 não podem ser
+  persistidos em logs, artifacts ou memória do Codex.
+- Active Record Encryption é obrigatório antes de habilitar a integração.
+
 ## Regras
 
 1. `.env` real nunca entra no GitHub.

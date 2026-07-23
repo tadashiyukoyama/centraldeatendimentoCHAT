@@ -16,6 +16,37 @@ class WhatsappChannel extends ApiClient {
       inbox_id: inboxId,
     });
   }
+
+  createEvolutionProvisioning(params) {
+    return axios.post(
+      `${this.baseUrl()}/whatsapp/evolution_provisionings`,
+      params
+    );
+  }
+
+  getEvolutionProvisioning(publicId) {
+    return axios.get(
+      `${this.baseUrl()}/whatsapp/evolution_provisionings/${publicId}`
+    );
+  }
+
+  reconnectEvolutionProvisioning(publicId) {
+    return axios.post(
+      `${this.baseUrl()}/whatsapp/evolution_provisionings/${publicId}/reconnect`
+    );
+  }
+
+  disconnectEvolutionProvisioning(publicId) {
+    return axios.post(
+      `${this.baseUrl()}/whatsapp/evolution_provisionings/${publicId}/disconnect`
+    );
+  }
+
+  deleteEvolutionProvisioning(publicId) {
+    return axios.delete(
+      `${this.baseUrl()}/whatsapp/evolution_provisionings/${publicId}`
+    );
+  }
 }
 
 export default new WhatsappChannel();
