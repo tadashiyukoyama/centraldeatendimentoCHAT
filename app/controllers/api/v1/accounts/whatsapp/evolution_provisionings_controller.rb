@@ -29,7 +29,7 @@ class Api::V1::Accounts::Whatsapp::EvolutionProvisioningsController < Api::V1::A
 
   def disconnect
     Whatsapp::Evolution::ApiClient.new(provisioning: @provisioning).logout
-    @provisioning.update!(status: :disconnected, last_seen_at: Time.current)
+    @provisioning.mark_disconnected!
     render json: response_payload(@provisioning, nil)
   rescue Whatsapp::Evolution::ApiClient::Error => e
     render json: { error: e.message }, status: :unprocessable_entity

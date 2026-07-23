@@ -13,8 +13,22 @@ RSpec.describe 'Webhooks::EvolutionController', type: :request do
     {
       event: 'connection.update',
       instance: provisioning.instance_name,
+      date_time: '2026-07-23T17:57:30.958Z',
       apikey: 'must-not-reach-the-job',
-      data: { state: 'connecting' }
+      destination: 'must-not-reach-the-job',
+      server_url: 'must-not-reach-the-job',
+      data: {
+        state: 'connecting',
+        metadata: {
+          token: 'must-not-reach-the-job',
+          safe: 'preserved'
+        }
+      },
+      evolution: {
+        event: 'connection.update',
+        apikey: 'must-not-reach-the-job',
+        data: { qrcode: { base64: 'must-not-reach-the-job' } }
+      }
     }
   end
   let(:claims) do
@@ -42,7 +56,43 @@ RSpec.describe 'Webhooks::EvolutionController', type: :request do
     expect(event.event_type).to eq('connection_update')
     expect(Webhooks::EvolutionEventsJob).to have_received(:perform_later).with(
       event.id,
-      hash_excluding('apikey')
+      {
+        'event' => 'connection.update',
+        'instance' => provisioning.instance_name,
+        'date_time' => '2026-07-23T17:57:30.958Z',
+        'data' => {
+          'state' => 'connecting',
+          'metadata' => { 'safe' => 'preserved' }
+        }
+      }
+    )
+  end
+
+  it 'removes QR material and duplicate provider envelopes before enqueueing' do
+    post "/webhooks/evolution/#{provisioning.public_id}",
+         params: payload.merge(
+           event: 'qrcode.updated',
+           data: {
+             qrcode: {
+               base64: 'data:image/png;base64,sensitive',
+               code: 'sensitive',
+               pairingCode: 'sensitive'
+             }
+           }
+         ),
+         headers: { 'Authorization' => "Bearer #{token}" },
+         as: :json
+
+    expect(response).to have_http_status(:accepted)
+    event = Whatsapp::EvolutionEvent.last
+    expect(Webhooks::EvolutionEventsJob).to have_received(:perform_later).with(
+      event.id,
+      {
+        'event' => 'qrcode.updated',
+        'instance' => provisioning.instance_name,
+        'date_time' => '2026-07-23T17:57:30.958Z',
+        'data' => {}
+      }
     )
   end
 

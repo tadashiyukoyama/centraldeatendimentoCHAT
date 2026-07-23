@@ -1,4 +1,17 @@
 class Webhooks::EvolutionController < ActionController::API
+  ALLOWED_PAYLOAD_KEYS = %w[event instance date_time data].freeze
+  SENSITIVE_PAYLOAD_KEYS = %w[
+    apikey
+    jwt_key
+    token
+    secret
+    base64
+    code
+    pairingcode
+    pairing_code
+    qrcode
+  ].freeze
+
   def process_payload
     provisioning = Whatsapp::EvolutionProvisioning.active.find_by!(public_id: params[:public_id])
     payload = sanitized_payload
@@ -20,13 +33,29 @@ class Webhooks::EvolutionController < ActionController::API
   private
 
   def sanitized_payload
-    payload = params.to_unsafe_h.except('controller', 'action', 'public_id', 'apikey')
-    payload['data'] = sanitize_qr_data(payload['data']) if normalized_event_name(payload['event']) == 'qrcode_updated'
-    payload
+    payload = params.to_unsafe_h.slice(*ALLOWED_PAYLOAD_KEYS)
+    payload['data'] =
+      if normalized_event_name(payload['event']) == 'qrcode_updated'
+        {}
+      else
+        deep_sanitize(payload['data'])
+      end
+    payload.compact
   end
 
-  def sanitize_qr_data(data)
-    data.to_h.except('base64', 'code', 'pairingCode', 'pairing_code', 'qrcode')
+  def deep_sanitize(value)
+    case value
+    when Hash
+      value.each_with_object({}) do |(key, nested_value), sanitized|
+        next if key.to_s.downcase.in?(SENSITIVE_PAYLOAD_KEYS)
+
+        sanitized[key] = deep_sanitize(nested_value)
+      end
+    when Array
+      value.map { |item| deep_sanitize(item) }
+    else
+      value
+    end
   end
 
   def normalized_event_name(value)

@@ -36,7 +36,7 @@ class Whatsapp::Evolution::WebhookProcessor
   def process_event
     case normalized_event_name
     when 'qrcode_updated'
-      provisioning.update!(status: :waiting_qr, last_seen_at: Time.current) unless provisioning.connected?
+      provisioning.mark_waiting_for_qr!
       :processed
     when 'connection_update'
       process_connection_update
@@ -59,9 +59,9 @@ class Whatsapp::Evolution::WebhookProcessor
     when 'open'
       finalize_connected_instance(data)
     when 'connecting'
-      provisioning.update!(status: :connecting, last_seen_at: Time.current)
+      provisioning.mark_connecting!
     when 'close'
-      provisioning.update!(status: :disconnected, last_seen_at: Time.current)
+      provisioning.mark_disconnected!
     else
       return :ignored
     end

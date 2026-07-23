@@ -39,10 +39,19 @@ class Whatsapp::Evolution::ConnectionSyncService
   end
 
   def refresh_qr_code(state)
-    provisioning.update!(
-      status: state == 'connecting' ? :connecting : :waiting_qr,
-      last_seen_at: Time.current
-    )
+    transitioned =
+      if state == 'connecting'
+        provisioning.mark_connecting!
+      else
+        provisioning.mark_waiting_for_qr!
+      end
+    unless transitioned
+      raise Whatsapp::Evolution::ApiClient::Error.new(
+        'Evolution provisioning is not available',
+        code: 'invalid_provisioning_state'
+      )
+    end
+
     connect_response = client.connect
     qr_code = connect_response['base64'] || connect_response.dig('qrcode', 'base64')
     Result.new(

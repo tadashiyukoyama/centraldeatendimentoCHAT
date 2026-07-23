@@ -69,15 +69,19 @@ Usar um número de teste autorizado:
 4. confirmar em teste automatizado que um webhook de QR ou conexão recebido
    antes da resposta de criação não causa `ActiveRecord::StaleObjectError` nem
    regride o estado do provisionamento;
-5. escanear o QR e confirmar a criação de uma única caixa com o número real;
-6. enviar texto para o número e confirmar contato, conversa e mensagem;
-7. responder pelo Chatwoot e confirmar `source_id`, envio e status;
-8. testar uma mídia pequena nos dois sentidos;
-9. confirmar que evento repetido não duplica a mensagem;
-10. desconectar e reconectar sem criar uma segunda caixa;
-11. cancelar uma sessão QR não concluída e comprovar a remoção remota;
-12. procurar `apikey`, `jwt_key`, QR e base64 nos logs sanitizados;
-13. confirmar saúde de Rails, Sidekiq, Chatwoot PostgreSQL/Redis e dos três
+5. confirmar que todos os eventos de QR e conexão terminaram como
+   `processed` ou `ignored`, sem evento `failed` e sem retry pendente;
+6. escanear o QR e confirmar a criação de uma única caixa com o número real;
+7. enviar texto para o número e confirmar contato, conversa e mensagem;
+8. responder pelo Chatwoot e confirmar `source_id`, envio e status;
+9. testar uma mídia pequena nos dois sentidos;
+10. confirmar que evento repetido não duplica a mensagem;
+11. desconectar e reconectar sem criar uma segunda caixa;
+12. cancelar uma sessão QR não concluída e comprovar a remoção remota;
+13. procurar `apikey`, `jwt_key`, `token`, `secret`, `qrcode`, `pairingCode`,
+    `base64` e envelopes `evolution` nos logs, filas e retries;
+14. confirmar que não restou job órfão após cancelar a sessão;
+15. confirmar saúde de Rails, Sidekiq, Chatwoot PostgreSQL/Redis e dos três
     serviços dedicados da Evolution.
 
 O smoke não deve usar número de cliente, campanha, conteúdo pessoal ou caixa
@@ -95,6 +99,8 @@ real sem autorização específica.
 | saída falha             | token da instância e estado da sessão          | não substituir pelo segredo global no canal       |
 | duplicidade             | chave em `whatsapp_evolution_events`           | preservar idempotência; não apagar ledger         |
 | QR falha após criação   | `lock_version`, ordem do webhook e resposta    | preservar estado avançado e compensação remota    |
+| evento QR falha no job  | concorrência, eventos `failed` e retries       | serializar transições; remover payload órfão       |
+| segredo aparece em fila | payload aninhado e argumentos do Active Job    | bloquear deploy; sanitizar antes do enqueue        |
 
 ## Rollback
 
