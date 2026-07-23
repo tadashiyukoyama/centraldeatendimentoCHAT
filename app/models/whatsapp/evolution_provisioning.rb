@@ -1,6 +1,11 @@
 class Whatsapp::EvolutionProvisioning < ApplicationRecord
   self.table_name = 'whatsapp_evolution_provisionings'
 
+  WAITING_QR_SOURCE_STATUSES = %w[provisioning waiting_qr disconnected].freeze
+  CONNECTING_SOURCE_STATUSES = %w[provisioning waiting_qr connecting disconnected].freeze
+  DISCONNECTED_SOURCE_STATUSES = %w[provisioning waiting_qr connecting connected disconnected].freeze
+  FAILURE_SOURCE_STATUSES = %w[provisioning waiting_qr connecting connected disconnected failed].freeze
+
   belongs_to :account
   belongs_to :whatsapp_channel, class_name: 'Channel::Whatsapp', optional: true
   has_many :events,
@@ -45,15 +50,60 @@ class Whatsapp::EvolutionProvisioning < ApplicationRecord
     whatsapp_channel&.inbox
   end
 
+  def mark_waiting_for_qr!(seen_at: Time.current)
+    transition_status!(:waiting_qr, from: WAITING_QR_SOURCE_STATUSES, last_seen_at: seen_at)
+  end
+
+  def mark_connecting!(seen_at: Time.current)
+    transition_status!(:connecting, from: CONNECTING_SOURCE_STATUSES, last_seen_at: seen_at)
+  end
+
+  def mark_disconnected!(seen_at: Time.current)
+    transition_status!(:disconnected, from: DISCONNECTED_SOURCE_STATUSES, last_seen_at: seen_at)
+  end
+
+  def mark_deleting!
+    transition_status!(:deleting, from: self.class.statuses.keys - %w[deleted])
+  end
+
+  def mark_deleted!(seen_at: Time.current)
+    transition_status!(
+      :deleted,
+      from: %w[deleting],
+      whatsapp_channel: nil,
+      last_seen_at: seen_at
+    )
+  end
+
   def record_failure!(code:, message:)
-    update!(
-      status: :failed,
+    transition_status!(
+      :failed,
+      from: FAILURE_SOURCE_STATUSES,
+      last_error_code: code.to_s.first(100),
+      last_error_message: message.to_s.first(500)
+    )
+  end
+
+  def record_teardown_failure!(code:, message:)
+    transition_status!(
+      :failed,
+      from: %w[deleting],
       last_error_code: code.to_s.first(100),
       last_error_message: message.to_s.first(500)
     )
   end
 
   private
+
+  def transition_status!(target_status, from:, **attributes)
+    allowed_statuses = Array(from).map(&:to_s)
+
+    with_lock do
+      next false unless status.in?(allowed_statuses)
+
+      update!(attributes.merge(status: target_status))
+    end
+  end
 
   def teardown_remote_instance
     Whatsapp::Evolution::TeardownService.new(self).perform

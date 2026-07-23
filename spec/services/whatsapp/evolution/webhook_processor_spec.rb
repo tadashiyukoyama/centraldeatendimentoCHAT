@@ -107,6 +107,44 @@ RSpec.describe Whatsapp::Evolution::WebhookProcessor do
     expect(client).to have_received(:fetch_instance)
   end
 
+  it 'serializes QR and connection transitions without regressing an advanced state' do
+    event = provisioning.events.create!(
+      event_key: SecureRandom.hex,
+      event_type: 'qrcode_updated'
+    )
+    payload = {
+      event: 'qrcode.updated',
+      instance: provisioning.instance_name,
+      data: {}
+    }
+    processor = described_class.new(event: event, payload: payload)
+    provisioning.update!(status: :connecting, last_seen_at: Time.current)
+
+    processor.perform
+
+    expect(event.reload).to be_processed
+    expect(provisioning.reload).to be_connecting
+  end
+
+  it 'refreshes a stale provisioning before applying a connection transition' do
+    event = provisioning.events.create!(
+      event_key: SecureRandom.hex,
+      event_type: 'connection_update'
+    )
+    payload = {
+      event: 'connection.update',
+      instance: provisioning.instance_name,
+      data: { state: 'connecting' }
+    }
+    processor = described_class.new(event: event, payload: payload)
+    provisioning.update!(status: :waiting_qr, last_seen_at: Time.current)
+
+    processor.perform
+
+    expect(event.reload).to be_processed
+    expect(provisioning.reload).to be_connecting
+  end
+
   it 'synchronizes the connection before handling an early message event' do
     event = provisioning.events.create!(
       event_key: SecureRandom.hex,

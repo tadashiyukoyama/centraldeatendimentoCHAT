@@ -50,19 +50,13 @@ class Whatsapp::Evolution::ProvisioningService
   end
 
   def advance_to_waiting_for_qr!(provisioning)
-    provisioning.with_lock do
-      next unless provisioning.provisioning?
-
-      provisioning.update!(status: :waiting_qr, last_seen_at: Time.current)
-    end
+    provisioning.mark_waiting_for_qr!
   end
 
   def record_failure_safely(provisioning, error)
     return unless provisioning
 
-    provisioning.with_lock do
-      provisioning.record_failure!(code: error_code(error), message: safe_error_message(error))
-    end
+    provisioning.record_failure!(code: error_code(error), message: safe_error_message(error))
   rescue StandardError => e
     Rails.logger.error(
       "[EVOLUTION] Failure persistence failed provisioning_id=#{provisioning.id} " \

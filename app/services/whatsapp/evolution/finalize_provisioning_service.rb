@@ -8,6 +8,8 @@ class Whatsapp::Evolution::FinalizeProvisioningService
 
   def perform
     provisioning.with_lock do
+      next provisioning.inbox if provisioning.deleting? || provisioning.deleted?
+
       if provisioning.whatsapp_channel_id.present?
         provisioning.update!(connected_attributes)
         next provisioning.inbox

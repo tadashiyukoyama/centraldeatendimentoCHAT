@@ -10,16 +10,17 @@ class Whatsapp::Evolution::TeardownService
 
   def perform
     return true unless provisioning
-    return true if provisioning.deleted?
+    return true if provisioning.reload.deleted?
 
-    provisioning.update!(status: :deleting)
+    return true unless provisioning.mark_deleting!
+
     client = Whatsapp::Evolution::ApiClient.new(provisioning: provisioning)
     ignore_missing_instance { client.logout }
     ignore_missing_instance { client.delete_instance }
-    provisioning.update!(status: :deleted, whatsapp_channel: nil, last_seen_at: Time.current)
+    provisioning.mark_deleted!
     true
   rescue StandardError => e
-    provisioning&.record_failure!(
+    provisioning&.record_teardown_failure!(
       code: e.respond_to?(:code) ? e.code : 'teardown_failed',
       message: e.is_a?(Whatsapp::Evolution::ApiClient::Error) ? e.message : 'Evolution teardown failed'
     )

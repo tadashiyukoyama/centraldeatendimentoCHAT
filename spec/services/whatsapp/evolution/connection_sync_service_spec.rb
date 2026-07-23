@@ -38,4 +38,34 @@ RSpec.describe Whatsapp::Evolution::ConnectionSyncService do
     expect(result.provisioning.inbox).to eq(inbox)
     expect(result.qr_code).to be_nil
   end
+
+  it 'refreshes a stale provisioning before applying the provider state' do
+    stale_provisioning = Whatsapp::EvolutionProvisioning.find(provisioning.id)
+    stale_client = instance_double(Whatsapp::Evolution::ApiClient)
+    allow(Whatsapp::Evolution::ApiClient).to receive(:new)
+      .with(provisioning: stale_provisioning)
+      .and_return(stale_client)
+    allow(stale_client).to receive(:connection_state).and_return('instance' => { 'state' => 'connecting' })
+    allow(stale_client).to receive(:connect).and_return(
+      'base64' => Base64.strict_encode64("\x89PNG\r\n\x1A\ncontent".b)
+    )
+    provisioning.update!(status: :waiting_qr, last_seen_at: Time.current)
+
+    result = described_class.new(provisioning: stale_provisioning).perform
+
+    expect(result.provisioning).to be_connecting
+  end
+
+  it 'does not reopen a provisioning that entered teardown concurrently' do
+    allow(client).to receive(:connection_state).and_return('instance' => { 'state' => 'connecting' })
+    allow(client).to receive(:connect)
+    provisioning.update!(status: :deleting)
+
+    expect do
+      described_class.new(provisioning: provisioning).perform
+    end.to raise_error(Whatsapp::Evolution::ApiClient::Error, 'Evolution provisioning is not available')
+
+    expect(provisioning.reload).to be_deleting
+    expect(client).not_to have_received(:connect)
+  end
 end

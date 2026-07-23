@@ -72,6 +72,13 @@ webhook. Se a criação falhar de forma incerta, a persistência do erro é
 best-effort e não pode impedir a compensação remota nem substituir a exceção
 original.
 
+Todas as mudanças de ciclo de vida, inclusive polling, webhook, desconexão,
+finalização e teardown, passam pelos métodos serializados do modelo. Cada método
+recarrega a linha sob lock e aceita apenas estados de origem explícitos. Eventos
+de QR atrasados não rebaixam `connecting` ou `connected`, falhas operacionais não
+reabrem `deleting` ou `deleted`, e somente o próprio teardown pode converter
+`deleting` em `failed` para permitir uma tentativa posterior controlada.
+
 ## Persistência
 
 `whatsapp_evolution_provisionings` mantém o vínculo operacional:
@@ -103,7 +110,12 @@ O `provider_config` do canal guarda apenas
   instâncias desconhecidas e rejeita assinatura inválida.
 - QR remoto é aceito somente como PNG válido, com limite de tamanho, antes de
   ser entregue ao navegador.
-- `apikey`, QR, pairing code, base64 e segredos são filtrados de logs e filas.
+- O webhook aceita somente `event`, `instance`, `date_time` e `data`; envelopes
+  duplicados do provedor e chaves não reconhecidas são descartados.
+- `apikey`, token, segredo, QR, pairing code, base64 e equivalentes aninhados
+  são removidos recursivamente antes de autenticação, idempotência e enqueue.
+- Argumentos do job de webhook não são escritos nos logs. Eventos removidos
+  durante teardown são descartados sem retry e sem reter o payload no Sidekiq.
 - TLS é obrigatório em produção, com verificação normal da cadeia e hostname.
 - HTTP Basic Authentication no ingresso Evolution é opcional e, quando usada,
   exige usuário e senha juntos.
