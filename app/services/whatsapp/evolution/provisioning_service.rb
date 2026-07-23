@@ -63,10 +63,10 @@ class Whatsapp::Evolution::ProvisioningService
     provisioning.with_lock do
       provisioning.record_failure!(code: error_code(error), message: safe_error_message(error))
     end
-  rescue StandardError => persistence_error
+  rescue StandardError => e
     Rails.logger.error(
       "[EVOLUTION] Failure persistence failed provisioning_id=#{provisioning.id} " \
-      "account_id=#{provisioning.account_id} error_class=#{persistence_error.class.name}"
+      "account_id=#{provisioning.account_id} error_class=#{e.class.name}"
     )
   end
 
