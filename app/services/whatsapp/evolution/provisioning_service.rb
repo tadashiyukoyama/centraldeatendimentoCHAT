@@ -12,13 +12,13 @@ class Whatsapp::Evolution::ProvisioningService
     remote_cleanup_needed = true
 
     response = Whatsapp::Evolution::ApiClient.new(provisioning: provisioning).create_instance
-    provisioning.update!(status: :waiting_qr, last_seen_at: Time.current)
+    advance_to_waiting_for_qr!(provisioning)
     Result.new(
       provisioning: provisioning,
       qr_code: Whatsapp::Evolution::QrCode.normalize(response.dig('qrcode', 'base64'))
     )
   rescue StandardError => e
-    provisioning&.record_failure!(code: error_code(e), message: safe_error_message(e))
+    record_failure_safely(provisioning, e)
     compensate_remote_instance(provisioning) if remote_cleanup_needed
     raise
   end
@@ -47,6 +47,27 @@ class Whatsapp::Evolution::ProvisioningService
       status: :provisioning,
       expires_at: 15.minutes.from_now
     }
+  end
+
+  def advance_to_waiting_for_qr!(provisioning)
+    provisioning.with_lock do
+      next unless provisioning.provisioning?
+
+      provisioning.update!(status: :waiting_qr, last_seen_at: Time.current)
+    end
+  end
+
+  def record_failure_safely(provisioning, error)
+    return unless provisioning
+
+    provisioning.with_lock do
+      provisioning.record_failure!(code: error_code(error), message: safe_error_message(error))
+    end
+  rescue StandardError => persistence_error
+    Rails.logger.error(
+      "[EVOLUTION] Failure persistence failed provisioning_id=#{provisioning.id} " \
+      "account_id=#{provisioning.account_id} error_class=#{persistence_error.class.name}"
+    )
   end
 
   def compensate_remote_instance(provisioning)
