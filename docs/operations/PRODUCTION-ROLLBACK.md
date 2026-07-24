@@ -5,12 +5,20 @@ Rollback is image-only for the application image. It restores only a previously 
 ## Procedure
 
 1. Identify a previously successful full-SHA image from the deployment record. The first deployment cannot use this procedure because it has no previous image.
-2. Supply exactly four arguments to the restricted rollback command: image SHA, Chatwoot domain, ICP panel domain and the `PROD_EXPECTED_IP` IPv4 value from the production environment.
-3. Before changing Rails or Sidekiq, validate the expected IPv4, public DNS, strict HTTPS, ICP panel, ICP container, private network and Compose configuration.
-4. Pull the previous immutable image from GHCR and log out on success or failure.
-5. Recreate only Chatwoot Rails and Sidekiq using the existing database, Redis and storage paths.
-6. Verify internal `/health`, the public Chatwoot domain, the ICP panel and the ICP container.
-7. Keep PostgreSQL, Redis, storage, `icontainer-network`, OpenResty and the ICP panel untouched.
+2. Run the manual `Roll back production image through ICP` workflow from
+   `main`, supplying the previous full SHA and the exact confirmation
+   `ROLLBACK`.
+3. The workflow validates that the target is an ancestor of `main`, that its
+   immutable image exists in GHCR, and that the pinned SSH key, remote
+   production contract, DNS, TLS and ICP preflights pass.
+4. The restricted gateway then supplies exactly four arguments to the rollback
+   command: image SHA, Chatwoot domain, ICP panel domain and the
+   `PROD_EXPECTED_IP` IPv4 value from the production environment.
+5. Before changing Rails or Sidekiq, validate the expected IPv4, public DNS, strict HTTPS, ICP panel, ICP container, private network and Compose configuration.
+6. Pull the previous immutable image from GHCR and log out on success or failure.
+7. Recreate only Chatwoot Rails and Sidekiq using the existing database, Redis and storage paths.
+8. Verify internal `/health`, the public Chatwoot domain, the ICP panel and the ICP container.
+9. Keep PostgreSQL, Redis, storage, `icontainer-network`, OpenResty and the ICP panel untouched.
 
 ## Limits
 
