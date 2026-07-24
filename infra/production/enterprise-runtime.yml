@@ -4,15 +4,15 @@ kind: production-runtime-state
 # This file contains no credentials. It records the state observed on the VPS
 # and the non-secret Enterprise settings required to reproduce that state.
 source_of_truth: vps
-observed_at_utc: '2026-07-18T17:40:43Z'
+observed_at_utc: '2026-07-24T17:15:04Z'
 
 repository: tadashiyukoyama/centraldeatendimentoCHAT
 
 application:
   image_repository: ghcr.io/tadashiyukoyama/centraldeatendimentochat
-  image_tag: c1862b9e18a46490cb1911cd071dc2c33d75b161
-  source_commit: c1862b9e18a46490cb1911cd071dc2c33d75b161
-  image_digest: sha256:11a6475bda29f40f1d1ff876ba00dde32ccdace42e0ba9445731898996715723
+  image_tag: 882b6fb14f653b7b858a230bb41e96da2407b255
+  source_commit: 882b6fb14f653b7b858a230bb41e96da2407b255
+  image_digest: sha256:476716699e6d61e1af5e3ae855d91dab8497cc2ffebea4e43dd7e200d3412857
   chatwoot_version: 4.15.1
 
 enterprise:
@@ -37,12 +37,13 @@ upstream_isolation:
 
 runtime:
   compose_file_sha256: cb8064bc9a0da7209f0955662f3eb6808d0c7f3227264ef16189c6329670f84a
-  active_image_marker: ghcr.io/tadashiyukoyama/centraldeatendimentochat:c1862b9e18a46490cb1911cd071dc2c33d75b161
+  active_image_marker: ghcr.io/tadashiyukoyama/centraldeatendimentochat:882b6fb14f653b7b858a230bb41e96da2407b255
   bootstrap_state: completed
 
 backup_gate:
   directory: /opt/central-atendimento/shared/backups/postgres
   directory_mode: '0700'
-  last_backup_file: chatwoot-20260718T174043Z-6e6027945f37461751603b9e80f5d43beb233774.dump
-  last_backup_sha256: dd04e908cd3a864fdcac176bde568892ccda98e52d5a957849896495e27546c3
+  last_backup_workflow: '30112148256'
+  last_backup_source_image: 7fc8a3a64569a9654eadab0632e6678a24f458b6
+  last_backup_record: remote-root-owned-latest-marker
   last_backup_validation: pg_restore-list-and-sha256sum

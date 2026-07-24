@@ -8,10 +8,11 @@ qualquer valor copiado neste documento.
 
 - Repositório canônico: `tadashiyukoyama/centraldeatendimentoCHAT`.
 - Upstream: `chatwoot/chatwoot`.
-- Base operacional atual: `main` em `7fc8a3a64569a9654eadab0632e6678a24f458b6`.
+- Base operacional atual: `main`; release da aplicação em
+  `882b6fb14f653b7b858a230bb41e96da2407b255`.
 - Correção Evolution: branch `agent/evolution-webhook-concurrency-sanitization`;
   PR `#15`, squash merge confirmado.
-- Deploy de produção: workflow `30051773036`, com `headSha` igual ao SHA acima.
+- Deploy de produção: workflow `30112148256`, com `headSha` igual ao SHA acima.
 - HEAD e status devem ser obtidos por `git rev-parse HEAD` e `git status`.
 - O HEAD da branch de implementação antes do merge foi
   `c2f669641e736f373e62df31941cb982bfa0b247`.
@@ -75,9 +76,9 @@ dependências ou build nesta fase.
 
 O runtime de produção foi reconciliado com a VPS e está documentado em
 [`docs/operations/PRODUCTION-RUNTIME-STATE.md`](PRODUCTION-RUNTIME-STATE.md).
-O release implantado é o commit `7fc8a3a64569a9654eadab0632e6678a24f458b6`,
+O release implantado é o commit `882b6fb14f653b7b858a230bb41e96da2407b255`,
 referenciado no GHCR pela tag imutável do mesmo SHA e pelo digest
-`sha256:cb1be78ea355453281c9e67589cffcce620c41cd7222d25d50ff5a5db54f7f18`.
+`sha256:476716699e6d61e1af5e3ae855d91dab8497cc2ffebea4e43dd7e200d3412857`.
 O modo Enterprise self-hosted permanece ativo na configuração persistida da
 VPS.
 
@@ -102,9 +103,10 @@ em:
 A frente `agent/strict-team-conversation-privacy` implementa uma feature
 opt-in por conta para transformar a equipe atribuída em fronteira de
 autorização, mesmo quando vários setores usam o mesmo número e a mesma caixa.
-O trabalho está publicado na branch remota de mesmo nome e não foi promovido
-para `main` nem para produção. O primeiro SHA remoto é
-`74c9f609c1b28603c2512376ba43489321f2b9be`.
+O código foi promovido por fast-forward para `main` e implantado em produção
+no SHA `882b6fb14f653b7b858a230bb41e96da2407b255`. A feature permanece
+desativada por padrão. A criação dos usuários sintéticos, a ativação na conta
+escolhida e o smoke controlado ainda não foram executados.
 
 A regra, as superfícies protegidas, os pré-requisitos, a ativação e o rollback
 estão em
@@ -117,8 +119,9 @@ interpretado como o estado atual da produção.
 
 Docker e Ruby/Bundler não estão disponíveis neste Windows workspace. Não foram
 executados containers locais nem testes backend locais. O acesso à VPS, o
-deploy versionado, as migrations e os healthchecks foram executados pelo
-workflow `30051773036`; não houve uso de número real ou cliente no smoke.
+backup, o deploy versionado, a preparação do banco e os healthchecks foram
+executados pelo workflow `30112148256`; não houve uso de número real ou
+cliente no smoke.
 
 ## Diagnóstico frontend
 
@@ -153,9 +156,10 @@ O commit corretivo
 `59f6fefac7bde542ca67516b25bb1e1b7d220287` foi validado pelo run
 [`30108403737`](https://github.com/tadashiyukoyama/centraldeatendimentoCHAT/actions/runs/30108403737):
 os 19 jobs passaram, incluindo os 16 shards do backend, RuboCop, ESLint e a
-suíte frontend completa com 378 arquivos e 3.742 testes aprovados. Esse gate
-prova o estado da branch, mas não equivale a merge, ativação da feature, deploy
-ou teste de aceitação com agentes reais.
+suíte frontend completa com 378 arquivos e 3.742 testes aprovados. O mesmo
+código de produto foi rebased sobre `main`, promovido e implantado; esse gate
+continua não equivalendo à ativação da feature nem ao teste de aceitação com
+agentes reais.
 
 ## Evidência operacional
 

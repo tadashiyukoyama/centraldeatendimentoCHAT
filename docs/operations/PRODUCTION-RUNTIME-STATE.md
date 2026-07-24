@@ -5,7 +5,7 @@ artefato atualmente em execução. Ele não contém credenciais.
 
 ## Fonte de verdade atual
 
-Durante a reconciliação de 23 de julho de 2026, o workflow versionado tratou a
+Durante a reconciliação de 24 de julho de 2026, o workflow versionado tratou a
 VPS como fonte de verdade operacional. A imagem foi selecionada pelo SHA
 imutável, e o deploy validou a revisão, o contrato remoto, o backup, a
 migration e os healthchecks públicos antes de concluir.
@@ -14,18 +14,18 @@ O estado não deve ser obtido por `latest`, por uma tag mutável ou por um
 checkout posterior. A referência exata está em
 [`infra/production/enterprise-runtime.yml`](../../infra/production/enterprise-runtime.yml).
 
-| Item | Valor observado |
-| --- | --- |
-| Repositório | `tadashiyukoyama/centraldeatendimentoCHAT` |
-| Commit da aplicação | `7fc8a3a64569a9654eadab0632e6678a24f458b6` |
-| Tag da imagem | `7fc8a3a64569a9654eadab0632e6678a24f458b6` |
-| Digest da imagem | `sha256:cb1be78ea355453281c9e67589cffcce620c41cd7222d25d50ff5a5db54f7f18` |
-| Chatwoot | `4.15.1` |
-| Estado do bootstrap | `completed` |
+| Item                | Valor observado                                                           |
+| ------------------- | ------------------------------------------------------------------------- |
+| Repositório         | `tadashiyukoyama/centraldeatendimentoCHAT`                                |
+| Commit da aplicação | `882b6fb14f653b7b858a230bb41e96da2407b255`                                |
+| Tag da imagem       | `882b6fb14f653b7b858a230bb41e96da2407b255`                                |
+| Digest da imagem    | `sha256:476716699e6d61e1af5e3ae855d91dab8497cc2ffebea4e43dd7e200d3412857` |
+| Chatwoot            | `4.15.1`                                                                  |
+| Estado do bootstrap | `completed`                                                               |
 
-O commit implantado é o merge squash da PR `#15`, existe no GitHub e é o
-ponteiro atual de `main`. A referência do release da VPS continua sendo o
-commit acima e o digest correspondente, não uma tag móvel.
+O commit implantado é o fast-forward da release de privacidade rígida, existe
+no GitHub e foi o ponteiro de `main` no momento do deploy. A referência do
+release da VPS é o commit acima e o digest correspondente, não uma tag móvel.
 
 ## Gate de backup PostgreSQL
 
@@ -34,13 +34,13 @@ modo `0700`. O deploy criou e validou um dump PostgreSQL em formato custom do
 estado anterior, executou `pg_restore --list` lendo pelo stdin e confirmou o
 checksum SHA-256 antes de iniciar as operações stateful.
 
-| Item | Valor observado |
-| --- | --- |
-| Diretório | `/opt/central-atendimento/shared/backups/postgres/` |
-| Workflow | `30051773036` |
-| Estado do gate | aprovado antes das operações stateful |
-| Armazenamento | `/opt/central-atendimento/shared/backups/postgres/` |
-| Validação | `pg_dump` custom + `pg_restore --list` + SHA-256, conforme o script versionado |
+| Item           | Valor observado                                                                |
+| -------------- | ------------------------------------------------------------------------------ |
+| Diretório      | `/opt/central-atendimento/shared/backups/postgres/`                            |
+| Workflow       | `30112148256`                                                                  |
+| Estado do gate | aprovado antes das operações stateful                                          |
+| Armazenamento  | `/opt/central-atendimento/shared/backups/postgres/`                            |
+| Validação      | `pg_dump` custom + `pg_restore --list` + SHA-256, conforme o script versionado |
 
 ## Enterprise self-hosted
 
@@ -70,6 +70,19 @@ conversation_required_attributes
 Essa configuração é runtime e pode mudar independentemente da imagem. Por
 isso, qualquer nova VPS ou restauração deve comparar o banco com o manifesto
 versionado antes de ser considerada reconciliada.
+
+O código de `strict_team_conversation_visibility` está presente na imagem, mas
+a feature permanece desativada por padrão. A criação dos usuários sintéticos,
+a ativação na conta escolhida e o smoke de dois setores são gates posteriores
+ao deploy e não são comprovados por este documento.
+
+## Rollback preparado
+
+O workflow manual `Roll back production image through ICP` está versionado em
+`main`. O alvo anterior imutável é
+`7fc8a3a64569a9654eadab0632e6678a24f458b6`; a release não contém migrations,
+portanto o rollback de imagem não encontra divergência de schema introduzida
+por esta frente.
 
 ## Isolamento do upstream
 
