@@ -144,8 +144,15 @@ SHA `74c9f609c1b28603c2512376ba43489321f2b9be`, no run
 Doze dos 19 jobs passaram. As falhas expuseram regressões de compatibilidade
 com a feature desativada em busca, ações em lote e integrações, o contrato do
 novo bit de feature flag, métricas do RuboCop e o mock frontend já
-diagnosticado. A branch contém a correção consolidada; um novo run é necessário
-antes de declarar o gate aprovado.
+diagnosticado.
+
+O commit corretivo
+`59f6fefac7bde542ca67516b25bb1e1b7d220287` foi validado pelo run
+[`30108403737`](https://github.com/tadashiyukoyama/centraldeatendimentoCHAT/actions/runs/30108403737):
+os 19 jobs passaram, incluindo os 16 shards do backend, RuboCop, ESLint e a
+suíte frontend completa com 378 arquivos e 3.742 testes aprovados. Esse gate
+prova o estado da branch, mas não equivale a merge, ativação da feature, deploy
+ou teste de aceitação com agentes reais.
 
 ## Evidência operacional
 
