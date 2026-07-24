@@ -20,8 +20,20 @@ class RoomChannel < ApplicationCable::Channel
     return if @current_account.blank?
 
     data = { account_id: @current_account.id, users: ::OnlineStatusTracker.get_available_users(@current_account.id) }
-    data[:contacts] = ::OnlineStatusTracker.get_available_contacts(@current_account.id) if @current_user.is_a? User
+    data[:contacts] = visible_contact_presence if @current_user.is_a? User
     ActionCable.server.broadcast(pubsub_token, { event: 'presence.update', data: data })
+  end
+
+  def visible_contact_presence
+    contacts = ::OnlineStatusTracker.get_available_contacts(@current_account.id)
+    return contacts unless @current_account.feature_enabled?('strict_team_conversation_visibility')
+
+    visible_ids = Contacts::PermissionFilterService.new(
+      @current_account.contacts.where(id: contacts.keys),
+      @current_user,
+      @current_account
+    ).perform.pluck(:id).map(&:to_s)
+    contacts.slice(*visible_ids)
   end
 
   def ensure_stream

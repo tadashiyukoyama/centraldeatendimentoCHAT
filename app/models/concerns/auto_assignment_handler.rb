@@ -13,6 +13,7 @@ module AutoAssignmentHandler
     # bypassing the open-only condition so the AssignmentJob can redistribute capacity.
     return unless conversation_status_changed_to_open? || conversation_status_changed_to_resolved_or_snoozed?
     return unless should_run_auto_assignment?
+    return if strict_team_visibility_without_team?
 
     if inbox.auto_assignment_v2_enabled?
       # Coalesces bursts of triggers per inbox. Fine if the job runs even when the
@@ -45,5 +46,9 @@ module AutoAssignmentHandler
 
     # run only if assignee is blank or doesn't have access to inbox
     assignee.blank? || inbox.members.exclude?(assignee)
+  end
+
+  def strict_team_visibility_without_team?
+    account.feature_enabled?('strict_team_conversation_visibility') && team_id.blank?
   end
 end

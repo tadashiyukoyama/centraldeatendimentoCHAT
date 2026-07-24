@@ -34,6 +34,7 @@ class AutoAssignment::AssignmentService
 
   def unassigned_conversations(limit)
     scope = inbox.conversations.unassigned.open
+    scope = scope.where.not(team_id: nil) if inbox.account.feature_enabled?('strict_team_conversation_visibility')
 
     # Skip stale backlog with no activity beyond the age threshold
     policy = inbox.assignment_policy

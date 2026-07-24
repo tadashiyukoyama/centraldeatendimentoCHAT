@@ -4,6 +4,7 @@ class Notification::PushNotificationService
   pattr_initialize [:notification!]
 
   def perform
+    return unless conversation_accessible?
     return unless user_subscribed_to_notification?
 
     notification_subscriptions.each do |subscription|
@@ -28,6 +29,17 @@ class Notification::PushNotificationService
 
   def conversation
     @conversation ||= notification.conversation
+  end
+
+  def conversation_accessible?
+    return true unless notification.account.feature_enabled?('strict_team_conversation_visibility')
+    return false if conversation.blank?
+
+    Conversations::PermissionFilterService.new(
+      notification.account.conversations.where(id: conversation.id),
+      notification.user,
+      notification.account
+    ).perform.exists?
   end
 
   def push_message

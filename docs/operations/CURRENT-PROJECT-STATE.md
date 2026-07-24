@@ -97,6 +97,18 @@ em:
 - [`docs/architecture/NATIVE-EVOLUTION-WHATSAPP.md`](../architecture/NATIVE-EVOLUTION-WHATSAPP.md);
 - [`docs/operations/EVOLUTION-NATIVE-WHATSAPP.md`](EVOLUTION-NATIVE-WHATSAPP.md).
 
+## Privacidade rígida por setor
+
+A frente `agent/strict-team-conversation-privacy` implementa uma feature
+opt-in por conta para transformar a equipe atribuída em fronteira de
+autorização, mesmo quando vários setores usam o mesmo número e a mesma caixa.
+O trabalho está somente na branch local e não foi promovido para `main` nem
+para produção.
+
+A regra, as superfícies protegidas, os pré-requisitos, a ativação e o rollback
+estão em
+[`docs/architecture/STRICT-TEAM-CONVERSATION-VISIBILITY.md`](../architecture/STRICT-TEAM-CONVERSATION-VISIBILITY.md).
+
 O bloco histórico abaixo descreve a fase de fundação anterior e não deve ser
 interpretado como o estado atual da produção.
 

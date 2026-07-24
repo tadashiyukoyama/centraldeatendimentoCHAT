@@ -10,14 +10,25 @@ module AssignmentHandler
   private
 
   def ensure_assignee_is_from_team
-    return unless team_id_changed?
+    return unless team_id_changed? || strict_team_assignee_changed?
 
     validate_current_assignee_team
-    self.assignee ||= find_assignee_from_team
+    self.assignee ||= find_assignee_from_team if team_id_changed?
+  end
+
+  def strict_team_assignee_changed?
+    strict_team_visibility? && assignee_id_changed? && assignee_id.present?
   end
 
   def validate_current_assignee_team
+    return if strict_team_visibility? && account.administrators.exists?(id: assignee_id)
+
     self.assignee_id = nil if team&.members&.exclude?(assignee)
+    self.assignee_id = nil if strict_team_visibility? && inbox.members.exclude?(assignee)
+  end
+
+  def strict_team_visibility?
+    account.feature_enabled?('strict_team_conversation_visibility')
   end
 
   def find_assignee_from_team

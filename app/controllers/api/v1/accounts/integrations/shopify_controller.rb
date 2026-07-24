@@ -45,7 +45,8 @@ class Api::V1::Accounts::Integrations::ShopifyController < Api::V1::Accounts::Ba
   end
 
   def contact
-    @contact ||= Current.account.contacts.find_by(id: params[:contact_id])
+    contacts = Contacts::PermissionFilterService.new(Current.account.contacts, Current.user, Current.account).perform
+    @contact ||= contacts.find_by(id: params[:contact_id])
   end
 
   def fetch_hook

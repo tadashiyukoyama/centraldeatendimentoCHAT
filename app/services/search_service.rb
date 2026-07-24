@@ -31,9 +31,9 @@ class SearchService
   end
 
   def filter_conversations
-    conversations_query = current_account.conversations.where(inbox_id: accessable_inbox_ids)
-                                         .joins('INNER JOIN contacts ON conversations.contact_id = contacts.id')
-                                         .where("cast(conversations.display_id as text) ILIKE :search OR contacts.name ILIKE :search OR contacts.email
+    conversations_query = permission_filtered_conversations
+                          .joins('INNER JOIN contacts ON conversations.contact_id = contacts.id')
+                          .where("cast(conversations.display_id as text) ILIKE :search OR contacts.name ILIKE :search OR contacts.email
                             ILIKE :search OR contacts.phone_number ILIKE :search OR contacts.identifier ILIKE :search", search: "%#{search_query}%")
 
     if current_account.feature_enabled?('advanced_search')
@@ -106,8 +106,7 @@ class SearchService
 
   def message_base_query
     query = current_account.messages.where('created_at >= ?', 3.months.ago)
-    query = query.where(inbox_id: accessable_inbox_ids) unless should_skip_inbox_filtering?
-    query
+    query.where(conversation_id: permission_filtered_conversations.select(:id))
   end
 
   def apply_message_filters(query)
@@ -166,6 +165,7 @@ class SearchService
       "name ILIKE :search OR email ILIKE :search OR phone_number
       ILIKE :search OR identifier ILIKE :search", search: "%#{search_query}%"
     )
+    contacts_query = Contacts::PermissionFilterService.new(contacts_query, current_user, current_account).perform
 
     contacts_query = apply_time_filter(contacts_query, 'last_activity_at') if current_account.feature_enabled?('advanced_search')
 
@@ -202,6 +202,14 @@ class SearchService
     requested_time = Time.zone.at(until_param.to_i)
 
     [requested_time, max_future].min
+  end
+
+  def permission_filtered_conversations
+    @permission_filtered_conversations ||= Conversations::PermissionFilterService.new(
+      current_account.conversations,
+      current_user,
+      current_account
+    ).perform
   end
 end
 

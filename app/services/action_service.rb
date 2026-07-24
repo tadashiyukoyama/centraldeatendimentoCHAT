@@ -103,7 +103,15 @@ class ActionService
     member_ids = @conversation.inbox.members.pluck(:user_id)
     assignable_agent_ids = member_ids + @account.administrators.ids
 
-    assignable_agent_ids.include?(agent_ids[0])
+    return false unless assignable_agent_ids.include?(agent_ids[0])
+    return true unless strict_team_assignment?
+    return true if @account.administrators.exists?(id: agent_ids[0])
+
+    @conversation.team.members.exists?(id: agent_ids[0])
+  end
+
+  def strict_team_assignment?
+    @conversation.team_id.present? && @account.feature_enabled?('strict_team_conversation_visibility')
   end
 
   def team_belongs_to_account?(team_ids)

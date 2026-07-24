@@ -34,5 +34,10 @@ class Api::V1::Accounts::Conversations::DirectUploadsController < ActiveStorage:
 
   def conversation
     @conversation ||= Current.account.conversations.find_by(display_id: params[:conversation_id])
+    return if @conversation.blank?
+
+    policy_user = Current.user || current_user || @resource
+    policy_context = { user: policy_user, account: Current.account, account_user: Current.account_user }
+    @conversation = nil unless ConversationPolicy.new(policy_context, @conversation).show?
   end
 end

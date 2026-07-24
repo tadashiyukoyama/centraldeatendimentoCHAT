@@ -203,7 +203,8 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
   def contact
     return if params[:contact_id].blank?
 
-    @contact = Current.account.contacts.find(params[:contact_id])
+    contacts = Contacts::PermissionFilterService.new(Current.account.contacts, Current.user, Current.account).perform
+    @contact = contacts.find(params[:contact_id])
   end
 
   def contact_inbox

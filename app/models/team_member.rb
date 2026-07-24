@@ -19,12 +19,19 @@ class TeamMember < ApplicationRecord
   belongs_to :team
   validates :user_id, uniqueness: { scope: :team_id }
 
-  after_commit :invalidate_filtered_unread_count_visibility, on: [:create, :destroy]
+  after_commit :invalidate_filtered_unread_count_visibility, :refresh_strict_team_visibility, on: [:create, :destroy]
 
   private
 
   def invalidate_filtered_unread_count_visibility
     ::Conversations::UnreadCounts::FilteredCountInvalidator.new(team&.account).user_visibility_changed!(user_id: user_id)
+  end
+
+  def refresh_strict_team_visibility
+    account = team&.account
+    return unless account&.feature_enabled?('strict_team_conversation_visibility')
+
+    ActionCableBroadcastJob.perform_later([user.pubsub_token], 'page:reload', { account_id: account.id })
   end
 end
 

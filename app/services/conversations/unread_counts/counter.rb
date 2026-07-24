@@ -14,6 +14,7 @@ class Conversations::UnreadCounts::Counter
   end
 
   def perform
+    return strict_visibility_counts if account.feature_enabled?('strict_team_conversation_visibility')
     return with_filtered_counts(empty_counts, build: false) if permission_mode == :none
 
     ensure_base_cache!
@@ -30,6 +31,44 @@ class Conversations::UnreadCounts::Counter
   end
 
   private
+
+  def strict_visibility_counts
+    conversations = Conversation.where(id: strict_unread_conversations.select(:id))
+    label_ids = account.labels.where(show_on_sidebar: true).select(:id)
+
+    {
+      all_count: conversations.count,
+      inboxes: stringify_positive_counts(conversations.group(:inbox_id).count),
+      labels: stringify_positive_counts(conversations.joins(:taggings).where(taggings: { tag_id: label_ids }).group('taggings.tag_id').count),
+      teams: stringify_positive_counts(conversations.where.not(team_id: nil).group(:team_id).count)
+    }.then { |counts| with_filtered_counts(counts) }
+  end
+
+  def strict_unread_conversations
+    Conversations::PermissionFilterService.new(
+      account.conversations
+             .joins(:messages)
+             .merge(Message.incoming.reorder(nil))
+             .where(messages: { account_id: account.id })
+             .where(strict_unread_since_last_seen_condition)
+             .distinct,
+      user,
+      account
+    ).perform
+  end
+
+  def strict_unread_since_last_seen_condition
+    conversations = Conversation.arel_table
+    messages = Message.arel_table
+
+    conversations[:agent_last_seen_at].eq(nil).or(messages[:created_at].gt(conversations[:agent_last_seen_at]))
+  end
+
+  def stringify_positive_counts(counts)
+    counts.each_with_object({}) do |(id, count), result|
+      result[id.to_s] = count if count.positive?
+    end
+  end
 
   def with_filtered_counts(counts, build: true)
     return counts unless account.feature_enabled?(::Conversations::UnreadCounts::FilteredCounter::FEATURE_FLAG)

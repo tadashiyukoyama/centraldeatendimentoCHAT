@@ -14,7 +14,10 @@ class ConversationPolicy < ApplicationPolicy
   private
 
   def agent_can_view_conversation?
-    inbox_access? || team_access?
+    return inbox_access? || team_access? unless strict_team_visibility?
+    return false unless inbox_access?
+
+    team_access? || assigned_to_user? || participant?
   end
 
   def administrator?
@@ -41,6 +44,10 @@ class ConversationPolicy < ApplicationPolicy
 
   def participant?
     record.conversation_participants.exists?(user_id: user.id)
+  end
+
+  def strict_team_visibility?
+    account&.feature_enabled?('strict_team_conversation_visibility')
   end
 end
 

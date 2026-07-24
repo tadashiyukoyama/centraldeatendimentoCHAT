@@ -40,7 +40,9 @@ class Contacts::BulkActionService
   end
 
   def ids
-    Array(@params[:ids]).compact
+    requested_ids = Array(@params[:ids]).compact
+    contacts = Contacts::PermissionFilterService.new(@account.contacts.where(id: requested_ids), @user, @account).perform
+    contacts.pluck(:id)
   end
 
   def labels_to_add

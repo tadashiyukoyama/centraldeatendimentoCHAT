@@ -30,7 +30,18 @@ class Conversations::AssignmentService
   end
 
   def assignee
-    @assignee ||= conversation.account.users.find_by(id: assignee_id)
+    @assignee ||= if strict_assignment?
+                    strict_assignee
+                  else
+                    conversation.account.users.find_by(id: assignee_id)
+                  end
+  end
+
+  def strict_assignee
+    administrator = conversation.account.administrators.find_by(id: assignee_id)
+    return administrator if administrator.present?
+
+    eligible_assignees.find_by!(id: assignee_id)
   end
 
   def agent_bot
@@ -39,5 +50,16 @@ class Conversations::AssignmentService
 
   def agent_bot_assignment?
     assignee_type.to_s == 'AgentBot'
+  end
+
+  def eligible_assignees
+    inbox_members = conversation.inbox.members
+    return inbox_members if conversation.team_id.blank?
+
+    conversation.team.members.merge(inbox_members)
+  end
+
+  def strict_assignment?
+    assignee_id.present? && conversation.account.feature_enabled?('strict_team_conversation_visibility')
   end
 end

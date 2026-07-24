@@ -18,6 +18,7 @@ module Enterprise::SearchService
   def build_where_conditions
     conditions = { account_id: current_account.id }
     conditions[:inbox_id] = accessable_inbox_ids unless should_skip_inbox_filtering?
+    conditions[:conversation_id] = permission_filtered_conversation_ids if strict_team_visibility?
     conditions
   end
 
@@ -84,5 +85,13 @@ module Enterprise::SearchService
     return true if should_skip_inbox_filtering?
 
     accessable_inbox_ids.include?(inbox_id)
+  end
+
+  def strict_team_visibility?
+    current_account.feature_enabled?('strict_team_conversation_visibility')
+  end
+
+  def permission_filtered_conversation_ids
+    permission_filtered_conversations.pluck(:id).presence || [-1]
   end
 end

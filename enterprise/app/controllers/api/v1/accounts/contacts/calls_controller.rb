@@ -25,7 +25,8 @@ class Api::V1::Accounts::Contacts::CallsController < Api::V1::Accounts::BaseCont
   private
 
   def contact
-    @contact ||= Current.account.contacts.find(params[:id])
+    contacts = Contacts::PermissionFilterService.new(Current.account.contacts, Current.user, Current.account).perform
+    @contact ||= contacts.find(params[:id])
   end
 
   def voice_inbox
@@ -48,7 +49,8 @@ class Api::V1::Accounts::Contacts::CallsController < Api::V1::Accounts::BaseCont
   def existing_conversation
     return nil if params[:conversation_id].blank?
 
-    conversation = Current.account.conversations.find_by(display_id: params[:conversation_id])
+    conversations = Conversations::PermissionFilterService.new(Current.account.conversations, Current.user, Current.account).perform
+    conversation = conversations.find_by(display_id: params[:conversation_id])
     return nil unless conversation
     return nil unless conversation.inbox_id == voice_inbox.id && conversation.contact_id == contact.id
     return nil unless conversation.open?

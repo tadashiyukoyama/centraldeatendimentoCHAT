@@ -22,6 +22,6 @@ class Api::V1::Accounts::Actions::ContactMergesController < Api::V1::Accounts::B
   end
 
   def contacts
-    @contacts ||= Current.account.contacts
+    @contacts ||= Contacts::PermissionFilterService.new(Current.account.contacts, Current.user, Current.account).perform
   end
 end
