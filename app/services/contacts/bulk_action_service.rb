@@ -41,6 +41,8 @@ class Contacts::BulkActionService
 
   def ids
     requested_ids = Array(@params[:ids]).compact
+    return requested_ids unless @account.feature_enabled?('strict_team_conversation_visibility')
+
     contacts = Contacts::PermissionFilterService.new(@account.contacts.where(id: requested_ids), @user, @account).perform
     contacts.pluck(:id)
   end

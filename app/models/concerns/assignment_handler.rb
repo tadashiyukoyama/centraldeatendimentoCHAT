@@ -21,10 +21,21 @@ module AssignmentHandler
   end
 
   def validate_current_assignee_team
-    return if strict_team_visibility? && account.administrators.exists?(id: assignee_id)
+    return if administrator_assignee?
 
-    self.assignee_id = nil if team&.members&.exclude?(assignee)
-    self.assignee_id = nil if strict_team_visibility? && inbox.members.exclude?(assignee)
+    self.assignee_id = nil unless team_assignee? && inbox_assignee?
+  end
+
+  def administrator_assignee?
+    strict_team_visibility? && account.administrators.exists?(id: assignee_id)
+  end
+
+  def team_assignee?
+    team.blank? || team.members.include?(assignee)
+  end
+
+  def inbox_assignee?
+    !strict_team_visibility? || inbox.members.include?(assignee)
   end
 
   def strict_team_visibility?
