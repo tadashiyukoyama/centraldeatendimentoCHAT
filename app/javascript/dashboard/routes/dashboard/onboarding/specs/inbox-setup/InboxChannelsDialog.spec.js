@@ -5,6 +5,7 @@ import InboxChannelsDialog from '../../inbox-setup/InboxChannelsDialog.vue';
 vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: key => key }) }));
 vi.mock('dashboard/composables/store', () => ({
   useMapGetter: () => ({ value: {} }),
+  useStore: () => ({ dispatch: vi.fn() }),
 }));
 vi.mock('../../inbox-setup/useChannelConnect', () => ({
   useChannelConnect: () => ({

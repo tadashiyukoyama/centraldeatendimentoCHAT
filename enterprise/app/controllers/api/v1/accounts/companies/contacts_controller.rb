@@ -55,10 +55,8 @@ class Api::V1::Accounts::Companies::ContactsController < Api::V1::Accounts::Comp
   end
 
   def contact_search_scope
-    contacts = Current.account.contacts
-                              .where('contacts.company_id IS NULL OR contacts.company_id != ?', @company.id)
-                              .where(CONTACT_SEARCH_QUERY, search: "%#{params[:q].strip}%")
-                              .order(:name, :id)
+    contacts = Current.account.contacts.where('contacts.company_id IS NULL OR contacts.company_id != ?', @company.id)
+    contacts = contacts.where(CONTACT_SEARCH_QUERY, search: "%#{params[:q].strip}%").order(:name, :id)
     permission_filtered_contacts(contacts)
   end
 

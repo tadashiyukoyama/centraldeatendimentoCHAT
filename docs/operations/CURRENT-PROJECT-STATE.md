@@ -98,8 +98,9 @@ operacional estão em:
 A frente `agent/strict-team-conversation-privacy` implementa uma feature
 opt-in por conta para transformar a equipe atribuída em fronteira de
 autorização, mesmo quando vários setores usam o mesmo número e a mesma caixa.
-O trabalho está somente na branch local e não foi promovido para `main` nem
-para produção.
+O trabalho está publicado na branch remota de mesmo nome e não foi promovido
+para `main` nem para produção. O primeiro SHA remoto é
+`74c9f609c1b28603c2512376ba43489321f2b9be`.
 
 A regra, as superfícies protegidas, os pré-requisitos, a ativação e o rollback
 estão em
@@ -131,10 +132,20 @@ aprovados. O erro terminal continua sendo a ausência de `useStore` no mock de
 `@chatwoot/prosemirror-schema` permanece ancillary. Nenhum arquivo de produto
 foi alterado para obter essa evidência.
 
-Os arquivos do produto envolvidos não foram alterados nesta correção e não
-tinham diff em relação à base autorizada; o diagnóstico não inclui conserto de
-produto. O CI foi observado após o novo commit, sem reexecução manual antes
-dele.
+O mock foi corrigido na branch de privacidade e os dois arquivos frontend
+diretamente envolvidos foram revalidados localmente: 16 testes passaram e o
+lint direcionado ficou verde.
+
+## CI da privacidade rígida
+
+O workflow manual `Run Chatwoot CE spec` foi executado uma única vez contra o
+SHA `74c9f609c1b28603c2512376ba43489321f2b9be`, no run
+[`30107312407`](https://github.com/tadashiyukoyama/centraldeatendimentoCHAT/actions/runs/30107312407).
+Doze dos 19 jobs passaram. As falhas expuseram regressões de compatibilidade
+com a feature desativada em busca, ações em lote e integrações, o contrato do
+novo bit de feature flag, métricas do RuboCop e o mock frontend já
+diagnosticado. A branch contém a correção consolidada; um novo run é necessário
+antes de declarar o gate aprovado.
 
 ## Evidência operacional
 

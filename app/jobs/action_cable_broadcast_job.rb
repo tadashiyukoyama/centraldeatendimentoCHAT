@@ -49,24 +49,32 @@ class ActionCableBroadcastJob < ApplicationJob
   end
 
   def authorized_members(members, event_name, data)
-    conversation = conversation_for_event(event_name, data)
-    contact = contact_for_event(event_name, data)
-    notification = notification_for_event(event_name, data)
-    account = conversation&.account || contact&.account || notification&.account
-    return members if account.blank?
-    return members unless account.feature_enabled?('strict_team_conversation_visibility')
+    resource = resource_for_event(event_name, data)
+    return members unless strict_team_visibility?(resource)
 
     users_by_token = User.where(pubsub_token: members).index_by(&:pubsub_token)
-    visible_user_tokens = if conversation.present?
-                            Conversations::VisibleUsersService.new(
-                              conversation: conversation,
-                              users: users_by_token.values
-                            ).perform.map(&:pubsub_token)
-                          else
-                            resource_visible_user_tokens(contact, notification, users_by_token.values)
-                          end
+    permitted_tokens = visible_user_tokens(resource, users_by_token.values)
 
-    (members - users_by_token.keys + visible_user_tokens).uniq
+    (members - users_by_token.keys + permitted_tokens).uniq
+  end
+
+  def resource_for_event(event_name, data)
+    conversation_for_event(event_name, data) || contact_for_event(event_name, data) || notification_for_event(event_name, data)
+  end
+
+  def strict_team_visibility?(resource)
+    resource&.account&.feature_enabled?('strict_team_conversation_visibility')
+  end
+
+  def visible_user_tokens(resource, users)
+    return conversation_visible_user_tokens(resource, users) if resource.is_a?(Conversation)
+    return contact_visible_user_tokens(resource, users) if resource.is_a?(Contact)
+
+    notification_visible_user_tokens(resource, users)
+  end
+
+  def conversation_visible_user_tokens(conversation, users)
+    Conversations::VisibleUsersService.new(conversation: conversation, users: users).perform.map(&:pubsub_token)
   end
 
   def conversation_for_event(event_name, data)
@@ -98,12 +106,6 @@ class ActionCableBroadcastJob < ApplicationJob
 
     payload = data.with_indifferent_access
     Notification.find_by(id: payload.dig(:notification, :id), account_id: payload[:account_id])
-  end
-
-  def resource_visible_user_tokens(contact, notification, users)
-    return contact_visible_user_tokens(contact, users) if contact.present?
-
-    notification_visible_user_tokens(notification, users)
   end
 
   def contact_visible_user_tokens(contact, users)

@@ -41,7 +41,7 @@ class Conversations::AssignmentService
     administrator = conversation.account.administrators.find_by(id: assignee_id)
     return administrator if administrator.present?
 
-    eligible_assignees.find_by!(id: assignee_id)
+    eligible_assignees.find(assignee_id)
   end
 
   def agent_bot

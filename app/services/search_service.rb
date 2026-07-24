@@ -31,7 +31,7 @@ class SearchService
   end
 
   def filter_conversations
-    conversations_query = permission_filtered_conversations
+    conversations_query = searchable_conversations
                           .joins('INNER JOIN contacts ON conversations.contact_id = contacts.id')
                           .where("cast(conversations.display_id as text) ILIKE :search OR contacts.name ILIKE :search OR contacts.email
                             ILIKE :search OR contacts.phone_number ILIKE :search OR contacts.identifier ILIKE :search", search: "%#{search_query}%")
@@ -106,7 +106,10 @@ class SearchService
 
   def message_base_query
     query = current_account.messages.where('created_at >= ?', 3.months.ago)
-    query.where(conversation_id: permission_filtered_conversations.select(:id))
+    return query.where(conversation_id: permission_filtered_conversations.select(:id)) if strict_team_visibility?
+
+    query = query.where(inbox_id: accessable_inbox_ids) unless should_skip_inbox_filtering?
+    query
   end
 
   def apply_message_filters(query)
@@ -210,6 +213,16 @@ class SearchService
       current_user,
       current_account
     ).perform
+  end
+
+  def searchable_conversations
+    return permission_filtered_conversations if strict_team_visibility?
+
+    current_account.conversations.where(inbox_id: accessable_inbox_ids)
+  end
+
+  def strict_team_visibility?
+    current_account.feature_enabled?('strict_team_conversation_visibility')
   end
 end
 
