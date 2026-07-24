@@ -24,7 +24,7 @@ class InboxMember < ApplicationRecord
 
   after_create :add_agent_to_round_robin
   after_destroy :remove_agent_from_round_robin
-  after_commit :invalidate_filtered_unread_count_visibility, on: [:create, :destroy]
+  after_commit :invalidate_filtered_unread_count_visibility, :refresh_strict_team_visibility, on: [:create, :destroy]
 
   private
 
@@ -38,6 +38,13 @@ class InboxMember < ApplicationRecord
 
   def invalidate_filtered_unread_count_visibility
     ::Conversations::UnreadCounts::FilteredCountInvalidator.new(inbox&.account).user_visibility_changed!(user_id: user_id)
+  end
+
+  def refresh_strict_team_visibility
+    account = inbox&.account
+    return unless account&.feature_enabled?('strict_team_conversation_visibility')
+
+    ActionCableBroadcastJob.perform_later([user.pubsub_token], 'page:reload', { account_id: account.id })
   end
 end
 

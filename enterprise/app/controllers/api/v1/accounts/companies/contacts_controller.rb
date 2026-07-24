@@ -28,7 +28,7 @@ class Api::V1::Accounts::Companies::ContactsController < Api::V1::Accounts::Comp
   end
 
   def create
-    @contact = Current.account.contacts.find(params[:contact_id])
+    @contact = permission_filtered_contacts(Current.account.contacts).find(params[:contact_id])
     membership_service.assign(contact: @contact)
   end
 
@@ -44,21 +44,26 @@ class Api::V1::Accounts::Companies::ContactsController < Api::V1::Accounts::Comp
   end
 
   def fetch_contact
-    @contact = @company.contacts.find(params[:id])
+    @contact = permission_filtered_contacts(@company.contacts).find(params[:id])
   end
 
   def fetch_contacts(contacts)
-    contacts
+    permission_filtered_contacts(contacts)
       .includes({ avatar_attachment: [:blob] }, :company)
       .page(@current_page)
       .per(RESULTS_PER_PAGE)
   end
 
   def contact_search_scope
-    Current.account.contacts
-           .where('contacts.company_id IS NULL OR contacts.company_id != ?', @company.id)
-           .where(CONTACT_SEARCH_QUERY, search: "%#{params[:q].strip}%")
-           .order(:name, :id)
+    contacts = Current.account.contacts
+                              .where('contacts.company_id IS NULL OR contacts.company_id != ?', @company.id)
+                              .where(CONTACT_SEARCH_QUERY, search: "%#{params[:q].strip}%")
+                              .order(:name, :id)
+    permission_filtered_contacts(contacts)
+  end
+
+  def permission_filtered_contacts(contacts)
+    Contacts::PermissionFilterService.new(contacts, Current.user, Current.account).perform
   end
 
   def membership_service

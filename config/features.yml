@@ -265,3 +265,7 @@
   display_name: WhatsApp Reconfigure
   enabled: false
   column: feature_flags_ext_1
+- name: strict_team_conversation_visibility
+  display_name: Strict Team Conversation Visibility
+  enabled: false
+  column: feature_flags_ext_1

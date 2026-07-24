@@ -133,6 +133,7 @@ class ActionCableListener < BaseListener
 
   def assignee_changed(event)
     conversation, account = extract_conversation_and_account(event)
+    broadcast_access_revocation(account, conversation, previous_assignee_users(event, account))
     tokens = user_tokens(account, conversation.inbox.members)
 
     broadcast(account, tokens, ASSIGNEE_CHANGED, conversation.push_event_data)
@@ -140,6 +141,7 @@ class ActionCableListener < BaseListener
 
   def team_changed(event)
     conversation, account = extract_conversation_and_account(event)
+    broadcast_access_revocation(account, conversation, previous_team_users(event, account, conversation))
     tokens = user_tokens(account, conversation.inbox.members)
 
     broadcast(account, tokens, TEAM_CHANGED, conversation.push_event_data)
@@ -154,17 +156,17 @@ class ActionCableListener < BaseListener
 
   def contact_created(event)
     contact, account = extract_contact_and_account(event)
-    broadcast(account, [account_token(account)], CONTACT_CREATED, contact.push_event_data)
+    broadcast(account, contact_event_tokens(account, contact), CONTACT_CREATED, contact.push_event_data)
   end
 
   def contact_updated(event)
     contact, account = extract_contact_and_account(event)
-    broadcast(account, [account_token(account)], CONTACT_UPDATED, contact.push_event_data)
+    broadcast(account, contact_event_tokens(account, contact), CONTACT_UPDATED, contact.push_event_data)
   end
 
   def contact_merged(event)
     contact, account = extract_contact_and_account(event)
-    broadcast(account, [account_token(account)], CONTACT_MERGED, contact.push_event_data)
+    broadcast(account, contact_event_tokens(account, contact), CONTACT_MERGED, contact.push_event_data)
   end
 
   def contact_deleted(event)
@@ -172,7 +174,8 @@ class ActionCableListener < BaseListener
     account = Account.find_by(id: contact_data[:account_id])
     return if account.blank?
 
-    broadcast(account, [account_token(account)], CONTACT_DELETED, contact_data)
+    tokens = strict_team_visibility?(account) ? user_tokens(account, User.none) : [account_token(account)]
+    broadcast(account, tokens, CONTACT_DELETED, contact_data)
   end
 
   def conversation_mentioned(event)
@@ -203,6 +206,48 @@ class ActionCableListener < BaseListener
     agent_tokens = agents.pluck(:pubsub_token)
     admin_tokens = account.administrators.pluck(:pubsub_token)
     (agent_tokens + admin_tokens).uniq
+  end
+
+  def contact_event_tokens(account, contact)
+    return [account_token(account)] unless strict_team_visibility?(account)
+
+    conversations = account.conversations.where(contact_id: contact.id)
+    agents = account.agents.select do |agent|
+      Conversations::PermissionFilterService.new(conversations, agent, account).perform.exists?
+    end
+    user_tokens(account, agents)
+  end
+
+  def broadcast_access_revocation(account, conversation, previous_users)
+    return unless strict_team_visibility?(account)
+    return if previous_users.blank?
+
+    visible_user_ids = Conversations::VisibleUsersService.new(
+      conversation: conversation,
+      users: previous_users
+    ).perform.map(&:id)
+    revoked_tokens = previous_users.reject { |user| visible_user_ids.include?(user.id) }.map(&:pubsub_token)
+    broadcast(account, revoked_tokens, 'page:reload', {})
+  end
+
+  def previous_assignee_users(event, account)
+    previous_assignee_id = changed_attribute(event, :assignee_id)&.first
+    previous_assignee_id.present? ? account.users.where(id: previous_assignee_id).to_a : []
+  end
+
+  def previous_team_users(event, account, conversation)
+    previous_team_id = changed_attribute(event, :team_id)&.first
+    return [] if previous_team_id.blank?
+
+    account.teams.find_by(id: previous_team_id)&.members&.where(id: conversation.inbox.members.select(:id))&.to_a || []
+  end
+
+  def changed_attribute(event, attribute)
+    event.data[:changed_attributes]&.with_indifferent_access&.dig(attribute)
+  end
+
+  def strict_team_visibility?(account)
+    account.feature_enabled?('strict_team_conversation_visibility')
   end
 
   def contact_tokens(contact_inbox, message)

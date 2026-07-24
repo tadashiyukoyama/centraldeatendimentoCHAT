@@ -28,6 +28,7 @@ class Api::V1::Accounts::ContactsController < Api::V1::Accounts::BaseController
       'name ILIKE :search OR email ILIKE :search OR phone_number ILIKE :search OR contacts.identifier LIKE :search',
       search: "%#{params[:q].strip}%"
     )
+    contacts = permission_filtered_contacts(contacts)
     @contacts = fetch_contacts_with_has_more(contacts)
   end
 
@@ -53,6 +54,7 @@ class Api::V1::Accounts::ContactsController < Api::V1::Accounts::BaseController
   def active
     contacts = Current.account.contacts.where(id: ::OnlineStatusTracker
                   .get_available_contact_ids(Current.account.id))
+    contacts = permission_filtered_contacts(contacts)
     @contacts = fetch_contacts(contacts)
     @contacts_count = @contacts.total_count
   end
@@ -121,6 +123,7 @@ class Api::V1::Accounts::ContactsController < Api::V1::Accounts::BaseController
     return @resolved_contacts if @resolved_contacts
 
     @resolved_contacts = Current.account.contacts.resolved_contacts(use_crm_v2: Current.account.feature_enabled?('crm_v2'))
+    @resolved_contacts = permission_filtered_contacts(@resolved_contacts)
 
     @resolved_contacts = @resolved_contacts.tagged_with(params[:labels], any: true) if params[:labels].present?
     @resolved_contacts
@@ -203,7 +206,12 @@ class Api::V1::Accounts::ContactsController < Api::V1::Accounts::BaseController
   def fetch_contact
     contact_scope = Current.account.contacts
     contact_scope = contact_scope.includes(contact_inboxes: [:inbox]) if @include_contact_inboxes
+    contact_scope = permission_filtered_contacts(contact_scope)
     @contact = contact_scope.find(params[:id])
+  end
+
+  def permission_filtered_contacts(contacts)
+    Contacts::PermissionFilterService.new(contacts, Current.user, Current.account).perform
   end
 
   def process_avatar_from_url

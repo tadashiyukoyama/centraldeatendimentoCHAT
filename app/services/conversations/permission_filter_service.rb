@@ -16,7 +16,23 @@ class Conversations::PermissionFilterService
   private
 
   def accessible_conversations
-    conversations.where(inbox: user.inboxes.where(account_id: account.id))
+    inbox_conversations = conversations.where(inbox: user.inboxes.where(account_id: account.id))
+    return inbox_conversations unless strict_team_visibility?
+
+    strict_team_conversations(inbox_conversations)
+  end
+
+  def strict_team_conversations(inbox_conversations)
+    team_conversations = inbox_conversations.where(team: user.teams.where(account_id: account.id))
+    assigned_conversations = inbox_conversations.where(assignee_id: user.id)
+    participant_conversation_ids = ConversationParticipant.where(account_id: account.id, user_id: user.id).select(:conversation_id)
+    participant_conversations = inbox_conversations.where(id: participant_conversation_ids)
+
+    team_conversations.or(assigned_conversations).or(participant_conversations)
+  end
+
+  def strict_team_visibility?
+    account.feature_enabled?('strict_team_conversation_visibility')
   end
 
   def account_user

@@ -52,6 +52,13 @@ correspondente. A configuração das equipes é criada pelo script idempotente e
 os administradores existentes são adicionados como membros para que possam
 visualizar as conversas roteadas.
 
+Quando a feature `strict_team_conversation_visibility` estiver ativa, um
+agente humano só recebe a conversa do setor se pertencer simultaneamente à
+equipe atribuída e à caixa do canal. A equipe passa a ser uma fronteira de
+autorização server-side. O contrato completo, os pré-requisitos e o rollback
+estão em
+[`docs/architecture/STRICT-TEAM-CONVERSATION-VISIBILITY.md`](../architecture/STRICT-TEAM-CONVERSATION-VISIBILITY.md).
+
 Os cenários antigos são preservados para auditoria, mas desativados durante a
 configuração porque havia duplicidade de “Prospective Buyer”. A classificação e
 o roteamento passam a ter uma única política no assistente principal.

@@ -92,10 +92,17 @@ class AccountUser < ApplicationRecord
 
   def invalidate_filtered_unread_count_visibility_update
     dispatch_account_cache_invalidated if invalidate_filtered_unread_count_visibility
+    refresh_strict_team_visibility
   end
 
   def dispatch_account_cache_invalidated
     Rails.configuration.dispatcher.dispatch(ACCOUNT_CACHE_INVALIDATED, Time.zone.now, account: account, cache_keys: account.cache_keys)
+  end
+
+  def refresh_strict_team_visibility
+    return unless account.feature_enabled?('strict_team_conversation_visibility')
+
+    ActionCableBroadcastJob.perform_later([user.pubsub_token], 'page:reload', { account_id: account.id })
   end
 end
 

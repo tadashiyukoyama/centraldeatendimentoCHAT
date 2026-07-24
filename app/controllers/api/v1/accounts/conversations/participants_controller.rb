@@ -12,6 +12,7 @@ class Api::V1::Accounts::Conversations::ParticipantsController < Api::V1::Accoun
       @participants = participant_ids_to_add.map { |user_id| @conversation.conversation_participants.find_or_create_by(user_id: user_id) }
     end
     notify_unread_count_change if participant_ids_to_add.any?
+    refresh_participant_visibility(participant_ids_to_add)
   end
 
   def update
@@ -24,6 +25,7 @@ class Api::V1::Accounts::Conversations::ParticipantsController < Api::V1::Accoun
       participant_ids_to_remove.each { |user_id| @conversation.conversation_participants.find_by(user_id: user_id)&.destroy }
     end
     notify_unread_count_change if changed_participant_ids.any?
+    refresh_participant_visibility(changed_participant_ids)
     @participants = @conversation.conversation_participants
     render action: 'show'
   end
@@ -35,6 +37,7 @@ class Api::V1::Accounts::Conversations::ParticipantsController < Api::V1::Accoun
       params[:user_ids].map { |user_id| @conversation.conversation_participants.find_by(user_id: user_id)&.destroy }
     end
     notify_unread_count_change if participant_ids_to_remove.any?
+    refresh_participant_visibility(participant_ids_to_remove)
     head :ok
   end
 
@@ -57,5 +60,13 @@ class Api::V1::Accounts::Conversations::ParticipantsController < Api::V1::Accoun
     return unless Current.account.feature_enabled?('unread_count_for_filters')
 
     Rails.configuration.dispatcher.dispatch(CONVERSATION_UNREAD_COUNT_CHANGED, Time.zone.now, conversation: @conversation)
+  end
+
+  def refresh_participant_visibility(user_ids)
+    return if user_ids.blank?
+    return unless Current.account.feature_enabled?('strict_team_conversation_visibility')
+
+    tokens = Current.account.users.where(id: user_ids).pluck(:pubsub_token)
+    ActionCableBroadcastJob.perform_later(tokens, 'page:reload', { account_id: Current.account.id }) if tokens.any?
   end
 end
