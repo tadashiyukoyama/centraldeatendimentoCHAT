@@ -89,7 +89,7 @@ function assertExactIds(actual, expected, label) {
     .sort((left, right) => left - right);
   assert(
     JSON.stringify(normalizedActual) === JSON.stringify(normalizedExpected),
-    `${label}: expected ${normalizedExpected.length} visible conversation(s), observed ${normalizedActual.length}`
+    `${label}: expected ids [${normalizedExpected.join(',')}], observed ids [${normalizedActual.join(',')}]`
   );
 }
 
@@ -332,6 +332,7 @@ async function main() {
     cables: [],
   };
   const checks = [];
+  const findings = [];
   const cleanup = {
     requested: false,
     verified: false,
@@ -346,6 +347,17 @@ async function main() {
     const detail = await operation();
     checks.push({ name, status: 'passed', detail });
     process.stdout.write('OK\n');
+  };
+
+  const recordFinding = async (name, operation) => {
+    process.stdout.write(`[smoke] ${name} ... `);
+    const result = await operation();
+    const status = result.passed ? 'passed' : 'failed';
+    checks.push({ name, status, detail: result.detail });
+    if (!result.passed) {
+      findings.push(name);
+    }
+    process.stdout.write(result.passed ? 'OK\n' : 'FINDING\n');
   };
 
   const platform = (path, optionsForRequest = {}) =>
@@ -1037,7 +1049,7 @@ async function main() {
       }
     );
 
-    await record(
+    await recordFinding(
       'team transfer revokes old access and grants new access immediately',
       async () => {
         cableFor('agentA').clear();
@@ -1050,33 +1062,70 @@ async function main() {
             body: { team_id: teamBId },
           }
         );
-        assertExactIds(
-          await listIds(agentA.token),
-          [],
-          'team A list after transfer'
+        const teamAIdsAfterTransfer = await listIds(agentA.token);
+        const transferredConversation = await request(
+          `${accountPath}/conversations/${conversations.teamA.id}`,
+          { token: admin.token }
         );
+        const transferredAssigneeId = Number(
+          transferredConversation.data?.meta?.assignee?.id
+        );
+        const incompatibleAssigneeCleared =
+          !teamAIdsAfterTransfer.includes(conversations.teamA.id) &&
+          transferredAssigneeId !== agentA.id;
         assertExactIds(
           await listIds(agentB.token),
           [conversations.teamA.id, conversations.teamB.id],
           'team B list after transfer'
-        );
-        await expectDenied(
-          `${accountPath}/conversations/${conversations.teamA.id}`,
-          agentA.token
         );
         await request(
           `${accountPath}/conversations/${conversations.teamA.id}`,
           { token: agentB.token }
         );
         await waitForEvent(
-          cableFor('agentA'),
-          'page:reload',
-          'team A real-time revocation after transfer'
-        );
-        await waitForEvent(
           cableFor('agentB'),
           'team.changed',
           'team B real-time grant after transfer'
+        );
+
+        if (incompatibleAssigneeCleared) {
+          await expectDenied(
+            `${accountPath}/conversations/${conversations.teamA.id}`,
+            agentA.token
+          );
+          await waitForEvent(
+            cableFor('agentA'),
+            'page:reload',
+            'team A real-time revocation after transfer'
+          );
+        } else {
+          await request(
+            `${accountPath}/conversations/${conversations.teamA.id}/assignments`,
+            {
+              method: 'POST',
+              token: admin.token,
+              body: { assignee_id: null },
+            }
+          );
+          assertExactIds(
+            await listIds(agentA.token),
+            [],
+            'team A list after explicit incompatible-assignee removal'
+          );
+          await expectDenied(
+            `${accountPath}/conversations/${conversations.teamA.id}`,
+            agentA.token
+          );
+          await waitForEvent(
+            cableFor('agentA'),
+            'page:reload',
+            'team A real-time revocation after explicit assignee removal'
+          );
+        }
+        assertExactIds(
+          await listIds(agentA.token),
+          [],
+          'team A list after transfer normalization'
         );
         assertExactIds(
           await getNotificationConversationIds(agentA.token),
@@ -1137,12 +1186,23 @@ async function main() {
           'team A notifications after transfer restore'
         );
         return {
-          revoked_from_old_team: true,
-          granted_to_new_team: true,
-          original_state_restored: true,
-          realtime_revocation_events: 2,
-          transferred_team_reply_created: true,
-          stale_notification_hidden: true,
+          passed: incompatibleAssigneeCleared,
+          detail: {
+            incompatible_assignee_cleared_automatically:
+              incompatibleAssigneeCleared,
+            transferred_assignee_id:
+              Number.isInteger(transferredAssigneeId) &&
+              transferredAssigneeId > 0
+                ? transferredAssigneeId
+                : null,
+            explicit_normalization_required: !incompatibleAssigneeCleared,
+            revoked_from_old_team: true,
+            granted_to_new_team: true,
+            original_state_restored: true,
+            realtime_revocation_events: 2,
+            transferred_team_reply_created: true,
+            stale_notification_hidden: true,
+          },
         };
       }
     );
@@ -1503,7 +1563,12 @@ async function main() {
       return { feature_enabled: true, team_a_visible: 1, team_b_visible: 1 };
     });
 
-    outcome = 'passed';
+    if (findings.length > 0) {
+      outcome = 'failed';
+      failure = `${findings.length} product finding(s): ${findings.join('; ')}`;
+    } else {
+      outcome = 'passed';
+    }
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error);
     process.stderr.write(`[smoke] FAILED: ${failure}\n`);
