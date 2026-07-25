@@ -12,9 +12,15 @@ temporary account with:
 - two teams, one agent per team;
 - one conversation per team and one conversation without a team.
 
-The runner verifies list, direct, search, contact, transfer, feature rollback,
-and feature reactivation behavior. It then requests deletion of all temporary
-resources and polls until their removal is confirmed.
+The runner attests the deployed Git SHA and verifies list, direct access,
+search, unread counts, notifications, contact surfaces, bulk contact actions,
+assignment and participant exceptions, team and inbox membership changes,
+human replies, team transfers, direct-upload authorization, ActionCable event
+isolation, feature rollback, and feature reactivation. It then requests
+deletion of all temporary resources and polls until their removal is confirmed.
+
+The smoke opens two authenticated ActionCable subscriptions. This requires
+Node.js 22 or newer and a production WebSocket endpoint at `/cable`.
 
 The required Platform App must be temporary. Store its token in a private file
 outside the Git repository and pass only the file path to the runner. Never put
