@@ -119,7 +119,7 @@ function createClient(baseUrl) {
     };
 
     if (token) {
-      headers.api_access_token = token;
+      headers['api-access-token'] = token;
     }
     if (body !== undefined) {
       headers['Content-Type'] = 'application/json';
