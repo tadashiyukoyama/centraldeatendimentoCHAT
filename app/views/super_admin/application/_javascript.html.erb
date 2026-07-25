@@ -21,11 +21,26 @@ by providing a `content_for(:javascript)` block.
 <% end %>
 
 <% support_config = ChatwootHub.support_config %>
-<% if support_config.values.all?(&:present?) && SuperAdmin.first.present? %>
+<% super_admin = SuperAdmin.first %>
+<% if support_config.values.all?(&:present?) && super_admin.present? %>
+<%
+  support_payload = {
+    websiteToken: support_config[:support_website_token],
+    baseUrl: support_config[:support_script_url]
+  }.to_json
+  support_user = {
+    identifier: ChatwootHub.installation_identifier,
+    identifier_hash: support_config[:support_identifier_hash],
+    email: super_admin.email,
+    name: super_admin.name
+  }.to_json
+%>
 <script>
 window.chatwootSettings = {
   hideMessageBubble: true,
 };
+const supportConfig = <%= raw json_escape(support_payload) %>;
+const supportUser = <%= raw json_escape(support_user) %>;
 
 (function(d,t) {
   var BASE_URL = '';
@@ -34,18 +49,15 @@ window.chatwootSettings = {
   g.async = true;
   s.parentNode.insertBefore(g,s);
   g.onload=function(){
-    window.chatwootSDK.run({
-      websiteToken: '<%= support_config[:support_website_token] %>',
-      baseUrl: '<%= support_config[:support_script_url] %>'
-    })
+    window.chatwootSDK.run(supportConfig)
   }
 })(document,"script");
 
 window.addEventListener('chatwoot:ready', function() {
-  window.$chatwoot.setUser('<%= ChatwootHub.installation_identifier %>', {
-    identifier_hash: '<%= support_config[:support_identifier_hash] %>',
-    email: '<%= SuperAdmin.first.email %>',
-    name: '<%= SuperAdmin.first.name %>'
+  window.$chatwoot.setUser(supportUser.identifier, {
+    identifier_hash: supportUser.identifier_hash,
+    email: supportUser.email,
+    name: supportUser.name
   });
 })
 

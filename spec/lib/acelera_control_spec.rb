@@ -63,6 +63,7 @@ RSpec.describe AceleraControl do
           url: 'https://control.acelerachat.example/v1/instances/heartbeat',
           open_timeout: 3,
           read_timeout: 5,
+          max_redirects: 0,
           headers: hash_including(authorization: 'Bearer test-control-token')
         )
       )
@@ -85,6 +86,35 @@ RSpec.describe AceleraControl do
       response = instance_double(
         RestClient::Response,
         to_s: signed_envelope(entitlement.merge('instance_id' => 'another-instance'))
+      )
+      allow(RestClient::Request).to receive(:execute).and_return(response)
+
+      result = with_modified_env(control_env) do
+        described_class.heartbeat(instance_id: instance_id)
+      end
+
+      expect(result).to eq({})
+    end
+
+    it 'rejects an entitlement with a non-string validity timestamp' do
+      response = instance_double(
+        RestClient::Response,
+        to_s: signed_envelope(entitlement.merge('expires_at' => nil))
+      )
+      allow(RestClient::Request).to receive(:execute).and_return(response)
+
+      result = with_modified_env(control_env) do
+        described_class.heartbeat(instance_id: instance_id)
+      end
+
+      expect(result).to eq({})
+      expect(Rails.logger).to have_received(:warn).with(/response ignored/)
+    end
+
+    it 'rejects an unknown entitlement status' do
+      response = instance_double(
+        RestClient::Response,
+        to_s: signed_envelope(entitlement.merge('status' => 'unknown'))
       )
       allow(RestClient::Request).to receive(:execute).and_return(response)
 

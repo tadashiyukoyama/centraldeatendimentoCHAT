@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import GroupedStackedChangelogCard from 'dashboard/components-next/changelog-card/GroupedStackedChangelogCard.vue';
 import { useUISettings } from 'dashboard/composables/useUISettings';
-import changelogAPI from 'dashboard/api/changelog';
+import changelogAPI, { sanitizeChangelogURL } from 'dashboard/api/changelog';
 
 defineOptions({
   inheritAttrs: false,
@@ -84,8 +84,9 @@ const handleDismiss = slug => {
 
 const handleReadMore = () => {
   const currentPost = unDismissedPosts.value[currentIndex.value];
-  if (currentPost?.url) {
-    window.open(currentPost.url, '_blank', 'noopener,noreferrer');
+  const safeURL = sanitizeChangelogURL(currentPost?.url);
+  if (safeURL) {
+    window.open(safeURL, '_blank', 'noopener,noreferrer');
   }
 };
 

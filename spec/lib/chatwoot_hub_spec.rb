@@ -83,6 +83,7 @@ describe ChatwootHub do
     end
 
     it 'keeps the managed plan during the signed grace period' do
+      create(:installation_config, name: 'ACELERA_CONTROL_STATUS', value: 'active')
       create(:installation_config, name: 'ACELERA_CONTROL_GRACE_UNTIL', value: 1.day.from_now.iso8601)
 
       with_modified_env ACELERA_CONTROL_ENABLED: 'true' do
@@ -92,7 +93,18 @@ describe ChatwootHub do
     end
 
     it 'fails closed after the managed grace period' do
+      create(:installation_config, name: 'ACELERA_CONTROL_STATUS', value: 'active')
       create(:installation_config, name: 'ACELERA_CONTROL_GRACE_UNTIL', value: 1.minute.ago.iso8601)
+
+      with_modified_env ACELERA_CONTROL_ENABLED: 'true' do
+        expect(described_class.pricing_plan).to eq('community')
+        expect(described_class.pricing_plan_quantity).to eq(0)
+      end
+    end
+
+    it 'fails closed immediately for a suspended entitlement' do
+      create(:installation_config, name: 'ACELERA_CONTROL_STATUS', value: 'suspended')
+      create(:installation_config, name: 'ACELERA_CONTROL_GRACE_UNTIL', value: 1.day.from_now.iso8601)
 
       with_modified_env ACELERA_CONTROL_ENABLED: 'true' do
         expect(described_class.pricing_plan).to eq('community')

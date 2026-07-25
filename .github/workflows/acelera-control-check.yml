@@ -28,6 +28,7 @@ on:
       - 'spec/jobs/internal/check_new_versions_job_spec.rb'
       - 'spec/lib/acelera_control_spec.rb'
       - 'spec/lib/chatwoot_hub_spec.rb'
+      - 'spec/requests/super_admin/support_widget_spec.rb'
   workflow_dispatch:
 
 permissions:
@@ -87,6 +88,7 @@ jobs:
           enterprise/app/services/internal/reconcile_plan_config_service.rb
           lib/acelera_control.rb
           lib/acelera_control/entitlement.rb
+          lib/acelera_control/entitlement_state.rb
           lib/acelera_control/url_policy.rb
           lib/chatwoot_hub.rb
           spec/enterprise/jobs/enterprise/internal/check_new_versions_job_spec.rb
@@ -95,6 +97,7 @@ jobs:
           spec/jobs/internal/check_new_versions_job_spec.rb
           spec/lib/acelera_control_spec.rb
           spec/lib/chatwoot_hub_spec.rb
+          spec/requests/super_admin/support_widget_spec.rb
 
       # Request specs render Vite entrypoints, so keep the same setup order used
       # by the main backend test workflow. These dependencies are reused by the
@@ -127,6 +130,7 @@ jobs:
           spec/enterprise/services/internal/reconcile_plan_config_service_spec.rb
           spec/services/notification/push_notification_service_spec.rb
           spec/controllers/installation/onboarding_controller_spec.rb
+          spec/requests/super_admin/support_widget_spec.rb
           --format progress
 
       - name: Run targeted frontend lint

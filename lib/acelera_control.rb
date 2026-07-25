@@ -16,6 +16,7 @@ module AceleraControl
   HEARTBEAT_PATH = '/v1/instances/heartbeat'
   OPEN_TIMEOUT = 3
   READ_TIMEOUT = 5
+  MAX_REDIRECTS = 0
   NETWORK_ERRORS = (ExceptionList::REST_CLIENT_EXCEPTIONS + [
     Errno::ECONNRESET,
     Errno::EHOSTUNREACH,
@@ -68,10 +69,7 @@ module AceleraControl
     end
 
     def entitlement_active?
-      grace_until = InstallationConfig.find_by(name: 'ACELERA_CONTROL_GRACE_UNTIL')&.value
-      grace_until.present? && Time.iso8601(grace_until.to_s).future?
-    rescue ArgumentError
-      false
+      EntitlementState.active?
     end
 
     def heartbeat(instance_config)
@@ -121,7 +119,8 @@ module AceleraControl
         payload: instance_config.to_json,
         headers: request_headers,
         open_timeout: OPEN_TIMEOUT,
-        read_timeout: READ_TIMEOUT
+        read_timeout: READ_TIMEOUT,
+        max_redirects: MAX_REDIRECTS
       )
     end
 

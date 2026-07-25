@@ -92,11 +92,19 @@ class AceleraControl::Entitlement
   end
 
   def validity_period(payload)
-    expires_at = Time.iso8601(payload.fetch('expires_at'))
-    grace_until = Time.iso8601(payload.fetch('grace_until', expires_at.iso8601))
+    expires_at_value = payload.fetch('expires_at')
+    grace_until_value = payload.fetch('grace_until', expires_at_value)
+    unless expires_at_value.is_a?(String) && grace_until_value.is_a?(String)
+      raise AceleraControl::InvalidEntitlementError
+    end
+
+    expires_at = Time.iso8601(expires_at_value)
+    grace_until = Time.iso8601(grace_until_value)
     raise AceleraControl::InvalidEntitlementError if grace_until < expires_at || grace_until.past?
 
     [expires_at, grace_until]
+  rescue ArgumentError, TypeError, KeyError
+    raise AceleraControl::InvalidEntitlementError
   end
 
   def normalized_attributes(payload, plan:, seat_limit:, status:, validity:)

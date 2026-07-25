@@ -15,6 +15,7 @@ RSpec.describe Internal::CheckNewVersionsJob do
     data = { 'version' => '1.2.3', 'plan' => 'enterprise', 'plan_quantity' => 1, 'chatwoot_support_website_token' => '123',
              'chatwoot_support_identifier_hash' => '123', 'chatwoot_support_script_url' => '123' }
     allow(ChatwootHub).to receive(:sync_with_hub).and_return(data)
+    expect(InstallationConfig).to receive(:transaction).and_call_original
     job
     expect(InstallationConfig.find_by(name: 'INSTALLATION_PRICING_PLAN').value).to eq 'enterprise'
     expect(InstallationConfig.find_by(name: 'INSTALLATION_PRICING_PLAN_QUANTITY').value).to eq 1

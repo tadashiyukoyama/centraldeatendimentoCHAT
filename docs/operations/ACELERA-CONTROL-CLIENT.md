@@ -59,6 +59,8 @@ Timeouts:
 - conexão: 3 segundos;
 - resposta: 5 segundos.
 
+Redirecionamentos HTTP não são seguidos, evitando que o token Bearer seja encaminhado para outro host.
+
 Indisponibilidade, timeout ou resposta inválida retornam um resultado vazio. O job não apaga nem rebaixa o último plano persistido durante o período de tolerância assinado.
 
 ## Envelope assinado
@@ -103,15 +105,16 @@ Validações obrigatórias:
 - `instance_id` idêntico ao da instalação;
 - plano reconhecido;
 - limite de assentos inteiro e não negativo;
+- status reconhecido; apenas `active`, `trialing` e `past_due` mantêm o entitlement ativo;
 - `grace_until` ainda válido;
 - features com formato estrito;
 - suporte somente por HTTPS e fora dos domínios antigos.
 
-O plano público `pro` é mapeado para o valor interno `enterprise`, preservando a lógica existente. Quando o gerenciamento está ativado, o plano local continua válido até `grace_until`; depois desse instante a aplicação passa para `community` e limite zero até receber um novo entitlement válido. Com o Control desativado, o plano local atual continua sendo a fonte de verdade.
+O plano público `pro` é mapeado para o valor interno `enterprise`, preservando a lógica existente. Quando o gerenciamento está ativado e o status é `active`, `trialing` ou `past_due`, o plano local continua válido até `grace_until`; depois desse instante a aplicação passa para `community` e limite zero até receber um novo entitlement válido. Os estados `canceled` e `suspended` falham fechados imediatamente, mesmo que exista uma tolerância futura persistida. Com o Control desativado, o plano local atual continua sendo a fonte de verdade.
 
 ## Persistência compatível
 
-Após validação, o job mantém as chaves internas existentes:
+Após validação, o job mantém as chaves internas existentes em uma única transação de banco:
 
 - `INSTALLATION_PRICING_PLAN`;
 - `INSTALLATION_PRICING_PLAN_QUANTITY`;
@@ -137,9 +140,9 @@ O reconciliador pode desativar recursos premium quando recebe um downgrade váli
 
 - Push mobile deve usar Firebase configurado diretamente na instância.
 - `ENABLE_PUSH_RELAY_SERVER` permanece apenas como chave de compatibilidade e não habilita relay.
-- O widget de suporte só é renderizado quando URL HTTPS, token e hash estão presentes.
+- O widget de suporte só é renderizado quando URL HTTPS, token e hash estão presentes; os valores são serializados como JSON escapado.
 - O botão de cobrança só aparece com `ACELERA_BILLING_PORTAL_URL` válido.
-- `CHANGELOG_URL` inicia vazio e poderá apontar para o feed próprio quando ele existir.
+- `CHANGELOG_URL` inicia vazio e poderá apontar para o feed próprio quando ele existir; links de posts aceitam apenas HTTPS, sem credenciais e fora dos domínios antigos.
 
 ## Rito de ativação futura
 

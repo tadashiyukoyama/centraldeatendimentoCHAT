@@ -23,12 +23,14 @@ module Enterprise::Internal::CheckNewVersionsJob
   def update_plan_info
     return if @instance_info.blank?
 
-    update_plan if SUPPORTED_PLANS.include?(@instance_info['plan'])
+    InstallationConfig.transaction do
+      update_plan if SUPPORTED_PLANS.include?(@instance_info['plan'])
 
-    RESPONSE_CONFIG_MAPPING.each do |response_key, config_key|
-      next unless @instance_info.key?(response_key)
+      RESPONSE_CONFIG_MAPPING.each do |response_key, config_key|
+        next unless @instance_info.key?(response_key)
 
-      update_installation_config(key: config_key, value: @instance_info[response_key])
+        update_installation_config(key: config_key, value: @instance_info[response_key])
+      end
     end
   end
 
