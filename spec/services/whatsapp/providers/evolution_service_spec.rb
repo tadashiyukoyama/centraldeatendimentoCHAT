@@ -36,6 +36,8 @@ RSpec.describe Whatsapp::Providers::EvolutionService do
 
     expect(service.supports_templates?).to be(false)
     expect(service.session_window_enforced?).to be(false)
+    expect(channel.supports_templates?).to be(false)
+    expect(channel.session_window_enforced?).to be(false)
   end
 
   it 'rejects a channel that tries to reuse an existing provisioning' do

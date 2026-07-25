@@ -50,7 +50,7 @@ class Conversations::MessageWindowService
 
   def whatsapp_messaging_window
     channel = @conversation.inbox.channel
-    channel.provider_service.session_window_enforced? ? MESSAGING_WINDOW_24_HOURS : nil
+    channel.session_window_enforced? ? MESSAGING_WINDOW_24_HOURS : nil
   end
 
   def messenger_messaging_window

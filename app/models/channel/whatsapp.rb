@@ -79,6 +79,14 @@ class Channel::Whatsapp < ApplicationRecord
     end
   end
 
+  def supports_templates?
+    provider != 'evolution'
+  end
+
+  def session_window_enforced?
+    provider != 'evolution'
+  end
+
   # Enables voice: turns calling on at Meta (idempotent), then re-registers webhooks
   # with the in-memory calling_enabled flag so the `calls` field is subscribed. The
   # flag is persisted only after registration succeeds, so a webhook failure can't

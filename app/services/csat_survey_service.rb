@@ -75,7 +75,7 @@ class CsatSurveyService
   end
 
   def whatsapp_template_channel?
-    whatsapp_channel? && inbox.channel.provider_service.supports_templates?
+    whatsapp_channel? && inbox.channel.supports_templates?
   end
 
   def template_available_and_approved?
