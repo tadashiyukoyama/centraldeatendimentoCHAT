@@ -31,6 +31,8 @@ module AssignmentHandler
   end
 
   def team_assignee?
+    return false if strict_team_visibility? && team.blank?
+
     team.blank? || team.members.include?(assignee)
   end
 

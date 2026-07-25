@@ -17,7 +17,7 @@ class ConversationPolicy < ApplicationPolicy
     return inbox_access? || team_access? unless strict_team_visibility?
     return false unless inbox_access?
 
-    team_access? || assigned_to_user? || participant?
+    team_access?
   end
 
   def administrator?

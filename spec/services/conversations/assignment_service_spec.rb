@@ -56,5 +56,51 @@ describe Conversations::AssignmentService do
         expect(conversation.assignee_id).to be_nil
       end
     end
+
+    context 'when strict team visibility is enabled' do
+      let(:team) { create(:team, account: account) }
+
+      it 'rejects a human assignment while the conversation has no team' do
+        create(:inbox_member, inbox: conversation.inbox, user: agent)
+        account.enable_features!(:strict_team_conversation_visibility)
+
+        expect do
+          described_class.new(conversation: conversation, assignee_id: agent.id).perform
+        end.to raise_error(ActiveRecord::RecordNotFound)
+        expect(conversation.reload.assignee_id).to be_nil
+      end
+
+      it 'allows an inbox member who belongs to the conversation team' do
+        create(:inbox_member, inbox: conversation.inbox, user: agent)
+        create(:team_member, team: team, user: agent)
+        conversation.update!(team: team)
+        account.enable_features!(:strict_team_conversation_visibility)
+
+        result = described_class.new(conversation: conversation, assignee_id: agent.id).perform
+
+        expect(result).to eq(agent)
+        expect(conversation.reload.assignee_id).to eq(agent.id)
+      end
+
+      it 'rejects an inbox member from another team' do
+        create(:inbox_member, inbox: conversation.inbox, user: agent)
+        conversation.update!(team: team)
+        account.enable_features!(:strict_team_conversation_visibility)
+
+        expect do
+          described_class.new(conversation: conversation, assignee_id: agent.id).perform
+        end.to raise_error(ActiveRecord::RecordNotFound)
+      end
+
+      it 'allows an administrator even while the conversation has no team' do
+        administrator = create(:user, account: account, role: :administrator)
+        account.enable_features!(:strict_team_conversation_visibility)
+
+        result = described_class.new(conversation: conversation, assignee_id: administrator.id).perform
+
+        expect(result).to eq(administrator)
+        expect(conversation.reload.assignee_id).to eq(administrator.id)
+      end
+    end
   end
 end

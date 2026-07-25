@@ -106,12 +106,13 @@ class ActionService
     return false unless assignable_agent_ids.include?(agent_ids[0])
     return true unless strict_team_assignment?
     return true if @account.administrators.exists?(id: agent_ids[0])
+    return false if @conversation.team.blank?
 
     @conversation.team.members.exists?(id: agent_ids[0])
   end
 
   def strict_team_assignment?
-    @conversation.team_id.present? && @account.feature_enabled?('strict_team_conversation_visibility')
+    @account.feature_enabled?('strict_team_conversation_visibility')
   end
 
   def team_belongs_to_account?(team_ids)

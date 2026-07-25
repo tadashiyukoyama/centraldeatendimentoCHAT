@@ -69,5 +69,34 @@ RSpec.describe ConversationPolicy, type: :policy do
         expect(subject).not_to permit(agent_context, conversation)
       end
     end
+
+    context 'when strict team visibility is enabled' do
+      let(:inbox) { create(:inbox, account: account) }
+      let(:team) { create(:team, account: account) }
+      let(:other_team) { create(:team, account: account) }
+      let!(:team_conversation) { create(:conversation, account: account, inbox: inbox, team: team) }
+      let!(:other_team_conversation) { create(:conversation, account: account, inbox: inbox, team: other_team, assignee: agent) }
+      let!(:unassigned_conversation) { create(:conversation, account: account, inbox: inbox, assignee: agent) }
+
+      before do
+        create(:inbox_member, user: agent, inbox: inbox)
+        create(:team_member, user: agent, team: team)
+        ConversationParticipant.find_or_create_by!(account: account, conversation: other_team_conversation, user: agent)
+        ConversationParticipant.find_or_create_by!(account: account, conversation: unassigned_conversation, user: agent)
+        account.enable_features!(:strict_team_conversation_visibility)
+      end
+
+      it 'allows a conversation in the agent team' do
+        expect(subject).to permit(agent_context, team_conversation)
+      end
+
+      it 'denies another team even when the agent is assigned and participating' do
+        expect(subject).not_to permit(agent_context, other_team_conversation)
+      end
+
+      it 'denies a teamless conversation even when the agent is assigned and participating' do
+        expect(subject).not_to permit(agent_context, unassigned_conversation)
+      end
+    end
   end
 end

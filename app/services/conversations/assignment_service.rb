@@ -54,7 +54,8 @@ class Conversations::AssignmentService
 
   def eligible_assignees
     inbox_members = conversation.inbox.members
-    return inbox_members if conversation.team_id.blank?
+    return inbox_members unless strict_assignment?
+    return User.none if conversation.team_id.blank?
 
     conversation.team.members.merge(inbox_members)
   end

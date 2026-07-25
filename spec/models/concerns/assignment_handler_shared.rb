@@ -62,5 +62,28 @@ shared_examples_for 'assignment_handler' do
         expect(conversation.reload.assignee).to eq assignee
       end
     end
+
+    context 'when strict team visibility is enabled' do
+      let(:strict_agent) { create(:user, account: conversation.account, role: :agent) }
+
+      before do
+        create(:inbox_member, user: strict_agent, inbox: conversation.inbox)
+        conversation.account.enable_features!(:strict_team_conversation_visibility)
+      end
+
+      it 'clears a non-administrator assignment while the conversation has no team' do
+        conversation.update!(team: nil, assignee: strict_agent)
+
+        expect(conversation.reload.assignee).to be_nil
+      end
+
+      it 'keeps an administrator assignment while the conversation has no team' do
+        administrator = create(:user, account: conversation.account, role: :administrator)
+
+        conversation.update!(team: nil, assignee: administrator)
+
+        expect(conversation.reload.assignee).to eq(administrator)
+      end
+    end
   end
 end

@@ -1,5 +1,7 @@
 module Enterprise::ConversationPolicy
   def show?
+    return inbox_access? if strict_manager?
+    return super if strict_team_visibility?
     return false unless super
     return true unless custom_role_permissions?
 
@@ -11,6 +13,11 @@ module Enterprise::ConversationPolicy
   end
 
   private
+
+  def strict_manager?
+    account&.feature_enabled?('strict_team_conversation_visibility') &&
+      custom_role_permissions? && manage_all_conversations?(custom_role_permissions)
+  end
 
   def manage_all_conversations?(permissions)
     permissions.include?('conversation_manage')

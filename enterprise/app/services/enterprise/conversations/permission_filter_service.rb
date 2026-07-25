@@ -1,5 +1,7 @@
 module Enterprise::Conversations::PermissionFilterService
   def perform
+    return strict_manager_conversations if strict_manager?
+    return super if account.feature_enabled?('strict_team_conversation_visibility')
     return filter_by_permissions(permissions) if user_has_custom_role?
 
     super
@@ -9,6 +11,15 @@ module Enterprise::Conversations::PermissionFilterService
 
   def user_has_custom_role?
     user_role == 'agent' && account_user&.custom_role_id.present?
+  end
+
+  def strict_manager?
+    account.feature_enabled?('strict_team_conversation_visibility') &&
+      user_has_custom_role? && permissions.include?('conversation_manage')
+  end
+
+  def strict_manager_conversations
+    conversations.where(inbox: user.inboxes.where(account_id: account.id))
   end
 
   def permissions

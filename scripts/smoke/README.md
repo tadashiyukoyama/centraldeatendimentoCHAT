@@ -7,6 +7,7 @@ through the public Platform and Application APIs. It creates an isolated,
 temporary account with:
 
 - one administrator;
+- one manager with the `conversation_manage` custom-role permission;
 - two agents;
 - one shared inbox;
 - two teams, one agent per team;
@@ -14,9 +15,9 @@ temporary account with:
 
 The runner attests the deployed Git SHA and verifies list, direct access,
 search, unread counts, notifications, contact surfaces, bulk contact actions,
-assignment and participant exceptions, team and inbox membership changes,
+strict assignment and participant boundaries, team and inbox membership changes,
 human replies, team transfers, direct-upload authorization, ActionCable event
-isolation, feature rollback, and feature reactivation. It then requests
+isolation, administrator/manager/agent hierarchy, feature rollback, and feature reactivation. It then requests
 deletion of all temporary resources and polls until their removal is confirmed.
 
 The smoke opens two authenticated ActionCable subscriptions. This requires

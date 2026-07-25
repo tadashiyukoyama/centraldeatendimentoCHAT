@@ -207,5 +207,49 @@ RSpec.describe Enterprise::Conversations::PermissionFilterService do
         expect(result).not_to include(other_inbox_conversation)
       end
     end
+
+    context 'when strict team visibility is enabled' do
+      it 'allows a manager to see every team in inboxes they manage' do
+        test_account = create(:account)
+        managed_inbox = create(:inbox, account: test_account)
+        other_inbox = create(:inbox, account: test_account)
+        manager = create(:user, account: test_account, role: :agent)
+        create(:inbox_member, user: manager, inbox: managed_inbox)
+        manager_role = create(:custom_role, account: test_account, permissions: ['conversation_manage'])
+        manager.account_users.find_by(account: test_account).update!(custom_role: manager_role)
+        team_a = create(:team, account: test_account)
+        team_b = create(:team, account: test_account)
+        team_a_conversation = create(:conversation, account: test_account, inbox: managed_inbox, team: team_a)
+        team_b_conversation = create(:conversation, account: test_account, inbox: managed_inbox, team: team_b)
+        unassigned_conversation = create(:conversation, account: test_account, inbox: managed_inbox)
+        other_inbox_conversation = create(:conversation, account: test_account, inbox: other_inbox)
+        test_account.enable_features!(:strict_team_conversation_visibility)
+
+        result = Conversations::PermissionFilterService.new(test_account.conversations, manager, test_account).perform
+
+        expect(result).to contain_exactly(team_a_conversation, team_b_conversation, unassigned_conversation)
+        expect(result).not_to include(other_inbox_conversation)
+      end
+
+      it 'does not let participating permissions bypass the agent team' do
+        test_account = create(:account)
+        test_inbox = create(:inbox, account: test_account)
+        test_agent = create(:user, account: test_account, role: :agent)
+        create(:inbox_member, user: test_agent, inbox: test_inbox)
+        custom_role = create(:custom_role, account: test_account, permissions: ['conversation_participating_manage'])
+        test_agent.account_users.find_by(account: test_account).update!(custom_role: custom_role)
+        team_a = create(:team, account: test_account)
+        team_b = create(:team, account: test_account)
+        create(:team_member, user: test_agent, team: team_a)
+        team_conversation = create(:conversation, account: test_account, inbox: test_inbox, team: team_a)
+        other_team_conversation = create(:conversation, account: test_account, inbox: test_inbox, team: team_b, assignee: test_agent)
+        ConversationParticipant.find_or_create_by!(account: test_account, conversation: other_team_conversation, user: test_agent)
+        test_account.enable_features!(:strict_team_conversation_visibility)
+
+        result = Conversations::PermissionFilterService.new(test_account.conversations, test_agent, test_account).perform
+
+        expect(result).to contain_exactly(team_conversation)
+      end
+    end
   end
 end

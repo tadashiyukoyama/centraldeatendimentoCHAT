@@ -332,7 +332,6 @@ async function main() {
     cables: [],
   };
   const checks = [];
-  const findings = [];
   const cleanup = {
     requested: false,
     verified: false,
@@ -347,17 +346,6 @@ async function main() {
     const detail = await operation();
     checks.push({ name, status: 'passed', detail });
     process.stdout.write('OK\n');
-  };
-
-  const recordFinding = async (name, operation) => {
-    process.stdout.write(`[smoke] ${name} ... `);
-    const result = await operation();
-    const status = result.passed ? 'passed' : 'failed';
-    checks.push({ name, status, detail: result.detail });
-    if (!result.passed) {
-      findings.push(name);
-    }
-    process.stdout.write(result.passed ? 'OK\n' : 'FINDING\n');
   };
 
   const platform = (path, optionsForRequest = {}) =>
@@ -404,6 +392,7 @@ async function main() {
     const password = () => `Aa1!${randomBytes(18).toString('base64url')}`;
     const userDefinitions = [
       { key: 'admin', name: 'Smoke Admin', role: 'administrator' },
+      { key: 'manager', name: 'Smoke Gerente', role: 'agent' },
       { key: 'agentA', name: 'Smoke Agente Setor A', role: 'agent' },
       { key: 'agentB', name: 'Smoke Agente Setor B', role: 'agent' },
     ];
@@ -447,12 +436,13 @@ async function main() {
     }
 
     const admin = resources.users.find(user => user.key === 'admin');
+    const manager = resources.users.find(user => user.key === 'manager');
     const agentA = resources.users.find(user => user.key === 'agentA');
     const agentB = resources.users.find(user => user.key === 'agentB');
     const accountPath = `/api/v1/accounts/${resources.accountId}`;
 
     await record(
-      'three authenticated identities belong to the isolated account',
+      'four authenticated hierarchy identities belong to the isolated account',
       async () => {
         for (const user of resources.users) {
           const profile = await request('/api/v1/profile', {
@@ -472,8 +462,40 @@ async function main() {
             `${user.key} profile does not include a pubsub token`
           );
         }
-        return { identities: 3, roles: ['administrator', 'agent', 'agent'] };
+        return {
+          identities: 4,
+          roles: ['administrator', 'manager', 'agent', 'agent'],
+        };
       }
+    );
+
+    const managerRoleResponse = await request(`${accountPath}/custom_roles`, {
+      method: 'POST',
+      token: admin.token,
+      body: {
+        custom_role: {
+          name: `Gerente ${runId}`,
+          description: 'Smoke strict hierarchy manager',
+          permissions: ['conversation_manage'],
+        },
+      },
+    });
+    const managerRoleId = Number(managerRoleResponse.data?.id);
+    assert(
+      managerRoleId > 0,
+      'Manager custom role creation did not return an id'
+    );
+    const managerUpdate = await request(`${accountPath}/agents/${manager.id}`, {
+      method: 'PUT',
+      token: admin.token,
+      body: {
+        agent: { name: manager.name },
+        custom_role_id: managerRoleId,
+      },
+    });
+    assert(
+      Number(managerUpdate.data?.custom_role_id) === managerRoleId,
+      'Manager custom role was not assigned'
     );
 
     const teamAResponse = await request(`${accountPath}/teams`, {
@@ -520,21 +542,22 @@ async function main() {
       token: admin.token,
       body: {
         inbox_id: inboxId,
-        user_ids: [agentA.id, agentB.id],
+        user_ids: [manager.id, agentA.id, agentB.id],
       },
     });
 
     await record(
-      'both agents share one inbox but belong to different teams',
+      'manager and agents share one inbox while agents belong to different teams',
       async () => ({
         inboxes: 1,
         teams: 2,
-        agents_in_shared_inbox: 2,
+        agents_in_shared_inbox: 3,
         agents_per_team: 1,
+        managers_without_team: 1,
       })
     );
 
-    for (const agent of [agentA, agentB]) {
+    for (const agent of [manager, agentA, agentB]) {
       resources.cables.push({
         key: agent.key,
         client: await connectActionCable(baseUrl, agent, resources.accountId),
@@ -614,7 +637,8 @@ async function main() {
             ) &&
             conversationEventIds(cableFor('agentB')).includes(
               conversations.teamB.id
-            ),
+            ) &&
+            conversationEventIds(cableFor('manager')).length === 3,
           'isolated conversation.created events'
         );
         await sleep(1_500);
@@ -628,10 +652,20 @@ async function main() {
           [conversations.teamB.id],
           'team B real-time conversation events'
         );
+        assertExactIds(
+          conversationEventIds(cableFor('manager')),
+          [
+            conversations.teamA.id,
+            conversations.teamB.id,
+            conversations.unassigned.id,
+          ],
+          'manager real-time conversation events'
+        );
         return {
-          action_cable_subscriptions: 2,
+          action_cable_subscriptions: 3,
           team_a_events: 1,
           team_b_events: 1,
+          manager_events: 3,
           leaked_events: 0,
         };
       }
@@ -729,6 +763,15 @@ async function main() {
           'administrator list'
         );
         assertExactIds(
+          await listIds(manager.token),
+          [
+            conversations.teamA.id,
+            conversations.teamB.id,
+            conversations.unassigned.id,
+          ],
+          'manager list'
+        );
+        assertExactIds(
           await listIds(agentA.token),
           [conversations.teamA.id],
           'team A list'
@@ -740,6 +783,7 @@ async function main() {
         );
         return {
           administrator_visible: 3,
+          manager_visible: 3,
           team_a_visible: 1,
           team_b_visible: 1,
           unassigned_agent_visible: 0,
@@ -751,12 +795,14 @@ async function main() {
       'strict unread counts match visible conversations',
       async () => {
         const adminCounts = await getUnreadCounts(admin.token);
+        const managerCounts = await getUnreadCounts(manager.token);
         const teamACounts = await getUnreadCounts(agentA.token);
         const teamBCounts = await getUnreadCounts(agentB.token);
         assert(
           adminCounts.all_count === 3,
           'administrator unread count must be 3'
         );
+        assert(managerCounts.all_count === 3, 'manager unread count must be 3');
         assert(teamACounts.all_count === 1, 'team A unread count must be 1');
         assert(teamBCounts.all_count === 1, 'team B unread count must be 1');
         assert(
@@ -771,6 +817,7 @@ async function main() {
         );
         return {
           administrator_unread: 3,
+          manager_unread: 3,
           team_a_unread: 1,
           team_b_unread: 1,
         };
@@ -798,9 +845,15 @@ async function main() {
             agentB.token
           ),
         ];
+        for (const conversation of Object.values(conversations)) {
+          await request(`${accountPath}/conversations/${conversation.id}`, {
+            token: manager.token,
+          });
+        }
         return {
           denied_requests: statuses.length,
           observed_statuses: [...new Set(statuses)].sort(),
+          manager_allowed_requests: 3,
         };
       }
     );
@@ -818,7 +871,20 @@ async function main() {
           [conversations.teamB.id],
           'team B search'
         );
-        return { team_a_search_results: 1, team_b_search_results: 1 };
+        assertExactIds(
+          await searchIds(manager.token),
+          [
+            conversations.teamA.id,
+            conversations.teamB.id,
+            conversations.unassigned.id,
+          ],
+          'manager search'
+        );
+        return {
+          team_a_search_results: 1,
+          team_b_search_results: 1,
+          manager_search_results: 3,
+        };
       }
     );
 
@@ -833,6 +899,11 @@ async function main() {
           `${accountPath}/contacts/${conversations.teamB.contactId}`,
           { token: agentB.token }
         );
+        for (const conversation of Object.values(conversations)) {
+          await request(`${accountPath}/contacts/${conversation.contactId}`, {
+            token: manager.token,
+          });
+        }
         const statuses = [
           await expectDenied(
             `${accountPath}/contacts/${conversations.teamB.contactId}`,
@@ -847,7 +918,11 @@ async function main() {
             agentA.token
           ),
         ];
-        return { allowed_requests: 2, denied_requests: statuses.length };
+        return {
+          agent_allowed_requests: 2,
+          manager_allowed_requests: 3,
+          denied_requests: statuses.length,
+        };
       }
     );
 
@@ -865,6 +940,15 @@ async function main() {
           'team B contact list'
         );
         assertExactIds(
+          await listContactIds(manager.token),
+          [
+            conversations.teamA.contactId,
+            conversations.teamB.contactId,
+            conversations.unassigned.contactId,
+          ],
+          'manager contact list'
+        );
+        assertExactIds(
           await searchContactIds(agentA.token),
           [conversations.teamA.contactId],
           'team A contact search'
@@ -873,6 +957,15 @@ async function main() {
           await searchContactIds(agentB.token),
           [conversations.teamB.contactId],
           'team B contact search'
+        );
+        assertExactIds(
+          await searchContactIds(manager.token),
+          [
+            conversations.teamA.contactId,
+            conversations.teamB.contactId,
+            conversations.unassigned.contactId,
+          ],
+          'manager contact search'
         );
 
         const ownLookup = await request(
@@ -902,6 +995,8 @@ async function main() {
         return {
           list_checks: 2,
           search_checks: 2,
+          manager_list_results: 3,
+          manager_search_results: 3,
           own_source_lookup: 'allowed',
           cross_team_source_lookup: 'denied',
         };
@@ -1041,6 +1136,18 @@ async function main() {
             },
           }
         );
+        await request(
+          `${accountPath}/conversations/${conversations.unassigned.id}/messages`,
+          {
+            method: 'POST',
+            token: manager.token,
+            body: {
+              content: `${marker} resposta gerente sem setor`,
+              message_type: 'outgoing',
+              private: false,
+            },
+          }
+        );
         const crossStatus = await expectDenied(
           `${accountPath}/conversations/${conversations.teamB.id}/messages`,
           agentA.token,
@@ -1055,12 +1162,13 @@ async function main() {
         );
         return {
           own_team_replies_created: 2,
+          manager_cross_team_replies_created: 1,
           cross_team_reply_status: crossStatus,
         };
       }
     );
 
-    await recordFinding(
+    await record(
       'team transfer revokes old access and grants new access immediately',
       async () => {
         const participantIdsBeforeTransfer = await waitUntil(async () => {
@@ -1092,6 +1200,10 @@ async function main() {
           conversations.teamA.id
         );
         const incompatibleAssigneeCleared = transferredAssigneeId !== agentA.id;
+        assert(
+          oldTeamAccessRevoked,
+          'team transfer retained access for the previous team'
+        );
         assertExactIds(
           await listIds(agentB.token),
           [conversations.teamA.id, conversations.teamB.id],
@@ -1107,47 +1219,15 @@ async function main() {
           'team B real-time grant after transfer'
         );
 
-        if (oldTeamAccessRevoked) {
-          await expectDenied(
-            `${accountPath}/conversations/${conversations.teamA.id}`,
-            agentA.token
-          );
-          await waitForEvent(
-            cableFor('agentA'),
-            'page:reload',
-            'team A real-time revocation after transfer'
-          );
-        } else {
-          if (!incompatibleAssigneeCleared) {
-            await request(
-              `${accountPath}/conversations/${conversations.teamA.id}/assignments`,
-              {
-                method: 'POST',
-                token: admin.token,
-                body: { assignee_id: null },
-              }
-            );
-          }
-          if (participantIdsAfterTransfer.includes(agentA.id)) {
-            await request(
-              `${accountPath}/conversations/${conversations.teamA.id}/participants`,
-              {
-                method: 'DELETE',
-                token: admin.token,
-                body: { user_ids: [agentA.id] },
-              }
-            );
-          }
-          await expectDenied(
-            `${accountPath}/conversations/${conversations.teamA.id}`,
-            agentA.token
-          );
-          await waitForEvent(
-            cableFor('agentA'),
-            'page:reload',
-            'team A real-time revocation after explicit visibility cleanup'
-          );
-        }
+        await expectDenied(
+          `${accountPath}/conversations/${conversations.teamA.id}`,
+          agentA.token
+        );
+        await waitForEvent(
+          cableFor('agentA'),
+          'page:reload',
+          'team A real-time revocation after transfer'
+        );
         assertExactIds(
           await listIds(agentA.token),
           [],
@@ -1212,125 +1292,68 @@ async function main() {
           'team A notifications after transfer restore'
         );
         return {
-          passed: oldTeamAccessRevoked,
-          detail: {
-            assigned_agent_was_participant_before_transfer:
-              participantIdsBeforeTransfer.includes(agentA.id),
-            incompatible_assignee_cleared_automatically:
-              incompatibleAssigneeCleared,
-            participant_retained_after_transfer:
-              participantIdsAfterTransfer.includes(agentA.id),
-            transferred_assignee_id:
-              Number.isInteger(transferredAssigneeId) &&
-              transferredAssigneeId > 0
-                ? transferredAssigneeId
-                : null,
-            explicit_normalization_required: !oldTeamAccessRevoked,
-            revoked_from_old_team_automatically: oldTeamAccessRevoked,
-            revoked_after_normalization: true,
-            granted_to_new_team: true,
-            original_state_restored: true,
-            realtime_revocation_events: 2,
-            transferred_team_reply_created: true,
-            stale_notification_hidden: true,
-          },
-        };
-      }
-    );
-
-    await recordFinding(
-      'direct assignee exception grants and then revokes unassigned access',
-      async () => {
-        cableFor('agentA').clear();
-        await request(
-          `${accountPath}/conversations/${conversations.unassigned.id}/assignments`,
-          {
-            method: 'POST',
-            token: admin.token,
-            body: { assignee_id: agentA.id },
-          }
-        );
-        assertExactIds(
-          await listIds(agentA.token),
-          [conversations.teamA.id, conversations.unassigned.id],
-          'team A list with direct assignment exception'
-        );
-        assert(
-          (await getUnreadCounts(agentA.token)).all_count === 2,
-          'team A unread count did not include direct assignment exception'
-        );
-        await waitUntil(
-          async () =>
-            (await getNotificationConversationIds(agentA.token)).includes(
-              conversations.unassigned.id
-            ),
-          'direct assignment notification'
-        );
-
-        cableFor('agentA').clear();
-        await request(
-          `${accountPath}/conversations/${conversations.unassigned.id}/assignments`,
-          {
-            method: 'POST',
-            token: admin.token,
-            body: { assignee_id: null },
-          }
-        );
-        const idsAfterUnassignment = await listIds(agentA.token);
-        const participantIdsAfterUnassignment = await getParticipantIds(
-          conversations.unassigned.id
-        );
-        const accessRevokedAutomatically = !idsAfterUnassignment.includes(
-          conversations.unassigned.id
-        );
-        if (!accessRevokedAutomatically) {
-          await request(
-            `${accountPath}/conversations/${conversations.unassigned.id}/participants`,
-            {
-              method: 'DELETE',
-              token: admin.token,
-              body: { user_ids: [agentA.id] },
-            }
-          );
-        }
-        assertExactIds(
-          await listIds(agentA.token),
-          [conversations.teamA.id],
-          'team A list after direct assignment removal'
-        );
-        assert(
-          (await getUnreadCounts(agentA.token)).all_count === 1,
-          'team A unread count retained revoked direct assignment'
-        );
-        await waitForEvent(
-          cableFor('agentA'),
-          'page:reload',
-          'direct assignment real-time revocation'
-        );
-        assertExactIds(
-          await getNotificationConversationIds(agentA.token),
-          [conversations.teamA.id],
-          'team A notifications after direct assignment removal'
-        );
-        return {
-          passed: accessRevokedAutomatically,
-          detail: {
-            assigned_exception_visible: true,
-            access_revoked_automatically: accessRevokedAutomatically,
-            participant_retained_after_unassignment:
-              participantIdsAfterUnassignment.includes(agentA.id),
-            explicit_participant_removal_required: !accessRevokedAutomatically,
-            removal_revoked_access_after_normalization: true,
-            unread_counts_updated: true,
-            stale_notification_hidden: true,
-            realtime_reload_received: true,
-          },
+          assigned_agent_was_participant_before_transfer:
+            participantIdsBeforeTransfer.includes(agentA.id),
+          incompatible_assignee_cleared_automatically:
+            incompatibleAssigneeCleared,
+          participant_retained_after_transfer:
+            participantIdsAfterTransfer.includes(agentA.id),
+          transferred_assignee_id:
+            Number.isInteger(transferredAssigneeId) && transferredAssigneeId > 0
+              ? transferredAssigneeId
+              : null,
+          explicit_normalization_required: false,
+          revoked_from_old_team_automatically: true,
+          granted_to_new_team: true,
+          original_state_restored: true,
+          realtime_revocation_events: 2,
+          transferred_team_reply_created: true,
+          stale_notification_hidden: true,
         };
       }
     );
 
     await record(
-      'participant exception grants and then revokes unassigned access',
+      'strict assignment rejects a human assignee before a team is selected',
+      async () => {
+        const assignmentResponse = await request(
+          `${accountPath}/conversations/${conversations.unassigned.id}/assignments`,
+          {
+            method: 'POST',
+            token: admin.token,
+            body: { assignee_id: agentA.id },
+            expected: [404, 422],
+          }
+        );
+        assertExactIds(
+          await listIds(agentA.token),
+          [conversations.teamA.id],
+          'team A list after rejected teamless assignment'
+        );
+        await expectDenied(
+          `${accountPath}/conversations/${conversations.unassigned.id}`,
+          agentA.token
+        );
+        assert(
+          (await getUnreadCounts(agentA.token)).all_count === 1,
+          'rejected teamless assignment changed team A unread count'
+        );
+        assertExactIds(
+          await getNotificationConversationIds(agentA.token),
+          [conversations.teamA.id],
+          'team A notifications after rejected teamless assignment'
+        );
+        return {
+          rejected_status: assignmentResponse.status,
+          visibility_granted: false,
+          unread_count_changed: false,
+          notification_created: false,
+        };
+      }
+    );
+
+    await record(
+      'participants do not bypass strict team visibility',
       async () => {
         cableFor('agentB').clear();
         await request(
@@ -1343,21 +1366,21 @@ async function main() {
         );
         assertExactIds(
           await listIds(agentB.token),
-          [conversations.teamB.id, conversations.unassigned.id],
-          'team B list with participant exception'
+          [conversations.teamB.id],
+          'team B list after cross-team participant addition'
         );
-        await request(
+        await expectDenied(
           `${accountPath}/conversations/${conversations.unassigned.id}`,
-          { token: agentB.token }
+          agentB.token
         );
         assert(
-          (await getUnreadCounts(agentB.token)).all_count === 2,
-          'team B unread count did not include participant exception'
+          (await getUnreadCounts(agentB.token)).all_count === 1,
+          'participant addition changed team B unread count'
         );
         await waitForEvent(
           cableFor('agentB'),
           'page:reload',
-          'participant real-time grant'
+          'participant addition reload'
         );
 
         cableFor('agentB').clear();
@@ -1388,9 +1411,9 @@ async function main() {
           'participant real-time revocation'
         );
         return {
-          participant_exception_visible: true,
-          removal_revoked_access: true,
-          unread_counts_updated: true,
+          participant_record_created: true,
+          cross_team_access_granted: false,
+          unread_count_changed: false,
           realtime_reload_events: 2,
         };
       }
@@ -1568,6 +1591,11 @@ async function main() {
           allIds,
           'team B list with feature disabled'
         );
+        assertExactIds(
+          await listIds(manager.token),
+          allIds,
+          'manager list with feature disabled'
+        );
         await request(
           `${accountPath}/conversations/${conversations.teamB.id}`,
           { token: agentA.token }
@@ -1576,7 +1604,12 @@ async function main() {
           `${accountPath}/conversations/${conversations.teamA.id}`,
           { token: agentB.token }
         );
-        return { feature_enabled: false, team_a_visible: 3, team_b_visible: 3 };
+        return {
+          feature_enabled: false,
+          team_a_visible: 3,
+          team_b_visible: 3,
+          manager_visible: 3,
+        };
       }
     );
 
@@ -1602,6 +1635,15 @@ async function main() {
         [conversations.teamB.id],
         'team B list after reactivation'
       );
+      assertExactIds(
+        await listIds(manager.token),
+        [
+          conversations.teamA.id,
+          conversations.teamB.id,
+          conversations.unassigned.id,
+        ],
+        'manager list after reactivation'
+      );
       await expectDenied(
         `${accountPath}/conversations/${conversations.teamB.id}`,
         agentA.token
@@ -1610,15 +1652,15 @@ async function main() {
         `${accountPath}/conversations/${conversations.teamA.id}`,
         agentB.token
       );
-      return { feature_enabled: true, team_a_visible: 1, team_b_visible: 1 };
+      return {
+        feature_enabled: true,
+        team_a_visible: 1,
+        team_b_visible: 1,
+        manager_visible: 3,
+      };
     });
 
-    if (findings.length > 0) {
-      outcome = 'failed';
-      failure = `${findings.length} product finding(s): ${findings.join('; ')}`;
-    } else {
-      outcome = 'passed';
-    }
+    outcome = 'passed';
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error);
     process.stderr.write(`[smoke] FAILED: ${failure}\n`);
@@ -1678,7 +1720,7 @@ async function main() {
     }
 
     const report = {
-      schema_version: 2,
+      schema_version: 3,
       run_id: runId,
       result: outcome,
       failure,
@@ -1694,10 +1736,12 @@ async function main() {
         isolated_account: true,
         shared_inbox_count: 1,
         team_count: 2,
-        agent_count: 2,
+        agent_count: 3,
+        manager_count: 1,
+        team_agent_count: 2,
         administrator_count: 1,
         temporary_conversation_count: 3,
-        action_cable_subscription_count: 2,
+        action_cable_subscription_count: 3,
       },
       checks,
       cleanup,

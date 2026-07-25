@@ -31,21 +31,23 @@ class Conversations::VisibleUsersService
   def strict_candidate_ids(account_users)
     user_ids = account_users.keys
     administrator_ids = account_users.values.select(&:administrator?).map(&:user_id)
-    (administrator_ids + (agent_candidate_ids(user_ids) & inbox_member_ids(user_ids))).compact.uniq
+    agent_ids = team_member_ids(user_ids) + strict_manager_ids(account_users)
+    (administrator_ids + (agent_ids & inbox_member_ids(user_ids))).compact.uniq
   end
 
-  def agent_candidate_ids(user_ids)
-    team_member_ids(user_ids) + [conversation.assignee_id] + participant_ids(user_ids)
+  def strict_manager_ids(account_users)
+    account_users.values.filter_map do |account_user|
+      next unless account_user.respond_to?(:custom_role)
+
+      permissions = account_user.custom_role&.permissions || []
+      account_user.user_id if account_user.agent? && permissions.include?('conversation_manage')
+    end
   end
 
   def team_member_ids(user_ids)
     return [] if conversation.team_id.blank?
 
     conversation.team.members.where(id: user_ids).pluck(:id)
-  end
-
-  def participant_ids(user_ids)
-    conversation.conversation_participants.where(user_id: user_ids).pluck(:user_id)
   end
 
   def inbox_member_ids(user_ids)

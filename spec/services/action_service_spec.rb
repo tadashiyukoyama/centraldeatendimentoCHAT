@@ -71,6 +71,19 @@ describe ActionService do
       end
     end
 
+    context 'when strict team visibility is enabled' do
+      let(:conversation) { create(:conversation, account: account) }
+
+      it 'does not assign an inbox agent before a team is selected' do
+        inbox_member
+        account.enable_features!(:strict_team_conversation_visibility)
+
+        action_service.assign_agent([agent.id])
+
+        expect(conversation.reload.assignee).to be_nil
+      end
+    end
+
     context 'when assigning the last responding agent' do
       it 'assigns the last agent who replied publicly' do
         note_author = create(:user, account: account, role: :agent)
