@@ -94,9 +94,7 @@ class AceleraControl::Entitlement
   def validity_period(payload)
     expires_at_value = payload.fetch('expires_at')
     grace_until_value = payload.fetch('grace_until', expires_at_value)
-    unless expires_at_value.is_a?(String) && grace_until_value.is_a?(String)
-      raise AceleraControl::InvalidEntitlementError
-    end
+    raise AceleraControl::InvalidEntitlementError unless expires_at_value.is_a?(String) && grace_until_value.is_a?(String)
 
     expires_at = Time.iso8601(expires_at_value)
     grace_until = Time.iso8601(grace_until_value)
