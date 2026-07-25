@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'json'
 require 'openssl'
 require 'time'
 require 'uri'
@@ -12,7 +13,7 @@ require 'uri'
 module AceleraControl
   class InvalidEntitlementError < StandardError; end
 
-  HEARTBEAT_PATH = '/v1/instances/heartbeat'.freeze
+  HEARTBEAT_PATH = '/v1/instances/heartbeat'
   OPEN_TIMEOUT = 3
   READ_TIMEOUT = 5
   NETWORK_ERRORS = (ExceptionList::REST_CLIENT_EXCEPTIONS + [
@@ -22,11 +23,13 @@ module AceleraControl
     Errno::ETIMEDOUT,
     OpenSSL::SSL::SSLError
   ]).uniq.freeze
-  FORBIDDEN_HOST_SUFFIXES = %w[
-    chatwoot.com
-    chatwoot.help
-    chwt.app
-  ].freeze
+  HEARTBEAT_ERRORS = (NETWORK_ERRORS + [
+    JSON::ParserError,
+    KeyError,
+    ArgumentError,
+    OpenSSL::PKey::PKeyError,
+    InvalidEntitlementError
+  ]).freeze
 
   class << self
     def managed?
@@ -74,38 +77,19 @@ module AceleraControl
     def heartbeat(instance_config)
       return {} unless enabled?
 
-      response = RestClient::Request.execute(
-        method: :post,
-        url: heartbeat_url,
-        payload: instance_config.to_json,
-        headers: request_headers,
-        open_timeout: OPEN_TIMEOUT,
-        read_timeout: READ_TIMEOUT
-      )
-
+      response = perform_heartbeat_request(instance_config)
       Entitlement.new(
         body: response.to_s,
         verification_key: verification_key,
         expected_instance_id: instance_config.fetch(:instance_id)
       ).to_h
-    rescue *NETWORK_ERRORS => e
-      log_rejection(e.class.name)
-      {}
-    rescue JSON::ParserError, KeyError, ArgumentError, OpenSSL::PKey::PKeyError, InvalidEntitlementError => e
+    rescue *HEARTBEAT_ERRORS => e
       log_rejection(e.class.name)
       {}
     end
 
     def safe_external_url(value)
-      return if value.blank?
-
-      uri = URI.parse(value.to_s.strip)
-      return unless uri.is_a?(URI::HTTPS) && uri.host.present? && uri.userinfo.blank?
-      return if forbidden_host?(uri.host)
-
-      uri.to_s
-    rescue URI::InvalidURIError
-      nil
+      UrlPolicy.call(value)
     end
 
     private
@@ -130,11 +114,15 @@ module AceleraControl
       }
     end
 
-    def forbidden_host?(host)
-      normalized_host = host.to_s.downcase.delete_suffix('.')
-      FORBIDDEN_HOST_SUFFIXES.any? do |suffix|
-        normalized_host == suffix || normalized_host.end_with?(".#{suffix}")
-      end
+    def perform_heartbeat_request(instance_config)
+      RestClient::Request.execute(
+        method: :post,
+        url: heartbeat_url,
+        payload: instance_config.to_json,
+        headers: request_headers,
+        open_timeout: OPEN_TIMEOUT,
+        read_timeout: READ_TIMEOUT
+      )
     end
 
     def boolean_env?(key)

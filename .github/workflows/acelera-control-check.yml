@@ -19,7 +19,6 @@ on:
       - 'config/installation_config.yml'
       - 'enterprise/app/jobs/enterprise/internal/check_new_versions_job.rb'
       - 'enterprise/app/services/internal/reconcile_plan_config_service.rb'
-      - 'enterprise/lib/enterprise/chatwoot_hub.rb'
       - 'lib/acelera_control.rb'
       - 'lib/acelera_control/**'
       - 'lib/chatwoot_hub.rb'
@@ -86,9 +85,9 @@ jobs:
           app/services/notification/push_test_service.rb
           enterprise/app/jobs/enterprise/internal/check_new_versions_job.rb
           enterprise/app/services/internal/reconcile_plan_config_service.rb
-          enterprise/lib/enterprise/chatwoot_hub.rb
           lib/acelera_control.rb
           lib/acelera_control/entitlement.rb
+          lib/acelera_control/url_policy.rb
           lib/chatwoot_hub.rb
           spec/enterprise/jobs/enterprise/internal/check_new_versions_job_spec.rb
           spec/enterprise/lib/chatwoot_hub_spec.rb

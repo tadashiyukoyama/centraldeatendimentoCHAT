@@ -123,7 +123,7 @@ RSpec.describe AceleraControl do
 
   def signed_envelope(payload, key: signing_key)
     raw_payload = payload.to_json
-    signature = key.sign(OpenSSL::Digest::SHA256.new, raw_payload)
+    signature = key.sign(OpenSSL::Digest.new('SHA256'), raw_payload)
     {
       payload: Base64.strict_encode64(raw_payload),
       signature: Base64.strict_encode64(signature)
