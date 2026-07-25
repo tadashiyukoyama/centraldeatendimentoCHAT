@@ -96,6 +96,21 @@ jobs:
           spec/lib/acelera_control_spec.rb
           spec/lib/chatwoot_hub_spec.rb
 
+      # Request specs render Vite entrypoints, so keep the same setup order used
+      # by the main backend test workflow. These dependencies are reused by the
+      # targeted frontend checks below; this does not add a second installation.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Prepare test database
         run: |
           bundle exec rake db:create
@@ -113,18 +128,6 @@ jobs:
           spec/services/notification/push_notification_service_spec.rb
           spec/controllers/installation/onboarding_controller_spec.rb
           --format progress
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: pnpm
-
-      - name: Install frontend dependencies
-        run: pnpm install --frozen-lockfile
 
       - name: Run targeted frontend lint
         run: >-
