@@ -41,7 +41,7 @@ RSpec.describe ConversationPolicy, type: :policy do
     end
 
     context 'when agent has inbox access' do
-      let(:inbox) { create(:inbox, account: account) }
+      let(:inbox) { create(:inbox, account: account, enable_auto_assignment: false) }
       let(:conversation) { create(:conversation, account: account, inbox: inbox) }
 
       before { create(:inbox_member, user: agent, inbox: inbox) }

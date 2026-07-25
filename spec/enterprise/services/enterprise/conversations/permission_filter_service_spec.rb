@@ -211,7 +211,7 @@ RSpec.describe Enterprise::Conversations::PermissionFilterService do
     context 'when strict team visibility is enabled' do
       it 'allows a manager to see every team in inboxes they manage' do
         test_account = create(:account)
-        managed_inbox = create(:inbox, account: test_account)
+        managed_inbox = create(:inbox, account: test_account, enable_auto_assignment: false)
         other_inbox = create(:inbox, account: test_account)
         manager = create(:user, account: test_account, role: :agent)
         create(:inbox_member, user: manager, inbox: managed_inbox)
@@ -233,7 +233,7 @@ RSpec.describe Enterprise::Conversations::PermissionFilterService do
 
       it 'does not let participating permissions bypass the agent team' do
         test_account = create(:account)
-        test_inbox = create(:inbox, account: test_account)
+        test_inbox = create(:inbox, account: test_account, enable_auto_assignment: false)
         test_agent = create(:user, account: test_account, role: :agent)
         create(:inbox_member, user: test_agent, inbox: test_inbox)
         custom_role = create(:custom_role, account: test_account, permissions: ['conversation_participating_manage'])
@@ -250,6 +250,32 @@ RSpec.describe Enterprise::Conversations::PermissionFilterService do
 
         expect(result).to contain_exactly(team_conversation)
       end
+    end
+  end
+
+  describe Conversations::VisibleUsersService do
+    let(:account) { create(:account) }
+    let(:inbox) { create(:inbox, account: account, enable_auto_assignment: false) }
+    let(:team) { create(:team, account: account, allow_auto_assign: false) }
+    let(:conversation) { create(:conversation, account: account, inbox: inbox, team: team) }
+    let(:manager) { create(:user, account: account, role: :agent) }
+    let(:manager_without_inbox) { create(:user, account: account, role: :agent) }
+    let(:manager_role) { create(:custom_role, account: account, permissions: ['conversation_manage']) }
+
+    before do
+      manager.account_users.find_by(account: account).update!(custom_role: manager_role)
+      manager_without_inbox.account_users.find_by(account: account).update!(custom_role: manager_role)
+      create(:inbox_member, inbox: inbox, user: manager)
+      account.enable_features!(:strict_team_conversation_visibility)
+    end
+
+    it 'broadcasts strict conversation events to managers of the inbox' do
+      result = described_class.new(
+        conversation: conversation,
+        users: [manager, manager_without_inbox]
+      ).perform
+
+      expect(result).to contain_exactly(manager)
     end
   end
 end

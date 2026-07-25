@@ -63,6 +63,7 @@ RSpec.describe ConversationPolicy, type: :policy do
     end
 
     context 'when strict team visibility is enabled' do
+      let(:inbox) { create(:inbox, account: account, enable_auto_assignment: false) }
       let(:other_team) { create(:team, account: account, allow_auto_assign: false) }
       let(:conversation) { create(:conversation, account: account, inbox: inbox, team: other_team) }
 
