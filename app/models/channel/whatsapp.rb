@@ -25,6 +25,11 @@ class Channel::Whatsapp < ApplicationRecord
   EDITABLE_ATTRS = [:phone_number, :provider, { provider_config: {} }].freeze
   attr_accessor :evolution_provisioning_validation_id
 
+  has_one :evolution_provisioning,
+          class_name: 'Whatsapp::EvolutionProvisioning',
+          foreign_key: :whatsapp_channel_id,
+          inverse_of: :whatsapp_channel
+
   # default at the moment is 360dialog lets change later.
   PROVIDERS = %w[default whatsapp_cloud evolution].freeze
   before_validation :ensure_webhook_verify_token

@@ -245,4 +245,17 @@ RSpec.describe Campaign do
       )
     end
   end
+
+  context 'when validating a WhatsApp campaign provider' do
+    let(:account) { create(:account) }
+
+    it 'rejects an Evolution inbox before a campaign can be scheduled' do
+      channel = create(:channel_whatsapp, account: account, provider: 'evolution',
+                                          validate_provider_config: false, sync_templates: false)
+      campaign = build(:campaign, account: account, inbox: channel.inbox)
+
+      expect(campaign).not_to be_valid
+      expect(campaign.errors[:inbox_id]).to include('must use a WhatsApp Cloud inbox for campaigns')
+    end
+  end
 end

@@ -154,6 +154,13 @@ export const getters = {
       item => item.channel_type === INBOX_TYPES.WHATSAPP
     );
   },
+  getWhatsAppCampaignInboxes($state) {
+    return $state.records.filter(
+      item =>
+        item.channel_type === INBOX_TYPES.WHATSAPP &&
+        item.provider === 'whatsapp_cloud'
+    );
+  },
   dialogFlowEnabledInboxes($state) {
     return $state.records.filter(
       item => item.channel_type !== INBOX_TYPES.EMAIL

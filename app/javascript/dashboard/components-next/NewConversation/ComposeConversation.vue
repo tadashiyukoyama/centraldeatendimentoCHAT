@@ -71,9 +71,11 @@ const uiFlags = useMapGetter('contactConversations/getUIFlags');
 const messageSignature = useMapGetter('getMessageSignature');
 const inboxesList = useMapGetter('inboxes/getInboxes');
 
-const sendWithSignature = computed(() =>
-  fetchSignatureFlagFromUISettings(targetInbox.value?.channelType)
-);
+const sendWithSignature = computed(() => {
+  if (targetInbox.value?.provider === 'evolution') return false;
+
+  return fetchSignatureFlagFromUISettings(targetInbox.value?.channelType);
+});
 
 const directUploadsEnabled = computed(
   () => globalConfig.value.directUploadsEnabled

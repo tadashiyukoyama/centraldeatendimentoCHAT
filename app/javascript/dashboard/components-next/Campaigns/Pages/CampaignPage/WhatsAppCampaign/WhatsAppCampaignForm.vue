@@ -18,7 +18,7 @@ const { t } = useI18n();
 const formState = {
   uiFlags: useMapGetter('campaigns/getUIFlags'),
   labels: useMapGetter('labels/getLabels'),
-  inboxes: useMapGetter('inboxes/getWhatsAppInboxes'),
+  inboxes: useMapGetter('inboxes/getWhatsAppCampaignInboxes'),
   getFilteredWhatsAppTemplates: useMapGetter(
     'inboxes/getFilteredWhatsAppTemplates'
   ),

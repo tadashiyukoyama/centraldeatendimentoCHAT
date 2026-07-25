@@ -38,4 +38,28 @@ RSpec.describe 'WhatsApp Evolution Provisionings API', type: :request do
       expect(response.parsed_body).not_to include('instance_token', 'webhook_secret', 'instance_name')
     end
   end
+
+
+  describe 'DELETE /api/v1/accounts/:account_id/whatsapp/evolution_provisionings/:public_id' do
+    it 'does not delete a provisioning that already owns a connected inbox' do
+      provisioning = create(:whatsapp_evolution_provisioning, account: account, status: :connected)
+      channel = build(
+        :channel_whatsapp,
+        account: account,
+        provider: 'evolution',
+        provider_config: { 'evolution_provisioning_id' => provisioning.id }
+      )
+      channel.evolution_provisioning_validation_id = provisioning.id
+      channel.save!
+      provisioning.update!(whatsapp_channel: channel)
+
+      delete "/api/v1/accounts/#{account.id}/whatsapp/evolution_provisionings/#{provisioning.public_id}",
+             headers: administrator.create_new_auth_token,
+             as: :json
+
+      expect(response).to have_http_status(:conflict)
+      expect(provisioning.reload).to be_connected
+      expect(provisioning.whatsapp_channel).to eq(channel)
+    end
+  end
 end

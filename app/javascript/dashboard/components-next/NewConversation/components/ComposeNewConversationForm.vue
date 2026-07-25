@@ -77,6 +77,9 @@ const inboxTypes = computed(() => ({
   isEmail: props.targetInbox?.channelType === INBOX_TYPES.EMAIL,
   isTwilio: props.targetInbox?.channelType === INBOX_TYPES.TWILIO,
   isWhatsapp: props.targetInbox?.channelType === INBOX_TYPES.WHATSAPP,
+  isEvolutionWhatsapp:
+    props.targetInbox?.channelType === INBOX_TYPES.WHATSAPP &&
+    props.targetInbox?.provider === 'evolution',
   isWebWidget: props.targetInbox?.channelType === INBOX_TYPES.WEB,
   isApi: props.targetInbox?.channelType === INBOX_TYPES.API,
   isEmailOrWebWidget:
@@ -109,7 +112,11 @@ const effectiveChannelType = computed(() =>
 const validationRules = computed(() => ({
   selectedContact: { required },
   targetInbox: { required },
-  message: { required: requiredIf(!inboxTypes.value.isWhatsapp) },
+  message: {
+    required: requiredIf(
+      !inboxTypes.value.isWhatsapp || inboxTypes.value.isEvolutionWhatsapp
+    ),
+  },
   subject: { required: requiredIf(inboxTypes.value.isEmail) },
 }));
 
@@ -336,7 +343,7 @@ const handleSendTwilioMessage = async ({ message, templateParams }) => {
 
 const shouldShowMessageEditor = computed(() => {
   return (
-    !inboxTypes.value.isWhatsapp &&
+    (!inboxTypes.value.isWhatsapp || inboxTypes.value.isEvolutionWhatsapp) &&
     !showNoInboxAlert.value &&
     !inboxTypes.value.isTwilioWhatsapp
   );
@@ -439,7 +446,11 @@ useKeyboardEvents({
       v-else
       :attached-files="state.attachedFiles"
       :is-whatsapp-inbox="inboxTypes.isWhatsapp"
+      :is-evolution-whatsapp-inbox="inboxTypes.isEvolutionWhatsapp"
       :is-email-or-web-widget-inbox="inboxTypes.isEmailOrWebWidget"
+      :is-attachment-upload-enabled="
+        inboxTypes.isEmailOrWebWidget || inboxTypes.isEvolutionWhatsapp
+      "
       :is-twilio-sms-inbox="inboxTypes.isTwilioSMS"
       :is-twilio-whats-app-inbox="inboxTypes.isTwilioWhatsapp"
       :message-templates="whatsappMessageTemplates"

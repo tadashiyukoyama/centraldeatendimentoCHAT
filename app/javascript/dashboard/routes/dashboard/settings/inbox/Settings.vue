@@ -23,6 +23,7 @@ import PreChatFormSettings from './PreChatForm/Settings.vue';
 import WeeklyAvailability from './components/WeeklyAvailability.vue';
 import GreetingsEditor from 'shared/components/GreetingsEditor.vue';
 import ConfigurationPage from './settingsPage/ConfigurationPage.vue';
+import EvolutionConnectionPage from './settingsPage/EvolutionConnectionPage.vue';
 import VoiceConfigurationPage from './settingsPage/VoiceConfigurationPage.vue';
 import WhatsappCallingPage from './settingsPage/WhatsappCallingPage.vue';
 import CustomerSatisfactionPage from './settingsPage/CustomerSatisfactionPage.vue';
@@ -54,6 +55,7 @@ export default {
     BotConfiguration,
     CollaboratorsPage,
     ConfigurationPage,
+    EvolutionConnectionPage,
     VoiceConfigurationPage,
     WhatsappCallingPage,
     CustomerSatisfactionPage,
@@ -169,6 +171,9 @@ export default {
       if (this.isATwilioWhatsAppChannel) {
         return this.$t('INBOX_MGMT.ADD.WHATSAPP.PROVIDERS.TWILIO');
       }
+      if (this.isEvolutionWhatsAppChannel) {
+        return this.$t('INBOX_MGMT.ADD.WHATSAPP.PROVIDERS.EVOLUTION');
+      }
       return '';
     },
     tabs() {
@@ -211,6 +216,7 @@ export default {
         this.isAPIInbox ||
         (this.isAnEmailChannel && !this.inbox.provider) ||
         this.shouldShowWhatsAppConfiguration ||
+        this.isEvolutionWhatsAppChannel ||
         this.isAWebWidgetInbox
       ) {
         visibleToAllChannelTabs = [
@@ -1373,7 +1379,11 @@ export default {
           class="mx-6"
           :class="isAWebWidgetInbox ? 'max-w-7xl' : 'max-w-4xl'"
         >
-          <ConfigurationPage :inbox="inbox" />
+          <EvolutionConnectionPage
+            v-if="isEvolutionWhatsAppChannel"
+            :inbox="inbox"
+          />
+          <ConfigurationPage v-else :inbox="inbox" />
         </div>
         <div
           v-if="selectedTabKey === 'voice-configuration'"

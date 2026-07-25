@@ -29,13 +29,13 @@ const store = useStore();
 const labels = useMapGetter('labels/getLabels');
 const { captainEnabled } = useCaptain();
 
-const { isAWhatsAppChannel, isATwilioWhatsAppChannel } = useInbox(
+const { isAWhatsAppCloudChannel, isATwilioWhatsAppChannel } = useInbox(
   props.inbox?.id
 );
 
-// Computed to check if it's any type of WhatsApp channel (Cloud or Twilio)
-const isAnyWhatsAppChannel = computed(
-  () => isAWhatsAppChannel.value || isATwilioWhatsAppChannel.value
+// Only providers backed by an official template API require CSAT templates.
+const isTemplateWhatsAppChannel = computed(
+  () => isAWhatsAppCloudChannel.value || isATwilioWhatsAppChannel.value
 );
 
 const isUpdating = ref(false);
@@ -94,7 +94,7 @@ const shouldShowTemplateStatus = computed(
   () => templateStatus.value && !templateLoading.value
 );
 const showUtilityAnalyzer = computed(
-  () => isAnyWhatsAppChannel.value && captainEnabled.value
+  () => isTemplateWhatsAppChannel.value && captainEnabled.value
 );
 
 const templateApprovalStatus = computed(() => {
@@ -168,7 +168,7 @@ const initializeState = () => {
     : [];
 
   // Store original template values for change detection
-  if (isAnyWhatsAppChannel.value) {
+  if (isTemplateWhatsAppChannel.value) {
     originalTemplateValues.value = {
       message: state.message,
       templateButtonText: state.templateButtonText,
@@ -178,7 +178,7 @@ const initializeState = () => {
 };
 
 const checkTemplateStatus = async () => {
-  if (!isAnyWhatsAppChannel.value) return;
+  if (!isTemplateWhatsAppChannel.value) return;
 
   try {
     templateLoading.value = true;
@@ -208,7 +208,7 @@ const checkTemplateStatus = async () => {
 onMounted(() => {
   initializeState();
   if (!labels.value?.length) store.dispatch('labels/get');
-  if (isAnyWhatsAppChannel.value) checkTemplateStatus();
+  if (isTemplateWhatsAppChannel.value) checkTemplateStatus();
 });
 
 watch(() => props.inbox, initializeState, { immediate: true });
@@ -317,7 +317,7 @@ const removeLabel = label => {
 
 // Check if template-related fields have changed
 const hasTemplateChanges = () => {
-  if (!isAnyWhatsAppChannel.value) return false;
+  if (!isTemplateWhatsAppChannel.value) return false;
 
   const original = originalTemplateValues.value;
   return (
@@ -387,7 +387,7 @@ const updateInbox = async attributes => {
 };
 
 const createTemplate = async () => {
-  if (!isAnyWhatsAppChannel.value) return null;
+  if (!isTemplateWhatsAppChannel.value) return null;
 
   const response = await store.dispatch('inboxes/createCSATTemplate', {
     inboxId: props.inbox.id,
@@ -408,7 +408,7 @@ const performSave = async () => {
 
     // For WhatsApp channels, create template first if needed
     if (
-      isAnyWhatsAppChannel.value &&
+      isTemplateWhatsAppChannel.value &&
       state.csatSurveyEnabled &&
       shouldCreateTemplate()
     ) {
@@ -480,7 +480,7 @@ const saveSettings = async () => {
   // Check if we need to show confirmation dialog for WhatsApp template changes
   // This applies to both WhatsApp Cloud and Twilio WhatsApp channels
   if (
-    isAnyWhatsAppChannel.value &&
+    isTemplateWhatsAppChannel.value &&
     state.csatSurveyEnabled &&
     hasExistingTemplate() &&
     hasTemplateChanges()
@@ -509,7 +509,7 @@ const handleConfirmTemplateUpdate = async () => {
         <div class="grid gap-5">
           <!-- Show display type only for non-WhatsApp channels -->
           <WithLabel
-            v-if="!isAnyWhatsAppChannel"
+            v-if="!isTemplateWhatsAppChannel"
             :label="$t('INBOX_MGMT.CSAT.DISPLAY_TYPE.LABEL')"
             name="display_type"
           >
@@ -519,7 +519,7 @@ const handleConfirmTemplateUpdate = async () => {
             />
           </WithLabel>
 
-          <template v-if="isAnyWhatsAppChannel">
+          <template v-if="isTemplateWhatsAppChannel">
             <div
               class="flex flex-col gap-4 justify-between w-full lg:flex-row lg:gap-6"
             >
@@ -719,7 +719,7 @@ const handleConfirmTemplateUpdate = async () => {
           </WithLabel>
           <p class="text-sm italic text-n-slate-11">
             {{
-              isAnyWhatsAppChannel
+              isTemplateWhatsAppChannel
                 ? $t('INBOX_MGMT.CSAT.WHATSAPP_NOTE')
                 : $t('INBOX_MGMT.CSAT.NOTE')
             }}

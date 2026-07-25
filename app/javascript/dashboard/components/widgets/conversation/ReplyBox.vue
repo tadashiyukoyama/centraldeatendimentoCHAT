@@ -211,6 +211,11 @@ export default {
     },
     messagePlaceHolder() {
       if (this.isEditorDisabled) {
+        if (this.isEvolutionConnectionUnavailable) {
+          return this.$t(
+            'CONVERSATION.FOOTER.MESSAGING_RESTRICTED_EVOLUTION_DISCONNECTED'
+          );
+        }
         if (this.isAWhatsAppChannel) {
           return this.$t('CONVERSATION.FOOTER.MESSAGING_RESTRICTED_WHATSAPP');
         }
@@ -366,6 +371,8 @@ export default {
       return !!this.messageSignature;
     },
     sendWithSignature() {
+      if (this.isEvolutionWhatsAppChannel) return false;
+
       return this.fetchSignatureFlagFromUISettings(this.channelType);
     },
     conversationId() {
@@ -448,9 +455,10 @@ export default {
     },
     isEditorDisabled() {
       return (
-        (this.isAWhatsAppChannel || this.isAPIInbox) &&
         !this.isOnPrivateNote &&
-        !this.currentChat.can_reply
+        (((this.isAWhatsAppChannel || this.isAPIInbox) &&
+          !this.currentChat.can_reply) ||
+          this.isEvolutionConnectionUnavailable)
       );
     },
   },

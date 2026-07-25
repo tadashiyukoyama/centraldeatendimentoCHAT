@@ -25,6 +25,25 @@ describe('#getters', () => {
     expect(getters.getSMSInboxes(state).length).toEqual(2);
   });
 
+  it('getWhatsAppCampaignInboxes returns only official Cloud API inboxes', () => {
+    const state = {
+      records: [
+        {
+          id: 1,
+          channel_type: 'Channel::Whatsapp',
+          provider: 'whatsapp_cloud',
+        },
+        { id: 2, channel_type: 'Channel::Whatsapp', provider: 'evolution' },
+        { id: 3, channel_type: 'Channel::Whatsapp', provider: 'default' },
+        { id: 4, channel_type: 'Channel::TwilioSms', medium: 'whatsapp' },
+      ],
+    };
+
+    expect(getters.getWhatsAppCampaignInboxes(state)).toEqual([
+      { id: 1, channel_type: 'Channel::Whatsapp', provider: 'whatsapp_cloud' },
+    ]);
+  });
+
   it('dialogFlowEnabledInboxes', () => {
     const state = { records: inboxList };
     expect(getters.dialogFlowEnabledInboxes(state).length).toEqual(8);

@@ -130,6 +130,15 @@ json.bot_name resource.channel.try(:bot_name) if resource.telegram?
 if resource.whatsapp?
   json.message_templates resource.channel.try(:message_templates)
   json.provider_config resource.channel.try(:provider_config) if Current.account_user&.administrator?
+  if resource.channel.try(:provider) == 'evolution' && resource.channel.try(:evolution_provisioning).present?
+    provisioning = resource.channel.evolution_provisioning
+    json.evolution_connection do
+      json.status provisioning.status
+      json.connected_number provisioning.connected_number
+      json.profile_name provisioning.profile_name
+      json.public_id provisioning.public_id if Current.account_user&.administrator?
+    end
+  end
   # Only show reauthorization for embedded signup; manual flow uses API keys, not OAuth
   json.reauthorization_required(
     (resource.channel.try(:provider_config) || {}).to_h['source'] == 'embedded_signup' &&

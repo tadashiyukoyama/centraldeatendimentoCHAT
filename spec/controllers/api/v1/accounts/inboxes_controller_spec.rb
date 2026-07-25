@@ -114,6 +114,66 @@ RSpec.describe 'Inboxes API', type: :request do
         expect(response.parsed_body['reauthorization_required']).to be(true)
       end
 
+      it 'returns public Evolution connection state to an administrator without session secrets' do
+        provisioning = create(
+          :whatsapp_evolution_provisioning,
+          account: account,
+          status: :connected,
+          connected_number: '+5511999999999',
+          profile_name: 'Support'
+        )
+        channel = build(
+          :channel_whatsapp,
+          account: account,
+          provider: 'evolution',
+          provider_config: { 'evolution_provisioning_id' => provisioning.id }
+        )
+        channel.evolution_provisioning_validation_id = provisioning.id
+        channel.save!
+        provisioning.update!(whatsapp_channel: channel)
+        evolution_inbox = create(:inbox, account: account, channel: channel)
+
+        get "/api/v1/accounts/#{account.id}/inboxes/#{evolution_inbox.id}",
+            headers: admin.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['evolution_connection']).to eq(
+          'status' => 'connected',
+          'connected_number' => '+5511999999999',
+          'profile_name' => 'Support',
+          'public_id' => provisioning.public_id
+        )
+        expect(response.body).not_to include(
+          provisioning.instance_token,
+          provisioning.webhook_secret,
+          provisioning.instance_name
+        )
+      end
+
+      it 'does not expose the Evolution management identifier to an assigned agent' do
+        provisioning = create(:whatsapp_evolution_provisioning, account: account, status: :connected)
+        channel = build(
+          :channel_whatsapp,
+          account: account,
+          provider: 'evolution',
+          provider_config: { 'evolution_provisioning_id' => provisioning.id }
+        )
+        channel.evolution_provisioning_validation_id = provisioning.id
+        channel.save!
+        provisioning.update!(whatsapp_channel: channel)
+        evolution_inbox = create(:inbox, account: account, channel: channel)
+        create(:inbox_member, inbox: evolution_inbox, user: agent)
+
+        get "/api/v1/accounts/#{account.id}/inboxes/#{evolution_inbox.id}",
+            headers: agent.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body.dig('evolution_connection', 'status')).to eq('connected')
+        expect(response.parsed_body['evolution_connection']).not_to have_key('public_id')
+      end
+
       it 'does not flag reauthorization_required for manual whatsapp channel even when reauth required' do
         whatsapp_channel = create(:channel_whatsapp, account: account, provider: 'whatsapp_cloud', sync_templates: false,
                                                      validate_provider_config: false)

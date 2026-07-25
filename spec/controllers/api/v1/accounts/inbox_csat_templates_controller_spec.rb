@@ -8,6 +8,16 @@ RSpec.describe Api::V1::Accounts::InboxCsatTemplatesController, type: :request d
     create(:channel_whatsapp, account: account, provider: 'whatsapp_cloud', sync_templates: false, validate_provider_config: false)
   end
   let(:whatsapp_inbox) { create(:inbox, channel: whatsapp_channel, account: account) }
+  let(:evolution_channel) do
+    create(
+      :channel_whatsapp,
+      account: account,
+      provider: 'evolution',
+      sync_templates: false,
+      validate_provider_config: false
+    )
+  end
+  let(:evolution_inbox) { create(:inbox, channel: evolution_channel, account: account) }
   let(:web_widget_inbox) { create(:inbox, account: account) }
   let(:mock_service) { instance_double(Whatsapp::CsatTemplateService) }
   let(:analysis_service) { instance_double(CsatTemplateUtilityAnalysisService) }
@@ -34,7 +44,24 @@ RSpec.describe Api::V1::Accounts::InboxCsatTemplatesController, type: :request d
             as: :json
 
         expect(response).to have_http_status(:bad_request)
-        expect(response.parsed_body['error']).to eq('CSAT template operations only available for WhatsApp and Twilio WhatsApp channels')
+        expect(response.parsed_body['error']).to eq(
+          'CSAT template operations are not available for this inbox provider'
+        )
+      end
+    end
+
+    context 'when it is an Evolution WhatsApp channel' do
+      it 'rejects Meta template operations without calling the Meta service' do
+        expect(Whatsapp::CsatTemplateService).not_to receive(:new)
+
+        get "/api/v1/accounts/#{account.id}/inboxes/#{evolution_inbox.id}/csat_template",
+            headers: admin.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:bad_request)
+        expect(response.parsed_body['error']).to eq(
+          'CSAT template operations are not available for this inbox provider'
+        )
       end
     end
 
@@ -163,7 +190,9 @@ RSpec.describe Api::V1::Accounts::InboxCsatTemplatesController, type: :request d
              as: :json
 
         expect(response).to have_http_status(:bad_request)
-        expect(response.parsed_body['error']).to eq('CSAT template operations only available for WhatsApp and Twilio WhatsApp channels')
+        expect(response.parsed_body['error']).to eq(
+          'CSAT template operations are not available for this inbox provider'
+        )
       end
     end
 

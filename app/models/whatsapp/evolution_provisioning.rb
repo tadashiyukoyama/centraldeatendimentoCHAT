@@ -7,7 +7,10 @@ class Whatsapp::EvolutionProvisioning < ApplicationRecord
   FAILURE_SOURCE_STATUSES = %w[provisioning waiting_qr connecting connected disconnected failed].freeze
 
   belongs_to :account
-  belongs_to :whatsapp_channel, class_name: 'Channel::Whatsapp', optional: true
+  belongs_to :whatsapp_channel,
+             class_name: 'Channel::Whatsapp',
+             inverse_of: :evolution_provisioning,
+             optional: true
   has_many :events,
            class_name: 'Whatsapp::EvolutionEvent',
            foreign_key: :provisioning_id,

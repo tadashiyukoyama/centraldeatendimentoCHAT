@@ -53,6 +53,11 @@ const mockStore = createStore({
               voice_enabled: true,
             },
             15: { id: 15, channel_type: INBOX_TYPES.TIKTOK },
+            16: {
+              id: 16,
+              channel_type: INBOX_TYPES.WHATSAPP,
+              provider: 'evolution',
+            },
           };
           return inboxes[id] || null;
         },
@@ -178,6 +183,16 @@ describe('useInbox', () => {
       expect(wrapper.vm.isAWhatsAppCloudChannel).toBe(false);
     });
 
+    it('identifies Evolution WhatsApp channel correctly', () => {
+      const wrapper = mount(createTestComponent(16), {
+        global: { plugins: [mockStore] },
+      });
+
+      expect(wrapper.vm.isEvolutionWhatsAppChannel).toBe(true);
+      expect(wrapper.vm.isAWhatsAppChannel).toBe(true);
+      expect(wrapper.vm.isAWhatsAppCloudChannel).toBe(false);
+    });
+
     it('identifies all other channel types correctly', () => {
       // Test Telegram
       let wrapper = mount(createTestComponent(8), {
@@ -275,6 +290,7 @@ describe('useInbox', () => {
         'isATwilioWhatsAppChannel',
         'isAWhatsAppCloudChannel',
         'is360DialogWhatsAppChannel',
+        'isEvolutionWhatsAppChannel',
         'isAnEmailChannel',
         'isAnInstagramChannel',
         'isATiktokChannel',

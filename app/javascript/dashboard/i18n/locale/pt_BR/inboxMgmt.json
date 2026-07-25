@@ -246,6 +246,8 @@
           "TWILIO": "Twilio",
           "WHATSAPP_CLOUD": "Cloud do WhatsApp",
           "WHATSAPP_CLOUD_DESC": "Configuração rápida via Meta",
+          "EVOLUTION": "WhatsApp por QR Code",
+          "EVOLUTION_DESC": "Conecte um número do WhatsApp lendo um QR Code",
           "TWILIO_DESC": "Conectar através de credenciais Twilio",
           "360_DIALOG": "360Dialog"
         },
@@ -291,6 +293,36 @@
           "WEBHOOK_VERIFICATION_TOKEN": "Token de verificação Webhook"
         },
         "SUBMIT_BUTTON": "Criar canal do WhatsApp",
+        "EVOLUTION": {
+          "TITLE": "Conectar WhatsApp por QR Code",
+          "DESCRIPTION": "Dê um nome à caixa e leia o QR Code com a conta do WhatsApp que esta equipe usará. As credenciais permanecem no servidor e nunca são exibidas no navegador.",
+          "CREATE": "Gerar QR Code",
+          "SCAN_TITLE": "Leia este QR Code no WhatsApp",
+          "STATUS_TITLE": "Status da conexão",
+          "QR_ALT": "QR Code para conexão do WhatsApp",
+          "CANCEL": "Cancelar conexão",
+          "ERROR": "Não foi possível conectar esta conta do WhatsApp.",
+          "CANCEL_ERROR": "Não foi possível remover com segurança a conexão pendente.",
+          "SETTINGS_TITLE": "Conexão do WhatsApp por QR Code",
+          "SETTINGS_DESCRIPTION": "Gerencie a conexão desta caixa sem expor as credenciais da sessão no navegador.",
+          "RECONNECT": "Reconectar e exibir QR Code",
+          "DISCONNECT": "Desconectar WhatsApp",
+          "REFRESH": "Atualizar status",
+          "RECONNECT_ERROR": "Não foi possível iniciar a reconexão do WhatsApp.",
+          "DISCONNECT_ERROR": "Não foi possível desconectar esta conta do WhatsApp.",
+          "DISCONNECT_SUCCESS": "O WhatsApp foi desconectado.",
+          "REFRESH_ERROR": "Não foi possível atualizar o status da conexão do WhatsApp.",
+          "STATUS": {
+            "PROVISIONING": "Preparando uma sessão segura do WhatsApp…",
+            "WAITING_QR": "Abra o WhatsApp, acesse Aparelhos conectados e leia o QR Code.",
+            "CONNECTING": "O WhatsApp está confirmando a conexão…",
+            "CONNECTED": "WhatsApp conectado com sucesso.",
+            "DISCONNECTED": "O WhatsApp está desconectado.",
+            "FAILED": "A conexão falhou ou expirou. Reconecte para gerar um novo QR Code.",
+            "DELETING": "Removendo a conexão do WhatsApp…",
+            "DELETED": "A conexão do WhatsApp foi removida."
+          }
+        },
         "EMBEDDED_SIGNUP": {
           "TITLE": "Configuração rápida com Meta",
           "DESC": "Use o fluxo de inscrição incorporada do WhatsApp para conectar rapidamente novos números. Você será redirecionado para a Meta para entrar na sua conta do WhatsApp Business. Ter acesso de administrador ajudará a tornar a configuração simples e fácil.",

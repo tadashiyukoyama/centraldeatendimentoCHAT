@@ -437,6 +437,31 @@ RSpec.describe Conversations::MessageWindowService do
     end
   end
 
+  describe 'on WhatsApp Evolution channels' do
+    let!(:whatsapp_channel) do
+      create(:channel_whatsapp, provider: 'evolution', sync_templates: false, validate_provider_config: false)
+    end
+    let!(:whatsapp_inbox) { create(:inbox, channel: whatsapp_channel, account: whatsapp_channel.account) }
+    let!(:conversation) { create(:conversation, inbox: whatsapp_inbox, account: whatsapp_channel.account) }
+
+    it 'allows replies without an incoming message' do
+      expect(described_class.new(conversation).can_reply?).to be true
+    end
+
+    it 'allows replies after the Meta 24-hour window' do
+      create(
+        :message,
+        account: conversation.account,
+        inbox: whatsapp_inbox,
+        conversation: conversation,
+        message_type: :incoming,
+        created_at: 10.days.ago
+      )
+
+      expect(described_class.new(conversation).can_reply?).to be true
+    end
+  end
+
   describe 'on Web widget channels' do
     let!(:widget_channel) { create(:channel_widget) }
     let!(:widget_inbox) { create(:inbox, channel: widget_channel, account: widget_channel.account) }

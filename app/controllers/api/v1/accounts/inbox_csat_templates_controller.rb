@@ -50,9 +50,10 @@ class Api::V1::Accounts::InboxCsatTemplatesController < Api::V1::Accounts::BaseC
   end
 
   def validate_whatsapp_channel
-    return if @inbox.whatsapp? || @inbox.twilio_whatsapp?
+    return if @inbox.twilio_whatsapp?
+    return if @inbox.whatsapp? && @inbox.channel.provider_service.supports_templates?
 
-    render json: { error: 'CSAT template operations only available for WhatsApp and Twilio WhatsApp channels' },
+    render json: { error: 'CSAT template operations are not available for this inbox provider' },
            status: :bad_request
   end
 

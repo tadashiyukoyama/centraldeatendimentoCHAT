@@ -4,7 +4,7 @@ class CsatSurveyService
   def perform
     return unless should_send_csat_survey?
 
-    if whatsapp_channel? && template_available_and_approved?
+    if whatsapp_template_channel? && template_available_and_approved?
       send_whatsapp_template_survey
     elsif inbox.twilio_whatsapp? && twilio_template_available_and_approved?
       send_twilio_whatsapp_template_survey
@@ -72,6 +72,10 @@ class CsatSurveyService
 
   def whatsapp_channel?
     inbox.channel_type == 'Channel::Whatsapp'
+  end
+
+  def whatsapp_template_channel?
+    whatsapp_channel? && inbox.channel.provider_service.supports_templates?
   end
 
   def template_available_and_approved?

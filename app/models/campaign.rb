@@ -40,6 +40,7 @@ class Campaign < ApplicationRecord
   validate :prevent_completed_campaign_from_update, on: :update
   validate :sender_must_belong_to_account
   validate :inbox_must_belong_to_account
+  validate :whatsapp_campaign_requires_cloud_provider
 
   belongs_to :account
   belongs_to :inbox
@@ -134,6 +135,13 @@ class Campaign < ApplicationRecord
     return if inbox.account_id == account_id
 
     errors.add(:inbox_id, 'must belong to the same account as the campaign')
+  end
+
+  def whatsapp_campaign_requires_cloud_provider
+    return unless inbox&.inbox_type == 'Whatsapp'
+    return if inbox.channel.provider == 'whatsapp_cloud'
+
+    errors.add(:inbox_id, 'must use a WhatsApp Cloud inbox for campaigns')
   end
 
   def sender_must_belong_to_account

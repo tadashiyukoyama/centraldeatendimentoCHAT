@@ -15,7 +15,9 @@ import ContentTemplateSelector from './ContentTemplateSelector.vue';
 const props = defineProps({
   attachedFiles: { type: Array, default: () => [] },
   isWhatsappInbox: { type: Boolean, default: false },
+  isEvolutionWhatsappInbox: { type: Boolean, default: false },
   isEmailOrWebWidgetInbox: { type: Boolean, default: false },
+  isAttachmentUploadEnabled: { type: Boolean, default: false },
   isTwilioSmsInbox: { type: Boolean, default: false },
   isTwilioWhatsAppInbox: { type: Boolean, default: false },
   // eslint-disable-next-line vue/no-unused-properties
@@ -72,19 +74,31 @@ const showTwilioContentTemplates = computed(() => {
   return props.isTwilioWhatsAppInbox && props.inboxId;
 });
 
+const canUploadAttachments = computed(
+  () => props.isAttachmentUploadEnabled || props.isEmailOrWebWidgetInbox
+);
+
 const shouldShowEmojiButton = computed(() => {
   return (
-    !props.isWhatsappInbox && !props.isTwilioWhatsAppInbox && !props.hasNoInbox
+    (!props.isWhatsappInbox || props.isEvolutionWhatsappInbox) &&
+    !props.isTwilioWhatsAppInbox &&
+    !props.hasNoInbox
   );
 });
 
 const isRegularMessageMode = computed(() => {
-  return !props.isWhatsappInbox && !props.isTwilioWhatsAppInbox;
+  return (
+    (!props.isWhatsappInbox || props.isEvolutionWhatsappInbox) &&
+    !props.isTwilioWhatsAppInbox
+  );
 });
 
 const shouldShowSignatureButton = computed(() => {
   return (
-    props.hasSelectedInbox && isRegularMessageMode.value && !props.voiceEnabled
+    props.hasSelectedInbox &&
+    isRegularMessageMode.value &&
+    !props.isEvolutionWhatsappInbox &&
+    !props.voiceEnabled
   );
 });
 
@@ -109,7 +123,7 @@ watch(
   () => props.hasSelectedInbox,
   newValue => {
     nextTick(() => {
-      if (newValue && !props.voiceEnabled) setSignature();
+      if (newValue && shouldShowSignatureButton.value) setSignature();
     });
   },
   { immediate: true }
@@ -132,7 +146,10 @@ const { onFileUpload } = useFileUpload({
         thumb: reader.result,
         blobSignedId: blob?.signed_id,
       };
-      emit('attachFile', [...props.attachedFiles, newFile]);
+      const attachments = props.isEvolutionWhatsappInbox
+        ? [newFile]
+        : [...props.attachedFiles, newFile];
+      emit('attachFile', attachments);
     };
   },
 });
@@ -171,7 +188,7 @@ const keyboardEvents = {
 useKeyboardEvents(keyboardEvents);
 
 const onPaste = e => {
-  if (!props.isEmailOrWebWidgetInbox) return;
+  if (!canUploadAttachments.value) return;
 
   const files = e.clipboardData?.files;
   if (!files?.length) return;
@@ -195,7 +212,7 @@ useEventListener(document, 'paste', onPaste);
   >
     <div class="flex gap-2 items-center">
       <WhatsAppOptions
-        v-if="isWhatsappInbox"
+        v-if="isWhatsappInbox && !isEvolutionWhatsappInbox"
         :inbox-id="inboxId"
         @send-message="emit('sendWhatsappMessage', $event)"
       />
@@ -224,12 +241,12 @@ useEventListener(document, 'paste', onPaste);
         />
       </div>
       <FileUpload
-        v-if="isEmailOrWebWidgetInbox"
+        v-if="canUploadAttachments"
         ref="uploadAttachment"
         input-id="composeNewConversationAttachment"
         :size="4096 * 4096"
         :accept="ALLOWED_FILE_TYPES"
-        multiple
+        :multiple="!isEvolutionWhatsappInbox"
         :drop-directory="false"
         :data="{
           direct_upload_url: '/rails/active_storage/direct_uploads',

@@ -349,6 +349,36 @@ describe CsatSurveyService do
         end
       end
     end
+
+    context 'when it is an Evolution WhatsApp channel' do
+      let(:evolution_channel) do
+        create(:channel_whatsapp, account: account, provider: 'evolution',
+                                  sync_templates: false, validate_provider_config: false)
+      end
+      let(:evolution_inbox) { create(:inbox, channel: evolution_channel, account: account, csat_survey_enabled: true) }
+      let(:evolution_contact_inbox) do
+        create(:contact_inbox, contact: contact, inbox: evolution_inbox, source_id: '1234567890')
+      end
+      let(:evolution_conversation) do
+        create(
+          :conversation,
+          contact_inbox: evolution_contact_inbox,
+          inbox: evolution_inbox,
+          account: account,
+          status: :resolved
+        )
+      end
+
+      it 'uses a regular survey without checking or creating a Meta template' do
+        expect(Whatsapp::CsatTemplateService).not_to receive(:new)
+
+        described_class.new(conversation: evolution_conversation).perform
+
+        expect(MessageTemplates::Template::CsatSurvey).to have_received(:new).with(conversation: evolution_conversation)
+        expect(csat_template).to have_received(:perform)
+        expect(Conversations::ActivityMessageJob).not_to have_received(:perform_later)
+      end
+    end
   end
 
   private

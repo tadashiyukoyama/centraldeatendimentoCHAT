@@ -91,6 +91,20 @@ export default {
         this.whatsAppAPIProvider === 'default'
       );
     },
+    isEvolutionWhatsAppChannel() {
+      return (
+        this.channelType === INBOX_TYPES.WHATSAPP &&
+        this.whatsAppAPIProvider === 'evolution'
+      );
+    },
+    isEvolutionConnectionUnavailable() {
+      const status = this.inbox.evolution_connection?.status;
+      return (
+        this.isEvolutionWhatsAppChannel &&
+        Boolean(status) &&
+        status !== 'connected'
+      );
+    },
     chatAdditionalAttributes() {
       const { additional_attributes: additionalAttributes } = this.chat || {};
       return additionalAttributes || {};

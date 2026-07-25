@@ -269,6 +269,27 @@ describe('inboxMixin', () => {
       expect(wrapper.vm.is360DialogWhatsAppChannel).toBe(true);
     });
 
+    it('detects an unavailable Evolution connection', () => {
+      const Component = getComponentConfigForInbox('Channel::Whatsapp', {
+        provider: 'evolution',
+        evolution_connection: { status: 'disconnected' },
+      });
+      const wrapper = shallowMount(Component);
+
+      expect(wrapper.vm.isEvolutionWhatsAppChannel).toBe(true);
+      expect(wrapper.vm.isEvolutionConnectionUnavailable).toBe(true);
+    });
+
+    it('keeps a connected Evolution inbox available', () => {
+      const Component = getComponentConfigForInbox('Channel::Whatsapp', {
+        provider: 'evolution',
+        evolution_connection: { status: 'connected' },
+      });
+      const wrapper = shallowMount(Component);
+
+      expect(wrapper.vm.isEvolutionConnectionUnavailable).toBe(false);
+    });
+
     it('isAWhatsAppChannel returns true if channel type is WhatsApp', () => {
       const Component = getComponentConfigForInbox('Channel::Whatsapp');
       const wrapper = shallowMount(Component);

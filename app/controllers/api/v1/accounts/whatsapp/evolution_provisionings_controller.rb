@@ -36,6 +36,10 @@ class Api::V1::Accounts::Whatsapp::EvolutionProvisioningsController < Api::V1::A
   end
 
   def destroy
+    if @provisioning.whatsapp_channel_id.present?
+      return render json: { error: 'Delete the connected inbox to remove this Evolution instance' }, status: :conflict
+    end
+
     Whatsapp::Evolution::TeardownService.new(@provisioning).perform
     head :no_content
   rescue Whatsapp::Evolution::ApiClient::Error => e
