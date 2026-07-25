@@ -28,7 +28,8 @@ class Channel::Whatsapp < ApplicationRecord
   has_one :evolution_provisioning,
           class_name: 'Whatsapp::EvolutionProvisioning',
           foreign_key: :whatsapp_channel_id,
-          inverse_of: :whatsapp_channel
+          inverse_of: :whatsapp_channel,
+          dependent: :nullify
 
   # default at the moment is 360dialog lets change later.
   PROVIDERS = %w[default whatsapp_cloud evolution].freeze

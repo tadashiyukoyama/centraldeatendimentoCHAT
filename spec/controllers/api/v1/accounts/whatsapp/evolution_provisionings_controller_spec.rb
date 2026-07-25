@@ -39,7 +39,6 @@ RSpec.describe 'WhatsApp Evolution Provisionings API', type: :request do
     end
   end
 
-
   describe 'DELETE /api/v1/accounts/:account_id/whatsapp/evolution_provisionings/:public_id' do
     it 'does not delete a provisioning that already owns a connected inbox' do
       provisioning = create(:whatsapp_evolution_provisioning, account: account, status: :connected)

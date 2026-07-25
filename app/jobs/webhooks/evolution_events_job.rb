@@ -33,7 +33,7 @@ class Webhooks::EvolutionEventsJob < MutexApplicationJob
 
     key = normalized.dig('data', 'key') || {}
     [key['remoteJidAlt'], key['remoteJid']].compact_blank.find do |jid|
-      jid.end_with?('@s.whatsapp.net') || jid.end_with?('@lid')
+      jid.end_with?('@s.whatsapp.net', '@lid')
     end
   end
 end
