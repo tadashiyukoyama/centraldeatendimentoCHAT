@@ -2,9 +2,9 @@ require 'rails_helper'
 
 describe ChatwootHub do
   describe '.base_url' do
-    it 'uses the static hub url' do
-      expect(described_class::DEFAULT_BASE_URL).to eq('https://hub.2.chatwoot.com')
-      expect(described_class.base_url).to eq('https://hub.2.chatwoot.com')
+    it 'has no external destination by default' do
+      expect(described_class.base_url).to be_nil
+      expect(described_class.ping_url).to be_nil
     end
   end
 
@@ -14,65 +14,89 @@ describe ChatwootHub do
     expect(described_class.installation_identifier).to eq installation_identifier
   end
 
-  context 'when fetching sync_with_hub' do
-    it 'get latest version from chatwoot hub' do
-      version = '1.1.1'
-      allow(RestClient).to receive(:post).and_return({ version: version }.to_json)
-      expect(described_class.sync_with_hub['version']).to eq version
-      expect(RestClient).to have_received(:post).with(described_class.ping_url, described_class.instance_config
-        .merge(described_class.instance_metrics).to_json, { content_type: :json, accept: :json })
+  context 'when syncing control state' do
+    it 'delegates a minimal payload to Acelera Control' do
+      allow(AceleraControl).to receive(:heartbeat).and_return('version' => '5.0.0')
+
+      expect(described_class.sync_with_hub['version']).to eq '5.0.0'
+      expect(AceleraControl).to have_received(:heartbeat).with(
+        hash_including(:instance_id, :app_version, :source_sha, :deployment_env, :edition)
+      )
     end
 
-    it 'will not send instance metrics when telemetry is disabled' do
-      version = '1.1.1'
-      with_modified_env DISABLE_TELEMETRY: 'true' do
-        allow(RestClient).to receive(:post).and_return({ version: version }.to_json)
-        expect(described_class.sync_with_hub['version']).to eq version
-        expect(RestClient).to have_received(:post).with(described_class.ping_url,
-                                                        described_class.instance_config.to_json, { content_type: :json, accept: :json })
+    it 'does not include usage unless explicitly enabled' do
+      allow(AceleraControl).to receive(:heartbeat).and_return({})
+
+      described_class.sync_with_hub
+
+      expect(AceleraControl).to have_received(:heartbeat) do |payload|
+        expect(payload).not_to have_key(:active_users_count)
       end
     end
 
-    it 'returns nil when chatwoot hub is down' do
-      allow(RestClient).to receive(:post).and_raise(ExceptionList::REST_CLIENT_EXCEPTIONS.sample)
-      expect(described_class.sync_with_hub).to be_nil
+    it 'includes only seat usage when explicitly enabled' do
+      allow(AceleraControl).to receive(:heartbeat).and_return({})
+      allow(User).to receive(:count).and_return(4)
+
+      with_modified_env ACELERA_CONTROL_INCLUDE_USAGE: 'true', DISABLE_TELEMETRY: 'false' do
+        described_class.sync_with_hub
+      end
+
+      expect(AceleraControl).to have_received(:heartbeat).with(hash_including(active_users_count: 4))
     end
   end
 
-  context 'when register instance' do
-    let(:company_name) { 'test' }
-    let(:owner_name) { 'test' }
-    let(:owner_email) { 'test@test.com' }
+  it 'does not register people, emit events or relay push notifications' do
+    allow(RestClient::Request).to receive(:execute)
 
-    it 'sends info of registration' do
-      info = { company_name: company_name, owner_name: owner_name, owner_email: owner_email, subscribed_to_mailers: true }
-      allow(RestClient).to receive(:post)
-      described_class.register_instance(company_name, owner_name, owner_email)
-      expect(RestClient).to have_received(:post).with(described_class.registration_url,
-                                                      info.merge(described_class.instance_config).to_json, { content_type: :json, accept: :json })
+    expect(described_class.register_instance('Company', 'Owner', 'owner@example.com')).to be(false)
+    expect(described_class.emit_event('event', sample: true)).to be(false)
+    expect(described_class.send_push(payload: true)).to be(false)
+    expect(described_class.push_relay_available?).to be(false)
+    expect(RestClient::Request).not_to have_received(:execute)
+  end
+
+  describe '.support_config' do
+    it 'rejects a legacy support endpoint even if it remains persisted locally' do
+      create(:installation_config, name: 'CHATWOOT_SUPPORT_SCRIPT_URL', value: 'https://app.chatwoot.com')
+      create(:installation_config, name: 'CHATWOOT_SUPPORT_WEBSITE_TOKEN', value: 'token')
+      create(:installation_config, name: 'CHATWOOT_SUPPORT_IDENTIFIER_HASH', value: 'hash')
+
+      expect(described_class.support_config).to eq(
+        support_website_token: nil,
+        support_script_url: nil,
+        support_identifier_hash: nil
+      )
     end
   end
 
-  context 'when sending events' do
-    let(:event_name) { 'sample_event' }
-    let(:event_data) { { 'sample_data' => 'sample_data' } }
-
-    it 'will send instance events' do
-      info = { event_name: event_name, event_data: event_data }
-      allow(RestClient).to receive(:post)
-      described_class.emit_event(event_name, event_data)
-      expect(RestClient).to have_received(:post).with(described_class.events_url,
-                                                      info.merge(described_class.instance_config).to_json, { content_type: :json, accept: :json })
+  describe '.pricing_plan' do
+    before do
+      allow(ChatwootApp).to receive(:enterprise?).and_return(true)
+      create(:installation_config, name: 'INSTALLATION_PRICING_PLAN', value: 'enterprise')
+      create(:installation_config, name: 'INSTALLATION_PRICING_PLAN_QUANTITY', value: 25)
     end
 
-    it 'will not send instance events when telemetry is disabled' do
-      with_modified_env DISABLE_TELEMETRY: 'true' do
-        info = { event_name: event_name, event_data: event_data }
-        allow(RestClient).to receive(:post)
-        described_class.emit_event(event_name, event_data)
-        expect(RestClient).not_to have_received(:post)
-          .with(described_class.events_url,
-                info.merge(described_class.instance_config).to_json, { content_type: :json, accept: :json })
+    it 'keeps the local plan when Acelera Control is not managing the instance' do
+      expect(described_class.pricing_plan).to eq('enterprise')
+      expect(described_class.pricing_plan_quantity).to eq(25)
+    end
+
+    it 'keeps the managed plan during the signed grace period' do
+      create(:installation_config, name: 'ACELERA_CONTROL_GRACE_UNTIL', value: 1.day.from_now.iso8601)
+
+      with_modified_env ACELERA_CONTROL_ENABLED: 'true' do
+        expect(described_class.pricing_plan).to eq('enterprise')
+        expect(described_class.pricing_plan_quantity).to eq(25)
+      end
+    end
+
+    it 'fails closed after the managed grace period' do
+      create(:installation_config, name: 'ACELERA_CONTROL_GRACE_UNTIL', value: 1.minute.ago.iso8601)
+
+      with_modified_env ACELERA_CONTROL_ENABLED: 'true' do
+        expect(described_class.pricing_plan).to eq('community')
+        expect(described_class.pricing_plan_quantity).to eq(0)
       end
     end
   end

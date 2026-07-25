@@ -9,6 +9,8 @@ class ChangelogApi extends ApiClient {
 
   // eslint-disable-next-line class-methods-use-this
   fetchFromHub() {
+    if (!CHANGELOG_API_URL) return Promise.resolve({ data: { posts: [] } });
+
     return axios.get(CHANGELOG_API_URL);
   }
 }

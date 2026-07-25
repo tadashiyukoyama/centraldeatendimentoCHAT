@@ -29,4 +29,24 @@ RSpec.describe Internal::CheckNewVersionsJob do
     job
     expect(reconsile_premium_config_service).to have_received(:perform)
   end
+
+  it 'does not clear persisted values when the response is empty' do
+    existing_plan = create(:installation_config, name: 'INSTALLATION_PRICING_PLAN', value: 'enterprise')
+    existing_quantity = create(:installation_config, name: 'INSTALLATION_PRICING_PLAN_QUANTITY', value: 10)
+    allow(ChatwootHub).to receive(:sync_with_hub).and_return({})
+
+    job
+
+    expect(existing_plan.reload.value).to eq('enterprise')
+    expect(existing_quantity.reload.value).to eq(10)
+  end
+
+  it 'ignores an unsupported plan' do
+    existing_plan = create(:installation_config, name: 'INSTALLATION_PRICING_PLAN', value: 'enterprise')
+    allow(ChatwootHub).to receive(:sync_with_hub).and_return('plan' => 'untrusted')
+
+    job
+
+    expect(existing_plan.reload.value).to eq('enterprise')
+  end
 end

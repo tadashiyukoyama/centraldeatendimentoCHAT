@@ -2,19 +2,19 @@ require 'rails_helper'
 
 RSpec.describe ChatwootHub do
   describe '.base_url' do
-    it 'uses the static hub url outside development for enterprise edition' do
-      with_modified_env CHATWOOT_HUB_URL: 'https://custom.example.com' do
+    it 'uses the configured Acelera Control URL outside development' do
+      with_modified_env ACELERA_CONTROL_URL: 'https://control.acelerachat.example' do
         allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new('production'))
 
-        expect(described_class.base_url).to eq('https://hub.2.chatwoot.com')
+        expect(described_class.base_url).to eq('https://control.acelerachat.example')
       end
     end
 
-    it 'uses CHATWOOT_HUB_URL in development for enterprise edition' do
-      with_modified_env CHATWOOT_HUB_URL: 'https://custom.example.com' do
+    it 'never restores the legacy URL in development' do
+      with_modified_env ACELERA_CONTROL_URL: 'https://hub.2.chatwoot.com' do
         allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new('development'))
 
-        expect(described_class.base_url).to eq('https://custom.example.com')
+        expect(described_class.base_url).to be_nil
       end
     end
   end

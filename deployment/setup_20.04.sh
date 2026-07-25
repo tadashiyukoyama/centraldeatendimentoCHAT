@@ -21,7 +21,6 @@ LONGOPTS=console,debug,help,install,Install:,logs:,restart,ssl,upgrade,Upgrade:,
 OPTIONS=cdhiI:l:rsuU:wvWK
 CWCTL_VERSION="3.5.0"
 pg_pass=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 15 ; echo '')
-CHATWOOT_HUB_URL="https://hub.2.chatwoot.com/events"
 
 # if user does not specify an option
 if [ "$#" -eq 0 ]; then
@@ -567,10 +566,8 @@ function ssl_success_message() {
     cat << EOF
 
 ***************************************************************************
-Woot! Woot!! Chatwoot server installation is complete.
+AceleraChat server installation is complete.
 The server will be accessible at https://$domain_name
-
-Join the community at https://chatwoot.com/community?utm_source=cwctl
 ***************************************************************************
 
 EOF
@@ -592,7 +589,19 @@ function cwctl_message() {
 #   None
 ##############################################################################
 function get_cw_version() {
-  CW_VERSION=$(curl -s https://app.chatwoot.com/api | python3 -c 'import sys,json;data=json.loads(sys.stdin.read()); print(data["version"])')
+  local app_config=''
+
+  if [ -f '/home/chatwoot/chatwoot/config/app.yml' ]; then
+    app_config='/home/chatwoot/chatwoot/config/app.yml'
+  elif [ -f 'config/app.yml' ]; then
+    app_config='config/app.yml'
+  fi
+
+  if [ -n "$app_config" ]; then
+    CW_VERSION=$(sed -n "s/^[[:space:]]*version:[[:space:]]*['\"]\([^'\"]*\)['\"].*/\1/p" "$app_config" | head -n 1)
+  fi
+
+  CW_VERSION=${CW_VERSION:-0.0.0}
 }
 
 ##############################################################################
@@ -676,13 +685,10 @@ EOF
 ➥ 9/9 Skipping SSL/TLS setup.
 
 ***************************************************************************
-Woot! Woot!! Chatwoot server installation is complete.
+AceleraChat server installation is complete.
 The server will be accessible at http://$public_ip:3000
 
-To configure a domain and SSL certificate, follow the guide at
-https://www.chatwoot.com/docs/deployment/deploy-chatwoot-in-linux-vm?utm_source=cwctl
-
-Join the community at https://chatwoot.com/community?utm_source=cwctl
+Use the versioned operational documentation to configure a domain and TLS.
 ***************************************************************************
 
 EOF
@@ -778,8 +784,7 @@ Miscellaneous:
 Exit status:
 Returns 0 if successful; non-zero otherwise.
 
-Report bugs at https://github.com/chatwoot/chatwoot/issues
-Get help, https://chatwoot.com/community?utm_source=cwctl
+Use the AceleraChat support channel configured for this installation.
 
 EOF
 }
@@ -996,7 +1001,7 @@ EOF
       echo "Proceeding with the upgrade..."
     else
       echo "Upgrade aborted. Please install pgvector support before upgrading."
-      echo "Read more at https://chwt.app/v4/migration"
+      echo "Consult the versioned pgvector migration documentation before retrying."
       return 1
     fi
   fi
@@ -1131,9 +1136,9 @@ function webserver() {
 
 
 ##############################################################################
-# Report cwctl events to hub
+# Event reporting is disabled. Keep the function as a compatibility no-op for
+# existing command paths without transmitting installation metadata.
 # Globals:
-#   CHATWOOT_HUB_URL
 # Arguments:
 # event_name: Name of the event to report
 # event_data: Data to report
@@ -1142,19 +1147,7 @@ function webserver() {
 #   None
 ##############################################################################
 function report_event() {
-  local event_name="$1"
-  local event_data="$2"
-
-  CHATWOOT_HUB_URL="https://hub.2.chatwoot.com/events"
-
-  # get installation identifier
-  local installation_identifier=$(get_installation_identifier)
-
-  # Prepare the data for the request
-  local data="{\"installation_identifier\":\"$installation_identifier\",\"event_name\":\"$event_name\",\"event_data\":{\"action\":\"$event_data\"}}"
-
-  # Make the curl request to report the event
-  curl -X POST -H "Content-Type: application/json" -d "$data" "$CHATWOOT_HUB_URL" -s -o /dev/null
+  return 0
 }
 
 

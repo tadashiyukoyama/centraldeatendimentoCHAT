@@ -1,29 +1,28 @@
-# TODO: lets use HTTParty instead of RestClient
+# Compatibility facade for legacy internal callers.
+# External communication is delegated exclusively to AceleraControl.
 class ChatwootHub
-  DEFAULT_BASE_URL = 'https://hub.2.chatwoot.com'.freeze
-
   def self.base_url
-    DEFAULT_BASE_URL
+    AceleraControl.base_url
   end
 
   def self.ping_url
-    "#{base_url}/ping"
+    AceleraControl.heartbeat_url
   end
 
   def self.registration_url
-    "#{base_url}/instances"
+    nil
   end
 
   def self.push_notification_url
-    "#{base_url}/send_push"
+    nil
   end
 
   def self.events_url
-    "#{base_url}/events"
+    nil
   end
 
   def self.billing_base_url
-    "#{base_url}/billing"
+    AceleraControl.billing_url
   end
 
   def self.installation_identifier
@@ -33,100 +32,84 @@ class ChatwootHub
   end
 
   def self.billing_url
-    "#{billing_base_url}?installation_identifier=#{installation_identifier}"
+    billing_base_url
   end
 
   def self.pricing_plan
     return 'community' unless ChatwootApp.enterprise?
 
-    InstallationConfig.find_by(name: 'INSTALLATION_PRICING_PLAN')&.value || 'community'
+    local_plan = InstallationConfig.find_by(name: 'INSTALLATION_PRICING_PLAN')&.value || 'community'
+    return local_plan unless AceleraControl.managed?
+
+    AceleraControl.entitlement_active? ? local_plan : 'community'
   end
 
   def self.pricing_plan_quantity
     return 0 unless ChatwootApp.enterprise?
+    return 0 if AceleraControl.managed? && !AceleraControl.entitlement_active?
 
     InstallationConfig.find_by(name: 'INSTALLATION_PRICING_PLAN_QUANTITY')&.value || 0
   end
 
   def self.support_config
+    support_script_url = AceleraControl.safe_external_url(
+      InstallationConfig.find_by(name: 'CHATWOOT_SUPPORT_SCRIPT_URL')&.value
+    )
+    return { support_website_token: nil, support_script_url: nil, support_identifier_hash: nil } if support_script_url.blank?
+
     {
       support_website_token: InstallationConfig.find_by(name: 'CHATWOOT_SUPPORT_WEBSITE_TOKEN')&.value,
-      support_script_url: InstallationConfig.find_by(name: 'CHATWOOT_SUPPORT_SCRIPT_URL')&.value,
+      support_script_url: support_script_url,
       support_identifier_hash: InstallationConfig.find_by(name: 'CHATWOOT_SUPPORT_IDENTIFIER_HASH')&.value
     }
   end
 
   def self.instance_config
     {
-      installation_identifier: installation_identifier,
-      installation_version: Chatwoot.config[:version],
-      installation_host: URI.parse(ENV.fetch('FRONTEND_URL', '')).host,
-      installation_env: ENV.fetch('INSTALLATION_ENV', ''),
+      instance_id: installation_identifier,
+      app_version: Chatwoot.config[:version],
+      source_sha: defined?(GIT_HASH) ? GIT_HASH : nil,
+      deployment_env: ENV.fetch('INSTALLATION_ENV', ''),
       edition: ENV.fetch('CW_EDITION', '')
-    }
+    }.compact
   end
 
   def self.instance_metrics
     {
-      accounts_count: fetch_count(Account),
-      users_count: fetch_count(User),
-      inboxes_count: fetch_count(Inbox),
-      conversations_count: fetch_count(Conversation),
-      incoming_messages_count: fetch_count(Message.incoming),
-      outgoing_messages_count: fetch_count(Message.outgoing),
-      additional_information: {}
+      active_users_count: User.count
     }
   end
 
-  def self.fetch_count(model)
-    model.last&.id || 0
-  end
-
   def self.sync_with_hub
-    begin
-      info = instance_config
-      info = info.merge(instance_metrics) unless ENV['DISABLE_TELEMETRY']
-      response = RestClient.post(ping_url, info.to_json, { content_type: :json, accept: :json })
-      parsed_response = JSON.parse(response)
-    rescue *ExceptionList::REST_CLIENT_EXCEPTIONS => e
-      Rails.logger.error "Exception: #{e.message}"
-    rescue StandardError => e
-      ChatwootExceptionTracker.new(e).capture_exception
-    end
-    parsed_response
+    info = instance_config
+    info = info.merge(instance_metrics) if include_usage_metrics?
+    AceleraControl.heartbeat(info)
   end
 
-  def self.register_instance(company_name, owner_name, owner_email)
-    info = { company_name: company_name, owner_name: owner_name, owner_email: owner_email, subscribed_to_mailers: true }
-    RestClient.post(registration_url, info.merge(instance_config).to_json, { content_type: :json, accept: :json })
-  rescue *ExceptionList::REST_CLIENT_EXCEPTIONS => e
-    Rails.logger.error "Exception: #{e.message}"
-  rescue StandardError => e
-    ChatwootExceptionTracker.new(e).capture_exception
+  def self.register_instance(*)
+    false
   end
 
-  def self.send_push(fcm_options)
-    send_push_with_response(fcm_options)
-  rescue *ExceptionList::REST_CLIENT_EXCEPTIONS => e
-    Rails.logger.error "Exception: #{e.message}"
-  rescue StandardError => e
-    ChatwootExceptionTracker.new(e).capture_exception
+  def self.send_push(*)
+    false
   end
 
-  def self.send_push_with_response(fcm_options)
-    info = { fcm_options: fcm_options }
-    RestClient.post(push_notification_url, info.merge(instance_config).to_json, { content_type: :json, accept: :json })
+  def self.send_push_with_response(*)
+    false
   end
 
-  def self.emit_event(event_name, event_data)
-    return if ENV['DISABLE_TELEMETRY']
+  def self.emit_event(*)
+    false
+  end
 
-    info = { event_name: event_name, event_data: event_data }
-    RestClient.post(events_url, info.merge(instance_config).to_json, { content_type: :json, accept: :json })
-  rescue *ExceptionList::REST_CLIENT_EXCEPTIONS => e
-    Rails.logger.error "Exception: #{e.message}"
-  rescue StandardError => e
-    ChatwootExceptionTracker.new(e).capture_exception
+  def self.push_relay_available?
+    false
+  end
+
+  def self.include_usage_metrics?
+    return false if ActiveModel::Type::Boolean.new.cast(ENV.fetch('DISABLE_TELEMETRY', false))
+
+    ActiveModel::Type::Boolean.new.cast(ENV.fetch('ACELERA_CONTROL_INCLUDE_USAGE', false))
   end
 end
 

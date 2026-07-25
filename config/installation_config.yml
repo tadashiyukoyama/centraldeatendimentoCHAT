@@ -55,6 +55,9 @@
   display_title: 'Chatwoot Metadata'
   description: 'Display default Chatwoot metadata like favicons and upgrade warnings'
   type: boolean
+- name: CHANGELOG_URL
+  value: ''
+  locked: true
 # ------- End of Branding Related Config ------- #
 
 # ------- Signup & Account Related Config ------- #

@@ -86,7 +86,8 @@ class Notification::PushTestService
   end
 
   def chatwoot_hub_enabled?
-    ActiveModel::Type::Boolean.new.cast(ENV.fetch('ENABLE_PUSH_RELAY_SERVER', true))
+    ChatwootHub.push_relay_available? &&
+      ActiveModel::Type::Boolean.new.cast(ENV.fetch('ENABLE_PUSH_RELAY_SERVER', false))
   end
 
   def browser_push_payload(subscription)
@@ -94,13 +95,13 @@ class Notification::PushTestService
       message: JSON.generate(
         title: resolved_title,
         tag: "super_admin_test_#{Time.zone.now.to_i}",
-        url: ENV.fetch('FRONTEND_URL', 'https://app.chatwoot.com')
+        url: ENV.fetch('FRONTEND_URL', 'http://localhost:3000')
       ),
       endpoint: subscription.subscription_attributes['endpoint'],
       p256dh: subscription.subscription_attributes['p256dh'],
       auth: subscription.subscription_attributes['auth'],
       vapid: {
-        subject: ENV.fetch('FRONTEND_URL', 'https://app.chatwoot.com'),
+        subject: ENV.fetch('FRONTEND_URL', 'http://localhost:3000'),
         public_key: VapidService.public_key,
         private_key: VapidService.private_key
       },
