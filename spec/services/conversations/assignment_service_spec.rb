@@ -58,7 +58,7 @@ describe Conversations::AssignmentService do
     end
 
     context 'when strict team visibility is enabled' do
-      let(:team) { create(:team, account: account) }
+      let(:team) { create(:team, account: account, allow_auto_assign: false) }
 
       it 'rejects a human assignment while the conversation has no team' do
         create(:inbox_member, inbox: conversation.inbox, user: agent)

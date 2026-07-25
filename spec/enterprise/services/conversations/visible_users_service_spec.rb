@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe Conversations::VisibleUsersService do
   let(:account) { create(:account) }
   let(:inbox) { create(:inbox, account: account) }
-  let(:team) { create(:team, account: account) }
+  let(:team) { create(:team, account: account, allow_auto_assign: false) }
   let(:conversation) { create(:conversation, account: account, inbox: inbox, team: team) }
   let(:manager) { create(:user, account: account, role: :agent) }
   let(:manager_without_inbox) { create(:user, account: account, role: :agent) }

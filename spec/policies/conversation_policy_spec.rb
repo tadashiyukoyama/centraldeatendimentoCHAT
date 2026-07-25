@@ -72,13 +72,15 @@ RSpec.describe ConversationPolicy, type: :policy do
 
     context 'when strict team visibility is enabled' do
       let(:inbox) { create(:inbox, account: account) }
-      let(:team) { create(:team, account: account) }
-      let(:other_team) { create(:team, account: account) }
+      let(:team) { create(:team, account: account, allow_auto_assign: false) }
+      let(:other_team) { create(:team, account: account, allow_auto_assign: false) }
+      let!(:other_team_membership) { create(:team_member, team: other_team, user: agent) }
       let!(:team_conversation) { create(:conversation, account: account, inbox: inbox, team: team) }
       let!(:other_team_conversation) { create(:conversation, account: account, inbox: inbox, team: other_team, assignee: agent) }
       let!(:unassigned_conversation) { create(:conversation, account: account, inbox: inbox, assignee: agent) }
 
       before do
+        other_team_membership.destroy!
         create(:inbox_member, user: agent, inbox: inbox)
         create(:team_member, user: agent, team: team)
         ConversationParticipant.find_or_create_by!(account: account, conversation: other_team_conversation, user: agent)

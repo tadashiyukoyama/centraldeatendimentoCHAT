@@ -44,13 +44,15 @@ RSpec.describe Conversations::PermissionFilterService do
       end
 
       context 'when strict team visibility is enabled' do
-        let(:team_a) { create(:team, account: account) }
-        let(:team_b) { create(:team, account: account) }
+        let(:team_a) { create(:team, account: account, allow_auto_assign: false) }
+        let(:team_b) { create(:team, account: account, allow_auto_assign: false) }
+        let!(:other_team_membership) { create(:team_member, team: team_b, user: agent) }
         let!(:team_conversation) { create(:conversation, account: account, inbox: inbox, team: team_a) }
         let!(:other_team_conversation) { create(:conversation, account: account, inbox: inbox, team: team_b, assignee: agent) }
         let!(:unassigned_conversation) { create(:conversation, account: account, inbox: inbox, assignee: agent) }
 
         before do
+          other_team_membership.destroy!
           create(:team_member, team: team_a, user: agent)
           ConversationParticipant.find_or_create_by!(account: account, conversation: other_team_conversation, user: agent)
           ConversationParticipant.find_or_create_by!(account: account, conversation: unassigned_conversation, user: agent)
