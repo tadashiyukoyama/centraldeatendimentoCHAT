@@ -1491,11 +1491,6 @@ async function main() {
       'bulk contact labels affect only contacts visible to the requesting agent',
       async () => {
         const labelTitle = `smoke-${runId}`;
-        await request(`${accountPath}/labels`, {
-          method: 'POST',
-          token: admin.token,
-          body: { label: { title: labelTitle, show_on_sidebar: false } },
-        });
         await request(`${accountPath}/bulk_actions`, {
           method: 'POST',
           token: agentA.token,
