@@ -689,6 +689,17 @@ async function main() {
       );
       return response.data.payload;
     };
+    const getParticipantIds = async conversationId => {
+      const response = await request(
+        `${accountPath}/conversations/${conversationId}/participants`,
+        { token: admin.token }
+      );
+      assert(
+        Array.isArray(response.data),
+        'Conversation participants response was not an array'
+      );
+      return response.data.map(participant => Number(participant.id));
+    };
     const eventCount = (client, eventName) =>
       client.events.filter(event => event.event === eventName).length;
     const waitForEvent = async (client, eventName, description) =>
@@ -1052,6 +1063,10 @@ async function main() {
     await recordFinding(
       'team transfer revokes old access and grants new access immediately',
       async () => {
+        const participantIdsBeforeTransfer = await waitUntil(async () => {
+          const ids = await getParticipantIds(conversations.teamA.id);
+          return ids.includes(agentA.id) ? ids : null;
+        }, 'assigned agent participation before transfer');
         cableFor('agentA').clear();
         cableFor('agentB').clear();
         await request(
@@ -1070,9 +1085,13 @@ async function main() {
         const transferredAssigneeId = Number(
           transferredConversation.data?.meta?.assignee?.id
         );
-        const incompatibleAssigneeCleared =
-          !teamAIdsAfterTransfer.includes(conversations.teamA.id) &&
-          transferredAssigneeId !== agentA.id;
+        const participantIdsAfterTransfer = await getParticipantIds(
+          conversations.teamA.id
+        );
+        const oldTeamAccessRevoked = !teamAIdsAfterTransfer.includes(
+          conversations.teamA.id
+        );
+        const incompatibleAssigneeCleared = transferredAssigneeId !== agentA.id;
         assertExactIds(
           await listIds(agentB.token),
           [conversations.teamA.id, conversations.teamB.id],
@@ -1088,7 +1107,7 @@ async function main() {
           'team B real-time grant after transfer'
         );
 
-        if (incompatibleAssigneeCleared) {
+        if (oldTeamAccessRevoked) {
           await expectDenied(
             `${accountPath}/conversations/${conversations.teamA.id}`,
             agentA.token
@@ -1099,19 +1118,26 @@ async function main() {
             'team A real-time revocation after transfer'
           );
         } else {
-          await request(
-            `${accountPath}/conversations/${conversations.teamA.id}/assignments`,
-            {
-              method: 'POST',
-              token: admin.token,
-              body: { assignee_id: null },
-            }
-          );
-          assertExactIds(
-            await listIds(agentA.token),
-            [],
-            'team A list after explicit incompatible-assignee removal'
-          );
+          if (!incompatibleAssigneeCleared) {
+            await request(
+              `${accountPath}/conversations/${conversations.teamA.id}/assignments`,
+              {
+                method: 'POST',
+                token: admin.token,
+                body: { assignee_id: null },
+              }
+            );
+          }
+          if (participantIdsAfterTransfer.includes(agentA.id)) {
+            await request(
+              `${accountPath}/conversations/${conversations.teamA.id}/participants`,
+              {
+                method: 'DELETE',
+                token: admin.token,
+                body: { user_ids: [agentA.id] },
+              }
+            );
+          }
           await expectDenied(
             `${accountPath}/conversations/${conversations.teamA.id}`,
             agentA.token
@@ -1119,7 +1145,7 @@ async function main() {
           await waitForEvent(
             cableFor('agentA'),
             'page:reload',
-            'team A real-time revocation after explicit assignee removal'
+            'team A real-time revocation after explicit visibility cleanup'
           );
         }
         assertExactIds(
@@ -1186,17 +1212,22 @@ async function main() {
           'team A notifications after transfer restore'
         );
         return {
-          passed: incompatibleAssigneeCleared,
+          passed: oldTeamAccessRevoked,
           detail: {
+            assigned_agent_was_participant_before_transfer:
+              participantIdsBeforeTransfer.includes(agentA.id),
             incompatible_assignee_cleared_automatically:
               incompatibleAssigneeCleared,
+            participant_retained_after_transfer:
+              participantIdsAfterTransfer.includes(agentA.id),
             transferred_assignee_id:
               Number.isInteger(transferredAssigneeId) &&
               transferredAssigneeId > 0
                 ? transferredAssigneeId
                 : null,
-            explicit_normalization_required: !incompatibleAssigneeCleared,
-            revoked_from_old_team: true,
+            explicit_normalization_required: !oldTeamAccessRevoked,
+            revoked_from_old_team_automatically: oldTeamAccessRevoked,
+            revoked_after_normalization: true,
             granted_to_new_team: true,
             original_state_restored: true,
             realtime_revocation_events: 2,
@@ -1207,7 +1238,7 @@ async function main() {
       }
     );
 
-    await record(
+    await recordFinding(
       'direct assignee exception grants and then revokes unassigned access',
       async () => {
         cableFor('agentA').clear();
@@ -1245,6 +1276,23 @@ async function main() {
             body: { assignee_id: null },
           }
         );
+        const idsAfterUnassignment = await listIds(agentA.token);
+        const participantIdsAfterUnassignment = await getParticipantIds(
+          conversations.unassigned.id
+        );
+        const accessRevokedAutomatically = !idsAfterUnassignment.includes(
+          conversations.unassigned.id
+        );
+        if (!accessRevokedAutomatically) {
+          await request(
+            `${accountPath}/conversations/${conversations.unassigned.id}/participants`,
+            {
+              method: 'DELETE',
+              token: admin.token,
+              body: { user_ids: [agentA.id] },
+            }
+          );
+        }
         assertExactIds(
           await listIds(agentA.token),
           [conversations.teamA.id],
@@ -1265,11 +1313,18 @@ async function main() {
           'team A notifications after direct assignment removal'
         );
         return {
-          assigned_exception_visible: true,
-          removal_revoked_access: true,
-          unread_counts_updated: true,
-          stale_notification_hidden: true,
-          realtime_reload_received: true,
+          passed: accessRevokedAutomatically,
+          detail: {
+            assigned_exception_visible: true,
+            access_revoked_automatically: accessRevokedAutomatically,
+            participant_retained_after_unassignment:
+              participantIdsAfterUnassignment.includes(agentA.id),
+            explicit_participant_removal_required: !accessRevokedAutomatically,
+            removal_revoked_access_after_normalization: true,
+            unread_counts_updated: true,
+            stale_notification_hidden: true,
+            realtime_reload_received: true,
+          },
         };
       }
     );
