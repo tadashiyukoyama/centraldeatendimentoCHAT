@@ -92,7 +92,7 @@ function assertExactIds(actual, expected, label) {
 }
 
 function conversationIds(response) {
-  const payload = response?.data?.payload;
+  const payload = response?.data?.payload ?? response?.payload;
   assert(
     Array.isArray(payload),
     'Conversation response did not contain data.payload'
