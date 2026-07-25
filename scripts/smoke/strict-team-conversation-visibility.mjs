@@ -100,6 +100,14 @@ function conversationIds(response) {
   return payload.map(conversation => Number(conversation.id));
 }
 
+function featureEnabled(features, name) {
+  if (Array.isArray(features)) {
+    return features.includes(name);
+  }
+
+  return features?.[name] === true;
+}
+
 async function readToken(tokenFile) {
   const token = (await readFile(resolve(tokenFile), 'utf8')).trim();
   assert(token.length >= 20, 'Platform token file is empty or invalid');
@@ -240,7 +248,7 @@ async function main() {
       'Platform account creation did not return an id'
     );
     assert(
-      accountResponse.data.features?.includes(FEATURE),
+      featureEnabled(accountResponse.data.features, FEATURE),
       `Feature ${FEATURE} was not enabled on the smoke account`
     );
 
@@ -617,7 +625,7 @@ async function main() {
           }
         );
         assert(
-          !disableResponse.data.features?.includes(FEATURE),
+          !featureEnabled(disableResponse.data.features, FEATURE),
           `Feature ${FEATURE} remained enabled after rollback`
         );
         const allIds = [
@@ -656,7 +664,7 @@ async function main() {
         }
       );
       assert(
-        enableResponse.data.features?.includes(FEATURE),
+        featureEnabled(enableResponse.data.features, FEATURE),
         `Feature ${FEATURE} was not re-enabled`
       );
       assertExactIds(
