@@ -20,6 +20,8 @@ import CreateResponseDialog from 'dashboard/components-next/captain/pageComponen
 import ResponsePageEmptyState from 'dashboard/components-next/captain/pageComponents/emptyStates/ResponsePageEmptyState.vue';
 import FeatureSpotlightPopover from 'dashboard/components-next/feature-spotlight/FeatureSpotlightPopover.vue';
 import LimitBanner from 'dashboard/components-next/captain/pageComponents/response/LimitBanner.vue';
+import { assistantAsset } from 'shared/helpers/publicBrand';
+import { getHelpUrlForFeature } from 'dashboard/helper/featureHelper';
 
 const router = useRouter();
 const route = useRoute();
@@ -261,9 +263,9 @@ onMounted(() => {
         :title="$t('CAPTAIN.RESPONSES.EMPTY_STATE.FEATURE_SPOTLIGHT.TITLE')"
         :note="$t('CAPTAIN.RESPONSES.EMPTY_STATE.FEATURE_SPOTLIGHT.NOTE')"
         :hide-actions="!isOnChatwootCloud"
-        fallback-thumbnail="/assets/images/dashboard/captain/faqs-popover-light.svg"
-        fallback-thumbnail-dark="/assets/images/dashboard/captain/faqs-popover-dark.svg"
-        learn-more-url="https://chwt.app/captain-faq"
+        :fallback-thumbnail="assistantAsset('faqs-popover-light.svg')"
+        :fallback-thumbnail-dark="assistantAsset('faqs-popover-dark.svg')"
+        :learn-more-url="getHelpUrlForFeature('captain')"
       />
     </template>
 

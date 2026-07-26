@@ -1,4 +1,4 @@
-# Asset clean logic taken from the article https://chwt.app/heroku-slug-size
+# Asset cleanup keeps deployment images small by removing build-only files.
 
 namespace :assets do
   desc "Remove 'node_modules' folder"

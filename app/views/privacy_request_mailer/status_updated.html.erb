@@ -1,0 +1,6 @@
+<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;color:#0f172a">
+<% if @logo_url.present? %><img src="<%= @logo_url %>" alt="<%= @brand_name %>" width="190"><% else %><h1><%= @brand_name %></h1><% end %>
+<p><%= @locale == 'en' ? 'Your privacy request was updated.' : 'Sua solicitação de privacidade foi atualizada.' %></p>
+<p><strong><%= @locale == 'en' ? 'Protocol' : 'Protocolo' %>:</strong> <%= @privacy_request.protocol %></p>
+<p><strong>Status:</strong> <%= @privacy_request.status_label(@locale) %></p>
+</body></html>

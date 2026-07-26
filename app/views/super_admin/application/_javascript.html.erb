@@ -20,7 +20,7 @@ by providing a `content_for(:javascript)` block.
   <% end %>
 <% end %>
 
-<% support_config = ChatwootHub.support_config %>
+<% support_config = PublicBrand.active? ? {} : ChatwootHub.support_config %>
 <% super_admin = SuperAdmin.first %>
 <% if support_config.values.all?(&:present?) && super_admin.present? %>
 <%

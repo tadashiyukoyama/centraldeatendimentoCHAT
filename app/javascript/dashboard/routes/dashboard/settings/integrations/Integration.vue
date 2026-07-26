@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n';
 import { frontendURL } from '../../../../helper/URLHelper';
 import { useAlert } from 'dashboard/composables';
 import { useBranding } from 'shared/composables/useBranding';
+import { integrationAssetId } from 'shared/helpers/publicBrand';
 
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -69,11 +70,11 @@ const confirmDeletion = () => {
     >
       <div class="flex h-16 w-16 items-center justify-center flex-shrink-0">
         <img
-          :src="`/dashboard/images/integrations/${integrationId}.png`"
+          :src="`/dashboard/images/integrations/${integrationAssetId(integrationId)}.png`"
           class="max-w-full rounded-md border border-n-weak shadow-sm block dark:hidden bg-n-alpha-3 dark:bg-n-alpha-2"
         />
         <img
-          :src="`/dashboard/images/integrations/${integrationId}-dark.png`"
+          :src="`/dashboard/images/integrations/${integrationAssetId(integrationId)}-dark.png`"
           class="max-w-full rounded-md border border-n-weak shadow-sm hidden dark:block bg-n-alpha-3 dark:bg-n-alpha-2"
         />
       </div>

@@ -52,14 +52,18 @@ const v$ = useVuelidate(rules, { credentials });
 
 const globalConfig = computed(() => store.getters['globalConfig/get']);
 
-const termsLink = computed(() =>
-  t('REGISTER.TERMS_ACCEPT')
-    .replace('https://www.chatwoot.com/terms', globalConfig.value.termsURL)
-    .replace(
-      'https://www.chatwoot.com/privacy-policy',
-      globalConfig.value.privacyURL
-    )
-);
+const termsLink = computed(() => {
+  const destinations = [
+    globalConfig.value.termsURL,
+    globalConfig.value.privacyURL,
+  ];
+  let linkIndex = 0;
+  return t('REGISTER.TERMS_ACCEPT').replace(/href="[^"]*"/g, () => {
+    const destination = destinations[linkIndex] || '#';
+    linkIndex += 1;
+    return `href="${destination}"`;
+  });
+});
 
 const allowedLoginMethods = computed(
   () => window.chatwootConfig.allowedLoginMethods || ['email']

@@ -1,0 +1,10 @@
+<h1><%= english? ? 'Confirm your request' : 'Confirme sua solicitação' %></h1>
+<% if @privacy_request %>
+  <p><%= english? ? 'Confirming proves access to the submitted email. It does not automatically approve deletion or any other action.' : 'A confirmação comprova acesso ao e-mail informado. Ela não aprova automaticamente exclusão ou qualquer outra ação.' %></p>
+  <%= form_with url: legal_data_request_confirm_path(request_protocol: @privacy_request.protocol, lang: current_legal_locale), method: :post do |form| %>
+    <%= hidden_field_tag :token, params[:token] %>
+    <button type="submit"><%= english? ? 'Confirm email' : 'Confirmar e-mail' %></button>
+  <% end %>
+<% else %>
+  <div class="errors"><%= english? ? 'This verification link is invalid or expired.' : 'Este link de verificação é inválido ou expirou.' %></div>
+<% end %>

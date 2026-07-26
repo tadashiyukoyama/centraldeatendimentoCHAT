@@ -58,7 +58,7 @@ class AccountSamlSettings < ApplicationRecord
   end
 
   def installation_name
-    GlobalConfigService.load('INSTALLATION_NAME', 'Chatwoot')
+    PublicBrand.value('INSTALLATION_NAME', GlobalConfigService.load('INSTALLATION_NAME', 'AceleraChat'))
   end
 
   def update_account_users_provider

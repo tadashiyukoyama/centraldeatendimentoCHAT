@@ -68,6 +68,13 @@ remove_old_notification_job:
   class: 'Notification::RemoveOldNotificationJob'
   queue: purgable
 
+# Removes expired unverified requests, purges closed-request sensitive data,
+# and deletes minimum protocol metadata after the published retention period.
+privacy_request_cleanup_job:
+  cron: '15 2 * * *'
+  class: 'PrivacyRequestCleanupJob'
+  queue: purgable
+
 # executed every 12 hours
 # to remove orphan conversations without contact
 remove_orphan_conversations_job:

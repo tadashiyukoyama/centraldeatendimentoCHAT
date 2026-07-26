@@ -1,0 +1,5 @@
+<%= @brand_name %>
+
+<%= @locale == 'en' ? 'Your privacy request was updated.' : 'Sua solicitação de privacidade foi atualizada.' %>
+<%= @locale == 'en' ? 'Protocol' : 'Protocolo' %>: <%= @privacy_request.protocol %>
+Status: <%= @privacy_request.status_label(@locale) %>

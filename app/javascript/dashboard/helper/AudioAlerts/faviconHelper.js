@@ -2,8 +2,16 @@ export const showBadgeOnFavicon = () => {
   const favicons = document.querySelectorAll('.favicon');
 
   favicons.forEach(favicon => {
-    const newFileName = `/favicon-badge-${favicon.sizes[[0]]}.png`;
-    favicon.href = newFileName;
+    const normalHref =
+      favicon.dataset.normalHref || favicon.getAttribute('href');
+    favicon.dataset.normalHref = normalHref;
+    const badgeURL = new URL(normalHref, window.location.origin);
+    const size = favicon.getAttribute('sizes');
+    badgeURL.pathname = badgeURL.pathname.replace(
+      /favicon-(?:badge-)?\d+x\d+\.png$/,
+      `favicon-badge-${size}.png`
+    );
+    favicon.href = badgeURL.toString();
   });
 };
 
@@ -13,8 +21,8 @@ export const initFaviconSwitcher = () => {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       favicons.forEach(favicon => {
-        const oldFileName = `/favicon-${favicon.sizes[[0]]}.png`;
-        favicon.href = oldFileName;
+        const normalHref = favicon.dataset.normalHref;
+        if (normalHref) favicon.href = normalHref;
       });
     }
   });

@@ -14,6 +14,7 @@ import { isASubmittedFormMessage } from 'shared/helpers/MessageTypeHelper';
 import ReplyToChip from 'widget/components/ReplyToChip.vue';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { emitter } from 'shared/helpers/mitt';
+import { assistantAvatar } from 'shared/helpers/publicBrand';
 
 export default {
   name: 'AgentMessage',
@@ -85,7 +86,7 @@ export default {
     avatarUrl() {
       const displayImage = this.useInboxAvatarForBot
         ? this.inboxAvatarUrl
-        : '/assets/images/chatwoot_bot.png';
+        : assistantAvatar();
 
       if (this.message.message_type === MESSAGE_TYPE.TEMPLATE) {
         return displayImage;

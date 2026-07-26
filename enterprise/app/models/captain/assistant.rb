@@ -108,6 +108,7 @@ class Captain::Assistant < ApplicationRecord
   def prompt_context
     {
       name: name,
+      system_name: PublicBrand.value('ASSISTANT_PUBLIC_NAME', 'Captain'),
       description: description,
       product_name: config['product_name'] || 'this product',
       scenarios: scenarios.enabled.map do |scenario|
@@ -123,6 +124,7 @@ class Captain::Assistant < ApplicationRecord
   end
 
   def default_avatar_url
-    "#{ENV.fetch('FRONTEND_URL', nil)}/assets/images/dashboard/captain/logo.svg"
+    asset_path = PublicBrand.value('ASSISTANT_ASSET_BASE_URL', '/assets/images/dashboard/captain')
+    "#{ENV.fetch('FRONTEND_URL', nil)}#{asset_path}/logo.svg"
   end
 end

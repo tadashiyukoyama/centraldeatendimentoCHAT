@@ -4,7 +4,7 @@
 Rails.application.config.filter_parameters += [
   :password, :secret, :_key, :auth, :crypt, :salt, :certificate, :otp, :access, :private, :protected, :ssn,
   :otp_secret, :otp_code, :backup_code, :mfa_token, :otp_backup_codes, :apikey, :qrcode, :pairing_code,
-  :pairingCode, :base64
+  :pairingCode, :base64, :email, :details, :resolution_notes, :status_token, :'h-captcha-response'
 ]
 
 # Regex to filter all occurrences of 'token' in keys except for 'website_token'

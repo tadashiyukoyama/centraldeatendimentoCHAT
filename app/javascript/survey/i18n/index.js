@@ -38,8 +38,9 @@ import uk from './locale/uk.json';
 import vi from './locale/vi.json';
 import zh_CN from './locale/zh_CN.json';
 import zh_TW from './locale/zh_TW.json';
+import { applyPublicBrandToMessages } from 'shared/helpers/publicBrandMessages';
 
-export default {
+export default applyPublicBrandToMessages({
   ar,
   bg,
   ca,
@@ -80,4 +81,4 @@ export default {
   vi,
   zh_CN,
   zh_TW,
-};
+});

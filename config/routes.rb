@@ -40,6 +40,18 @@ Rails.application.routes.draw do
 
   get '/health', to: 'health#show'
   get '/api', to: 'api#index'
+
+  scope '/legal' do
+    get 'terms', to: 'public/legal#terms', as: :legal_terms
+    get 'privacy', to: 'public/legal#privacy', as: :legal_privacy
+    get 'cookies', to: 'public/legal#cookies', as: :legal_cookies
+    get 'data-request', to: 'public/legal#data_request', as: :legal_data_request
+    post 'data-request', to: 'public/legal#create_data_request', as: :legal_data_request_create
+    get 'data-request/verify/:request_protocol', to: 'public/legal#verify_data_request', as: :legal_data_request_verify
+    post 'data-request/verify/:request_protocol', to: 'public/legal#confirm_data_request', as: :legal_data_request_confirm
+    get 'data-request/status/:request_protocol', to: 'public/legal#data_request_status', as: :legal_data_request_status
+  end
+
   namespace :api, defaults: { format: 'json' } do
     namespace :v1 do
       # ----------------------------------
@@ -721,6 +733,7 @@ Rails.application.routes.draw do
       end
       resources :platform_apps, only: [:index, :new, :create, :show, :edit, :update, :destroy]
       resources :platform_banners
+      resources :privacy_requests, only: [:index, :show, :update]
       resource :instance_status, only: [:show]
 
       resource :settings, only: [:show] do

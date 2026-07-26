@@ -26,9 +26,29 @@ class DashboardController < ActionController::Base
     DEPLOYMENT_ENV
     INSTALLATION_PRICING_PLAN
     CHANGELOG_URL
+    PUBLIC_BRAND_PROFILE
+    ASSISTANT_PUBLIC_NAME
+    PUBLIC_PLAN_NAME
+    ASSISTANT_AVATAR_URL
+    ASSISTANT_ASSET_BASE_URL
+    HELP_CENTER_URL
+    SUPPORT_URL
+    COOKIES_URL
+    DATA_REQUEST_URL
+    MANIFEST_URL
+    BROWSER_CONFIG_URL
+    PWA_ASSET_BASE_URL
+    OPEN_GRAPH_IMAGE_URL
+    STATUS_URL
+    BILLING_URL
+    THEME_COLOR
+    BACKGROUND_COLOR
+    PUBLIC_META_DESCRIPTION
+    MAILER_SUPPORT_EMAIL
   ].freeze
 
   before_action :set_application_pack
+  before_action :ensure_saml_login_available
   before_action :set_global_config
   before_action :set_dashboard_scripts
   around_action :switch_locale
@@ -43,6 +63,10 @@ class DashboardController < ActionController::Base
 
   def ensure_html_format
     render json: { error: 'Please use API routes instead of dashboard routes for JSON requests' }, status: :not_acceptable if request.format.json?
+  end
+
+  def ensure_saml_login_available
+    redirect_to('/app/login') if request.path == '/app/login/sso' && !saml_login_enabled?
   end
 
   def set_global_config
@@ -75,7 +99,7 @@ class DashboardController < ActionController::Base
   def app_config
     {
       APP_VERSION: Chatwoot.config[:version],
-      VAPID_PUBLIC_KEY: VapidService.public_key,
+      VAPID_PUBLIC_KEY: vapid_public_key,
       ENABLE_ACCOUNT_SIGNUP: GlobalConfigService.load('ENABLE_ACCOUNT_SIGNUP', 'false'),
       FB_APP_ID: GlobalConfigService.load('FB_APP_ID', ''),
       INSTAGRAM_APP_ID: GlobalConfigService.load('INSTAGRAM_APP_ID', ''),
@@ -97,11 +121,32 @@ class DashboardController < ActionController::Base
     PlatformBanner.active.order(created_at: :desc).as_json(only: %i[id banner_message banner_type updated_at])
   end
 
+  def vapid_public_key
+    # Authentication pages do not use push notifications. Avoid generating
+    # and persisting installation keys during a login request.
+    return '' if @application_pack == 'v3app'
+
+    VapidService.public_key
+  end
+
   def allowed_login_methods
     methods = ['email']
-    methods << 'google_oauth' if GlobalConfigService.load('ENABLE_GOOGLE_OAUTH_LOGIN', 'true').to_s != 'false'
-    methods << 'saml' if ChatwootHub.pricing_plan != 'community' && GlobalConfigService.load('ENABLE_SAML_SSO_LOGIN', 'true').to_s != 'false'
+    methods << 'google_oauth' if google_oauth_enabled?
+    methods << 'saml' if saml_login_enabled?
     methods
+  end
+
+  def google_oauth_enabled?
+    GlobalConfig.get_value('ENABLE_GOOGLE_OAUTH_LOGIN').to_s != 'false' &&
+      ENV['GOOGLE_OAUTH_CLIENT_ID'].present? && ENV['GOOGLE_OAUTH_CLIENT_SECRET'].present?
+  end
+
+  def saml_login_enabled?
+    return true if User.exists?(provider: 'saml')
+    return false if ChatwootHub.pricing_plan == 'community'
+    return false if PublicBrand.active?
+
+    GlobalConfigService.load('ENABLE_SAML_SSO_LOGIN', 'true').to_s != 'false'
   end
 
   def set_application_pack

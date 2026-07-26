@@ -3,6 +3,21 @@
 require 'rails_helper'
 
 RSpec.describe 'Devise::Mailer' do
+  around do |example|
+    with_modified_env(
+      PUBLIC_BRAND_PROFILE: 'acelerachat',
+      MAILER_SENDER_EMAIL: 'AceleraChat <no-reply@meugerenciador.pro>'
+    ) do
+      previous_sender = Devise.mailer_sender
+      Devise.mailer_sender = 'AceleraChat <no-reply@meugerenciador.pro>'
+      PublicBrand.reset!
+      example.run
+    ensure
+      Devise.mailer_sender = previous_sender
+      PublicBrand.reset!
+    end
+  end
+
   describe 'notify' do
     let(:account) { create(:account) }
     let!(:confirmable_user) { create(:user, inviter: inviter_val, account: account) }
@@ -17,7 +32,7 @@ RSpec.describe 'Devise::Mailer' do
     end
 
     it 'has the correct header data' do
-      expect(mail.reply_to).to contain_exactly('accounts@chatwoot.com')
+      expect(mail.reply_to).to contain_exactly('no-reply@meugerenciador.pro')
       expect(mail.to).to contain_exactly(confirmable_user.email)
       expect(mail.subject).to eq('Confirmation Instructions')
     end
@@ -40,7 +55,7 @@ RSpec.describe 'Devise::Mailer' do
 
     it 'shows the default confirmation state' do
       expect(mail_body).to include('Confirm your email to get started')
-      expect(mail_body).to include('Welcome to Chatwoot. We just need to verify your email address before you can start using your account.')
+      expect(mail_body).to include('Welcome to AceleraChat. We just need to verify your email address before you can start using your account.')
       expect(mail_body).to include('Confirm my account')
       expect(mail_body).not_to include('Workspace invitation')
     end
@@ -55,7 +70,7 @@ RSpec.describe 'Devise::Mailer' do
 
       it 'refers to the inviter and their account' do
         expect(mail_body).to include("You're invited to join #{account.name}")
-        expect(mail_body).to include("#{inviter_val.name} invited you to join the #{account.name} workspace on Chatwoot.")
+        expect(mail_body).to include("#{inviter_val.name} invited you to join the #{account.name} workspace on AceleraChat.")
         expect(mail_body).to include('Accept invitation')
         expect(mail_body).not_to include('Confirm your email to get started')
       end

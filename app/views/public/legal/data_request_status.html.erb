@@ -1,0 +1,9 @@
+<h1><%= english? ? 'Request status' : 'Status da solicitação' %></h1>
+<% if @privacy_request %>
+  <p><strong><%= english? ? 'Protocol' : 'Protocolo' %>:</strong> <%= @privacy_request.protocol %></p>
+  <p><span class="status"><%= privacy_request_status_label(@privacy_request) %></span></p>
+  <% if @privacy_request.due_at %><p><strong><%= english? ? 'Target date' : 'Prazo de referência' %>:</strong> <%= l(@privacy_request.due_at.to_date) %></p><% end %>
+  <p><%= english? ? 'For security, this page never displays the submitted email or request details.' : 'Por segurança, esta página nunca exibe o e-mail informado nem os detalhes da solicitação.' %></p>
+<% else %>
+  <div class="errors"><%= english? ? 'The protocol or protected token is invalid.' : 'O protocolo ou token protegido é inválido.' %></div>
+<% end %>

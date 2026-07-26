@@ -9,7 +9,7 @@ class SuperAdmin::ApplicationController < Administrate::ApplicationController
   include ActionView::Context
   include SuperAdmin::NavigationHelper
 
-  helper_method :render_vue_component, :settings_open?, :settings_pages
+  helper_method :render_vue_component, :settings_open?, :settings_pages, :application_title
   # authenticiation done via devise : SuperAdmin Model
   before_action :authenticate_super_admin!
 
@@ -27,6 +27,10 @@ class SuperAdmin::ApplicationController < Administrate::ApplicationController
   end
 
   private
+
+  def application_title
+    GlobalConfig.get_value('INSTALLATION_NAME').presence || 'AceleraChat'
+  end
 
   def render_vue_component(component_name, props = {})
     html_options = {

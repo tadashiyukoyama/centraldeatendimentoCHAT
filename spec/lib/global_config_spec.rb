@@ -34,6 +34,17 @@ describe GlobalConfig do
         expect(InstallationConfig).to receive(:find_by).with({ name: 'test' }).and_return(nil)
         described_class.get('test')
       end
+
+      it 'applies the active public brand after reading persisted configuration' do
+        create(:installation_config, name: 'INSTALLATION_NAME', value: 'Persisted name')
+
+        with_modified_env PUBLIC_BRAND_PROFILE: 'acelerachat' do
+          PublicBrand.reset!
+          expect(described_class.get('INSTALLATION_NAME')['INSTALLATION_NAME']).to eq('AceleraChat')
+        end
+      ensure
+        PublicBrand.reset!
+      end
     end
   end
 end

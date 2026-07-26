@@ -90,7 +90,7 @@ class Captain::Onboarding::WebsiteAnalyzerService < Llm::BaseAiService
 
       {
         "business_name": "The company or business name",
-        "suggested_assistant_name": "A friendly assistant name (e.g., 'Captain Assistant', 'Support Genie', etc.)",
+        "suggested_assistant_name": "A friendly assistant name (e.g., 'Nemmo', 'Support Genie', etc.)",
         "description": "Persona of the assistant based on the business type"
       }
 

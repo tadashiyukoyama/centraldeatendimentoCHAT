@@ -1,0 +1,31 @@
+---
+id: "help.channel_email.pt_BR"
+kind: "help"
+locale: "pt_BR"
+slug: "canal-de-email"
+title: "Canal de e-mail"
+category_slug: "channels"
+category_name: "Canais"
+position: 6
+managed: true
+---
+
+Conecte uma caixa de e-mail, valide remetente e teste recebimento e resposta.
+
+## Como configurar
+
+1. Entre em **Configurações** com um papel autorizado.
+2. Revise o escopo, os usuários envolvidos e os dados que serão tratados.
+3. Faça a alteração em ambiente controlado e valide com uma conta de teste.
+4. Registre o responsável, o resultado e o caminho de reversão.
+
+## Boas práticas
+
+- aplique o menor privilégio e não compartilhe credenciais;
+- mantenha nomes, responsáveis e finalidade documentados;
+- teste os temas claro e escuro, desktop e celular;
+- confirme que nenhum dado sensível aparece em URL, log ou captura de tela.
+
+## Precisa de ajuda?
+
+Use o suporte em `{{SUPPORT_CONTACT_EMAIL}}` e informe apenas o protocolo, sem enviar senha, token ou QR Code.

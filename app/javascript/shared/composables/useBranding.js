@@ -17,7 +17,13 @@ export function useBranding() {
     const installationName = globalConfig.value?.installationName;
     if (!installationName) return text;
 
-    return text.replace(/Chatwoot/g, installationName);
+    const assistantName = globalConfig.value?.assistantPublicName || 'Nemmo';
+    const planName = globalConfig.value?.publicPlanName || 'PRO';
+
+    return text
+      .replace(/Chatwoot/gi, installationName)
+      .replace(/Captain|Capitão/gi, assistantName)
+      .replace(/\bEnterprise\b/gi, planName);
   };
 
   return {

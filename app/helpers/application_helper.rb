@@ -4,6 +4,8 @@ module ApplicationHelper
   end
 
   def feature_help_urls
+    return PublicBrand.help_urls(locale: I18n.locale) if PublicBrand.active?
+
     features = YAML.safe_load(Rails.root.join('config/features.yml').read).freeze
     features.each_with_object({}) do |feature, hash|
       hash[feature['name']] = feature['help_url'] if feature['help_url']

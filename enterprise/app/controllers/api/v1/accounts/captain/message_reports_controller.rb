@@ -29,7 +29,7 @@ class Api::V1::Accounts::Captain::MessageReportsController < Api::V1::Accounts::
   def ensure_captain_message
     return if @message.sender_type == 'Captain::Assistant'
 
-    render json: { error: 'Only Captain messages can be reported' }, status: :unprocessable_entity
+    render json: { error: 'Only Nemmo messages can be reported' }, status: :unprocessable_entity
   end
 
   def permitted_params

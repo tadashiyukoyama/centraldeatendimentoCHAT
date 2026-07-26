@@ -1,0 +1,301 @@
+{
+  "generator": "scripts/generate_acelerachat_assets.py",
+  "audited_visual_assets": 55,
+  "generated_files": [
+    {
+      "path": "app/javascript/dashboard/assets/images/acelerachat-bubble-logo.svg",
+      "bytes": 655,
+      "sha256": "3f7b43bacc3e4536d0420af847a92b0324c25edc583073b3c8462ae1a82b0f32"
+    },
+    {
+      "path": "app/javascript/dashboard/assets/images/nemmo_bot.png",
+      "bytes": 31953,
+      "sha256": "71ac780a8ee82959837886b3c9e3695bbd94ede90f562085a13dc4a724496153"
+    },
+    {
+      "path": "app/javascript/design-system/images/acelerachat-logo-dark.png",
+      "bytes": 15018,
+      "sha256": "52b23f6817a332fa0b890e6f5767765beab2dc3b9e5f4a9fa38fd0b8cb444646"
+    },
+    {
+      "path": "app/javascript/design-system/images/acelerachat-logo.png",
+      "bytes": 15014,
+      "sha256": "5a0be78aec5b4a2dc270b92836cf33d62ab813ad03df32f7ceb459104f7128ba"
+    },
+    {
+      "path": "app/javascript/design-system/images/acelerachat-symbol.svg",
+      "bytes": 655,
+      "sha256": "3f7b43bacc3e4536d0420af847a92b0324c25edc583073b3c8462ae1a82b0f32"
+    },
+    {
+      "path": "app/javascript/widget/assets/images/acelerachat-symbol.svg",
+      "bytes": 655,
+      "sha256": "3f7b43bacc3e4536d0420af847a92b0324c25edc583073b3c8462ae1a82b0f32"
+    },
+    {
+      "path": "public/assets/images/dashboard/nemmo/assistant-dark.svg",
+      "bytes": 825,
+      "sha256": "cfabe339696a229f86191af91cecf980df980c4a20195ad08b65de588ac27c02"
+    },
+    {
+      "path": "public/assets/images/dashboard/nemmo/assistant-light.svg",
+      "bytes": 825,
+      "sha256": "eb5c3eb1683f68f789614f05fe3e2c334ebbbdf9acaa392d330ec5fcc6fb634f"
+    },
+    {
+      "path": "public/assets/images/dashboard/nemmo/assistant-popover-dark.svg",
+      "bytes": 825,
+      "sha256": "6d97a117cd99921fec7e4cef8a47c32a3a89a16c506f27d67c90cacafbd833cb"
+    },
+    {
+      "path": "public/assets/images/dashboard/nemmo/assistant-popover-light.svg",
+      "bytes": 825,
+      "sha256": "821852dcdf66accf1a67c22e2b0a627d8bd445faa4dced3bcfb4200407d38588"
+    },
+    {
+      "path": "public/assets/images/dashboard/nemmo/document-dark.svg",
+      "bytes": 793,
+      "sha256": "7c9f90a32474351999338385c1981c7f7798183e0fb404e0bdd79f1a0b0e8ed2"
+    },
+    {
+      "path": "public/assets/images/dashboard/nemmo/document-light.svg",
+      "bytes": 793,
+      "sha256": "54c38617c50945425593970a7d43f31b0ab870d6875fdc20c74e54aaec7cc004"
+    },
+    {
+      "path": "public/assets/images/dashboard/nemmo/document-popover-dark.svg",
+      "bytes": 793,
+      "sha256": "ef1a07a7e40f711bf07bbf5ab0621715640ee2407d5c7e5dbac67bc23dfa8ef5"
+    },
+    {
+      "path": "public/assets/images/dashboard/nemmo/document-popover-light.svg",
+      "bytes": 793,
+      "sha256": "556226b76daa965980e7cc659dd396a99f9231ab0d415a42e450a17a96e67b85"
+    },
+    {
+      "path": "public/assets/images/dashboard/nemmo/faqs-dark.svg",
+      "bytes": 892,
+      "sha256": "ae2cf1c23ce9db55ea8739e6f118dfaec0f42288a4a0f09522805dfd7f717abd"
+    },
+    {
+      "path": "public/assets/images/dashboard/nemmo/faqs-light.svg",
+      "bytes": 892,
+      "sha256": "e7d4e0af0dc6aa79d9a94efdc2325425cd6571caadafc26ac3e6729e0da32533"
+    },
+    {
+      "path": "public/assets/images/dashboard/nemmo/faqs-popover-dark.svg",
+      "bytes": 892,
+      "sha256": "3ac39bf8ef8a5ef3eea57c55e64e3c9a0c12355eb3857a4b9ba13ffa7ee83e11"
+    },
+    {
+      "path": "public/assets/images/dashboard/nemmo/faqs-popover-light.svg",
+      "bytes": 892,
+      "sha256": "2f71423cc8955fc88c81badb5338010e600fce1ec5cf21f1a02240ed54eb7976"
+    },
+    {
+      "path": "public/assets/images/dashboard/nemmo/logo.svg",
+      "bytes": 655,
+      "sha256": "3f7b43bacc3e4536d0420af847a92b0324c25edc583073b3c8462ae1a82b0f32"
+    },
+    {
+      "path": "public/assets/images/nemmo_bot.png",
+      "bytes": 31953,
+      "sha256": "71ac780a8ee82959837886b3c9e3695bbd94ede90f562085a13dc4a724496153"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/browserconfig.xml",
+      "bytes": 382,
+      "sha256": "d7e64a3ac03204ab1d7190f5d0e251fd76c6fc1b6b3814690a69ead705f11284"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/logo-dark.svg",
+      "bytes": 936,
+      "sha256": "2c72dfd39a72378497144697d2668dcf2506bba645202665c3f28dee61476819"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/logo.svg",
+      "bytes": 936,
+      "sha256": "41043c6d065d8ca78ee0ee557326ccd12b1c69c79d5b5e521670a3f45e51e3a7"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/manifest.json",
+      "bytes": 455,
+      "sha256": "55b86ecfbb3984d352aaccc199a488ed949c3b882353bb4ea465a6d0be052df4"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/nemmo-avatar.png",
+      "bytes": 31953,
+      "sha256": "71ac780a8ee82959837886b3c9e3695bbd94ede90f562085a13dc4a724496153"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/open-graph.png",
+      "bytes": 35917,
+      "sha256": "64b06afd941fbea81b76b8197db05bb0dd49604c2ea683a66ff32c55bdf2aecc"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/android-icon-144x144.png",
+      "bytes": 5535,
+      "sha256": "38eb080caf5b2f0793218cbe7cfa58920ede506a4a657b20121878959f3d8dfd"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/android-icon-192x192.png",
+      "bytes": 6967,
+      "sha256": "b01dcc1ede2c9c6adc4000e9c91a0c0a23f7a960d710f4470c14a4c213f741ca"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/android-icon-36x36.png",
+      "bytes": 1585,
+      "sha256": "ec484dcf9b83eea35e58abb574fd4f1c90720324dda2bac817c6e1ee5c8dfee8"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/android-icon-48x48.png",
+      "bytes": 1993,
+      "sha256": "b2c6dce507711dff58a7898fef10f030e6d721561ce92596a84da2b10852eb8d"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/android-icon-72x72.png",
+      "bytes": 2802,
+      "sha256": "420dcea808dcb9d72791567c55526135e349ddf3ec9331d4e3fc482a718442c8"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/android-icon-96x96.png",
+      "bytes": 3738,
+      "sha256": "4e35f7620d9f6a76adc9eac6c2b8c58ba28b8b05d8068c6d83010296d6e7ddb6"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/apple-icon-114x114.png",
+      "bytes": 4170,
+      "sha256": "19a772501eeeb51a4d9edaadfa9ee7dcef039970db3365b6384a5ec42c92fa6f"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/apple-icon-120x120.png",
+      "bytes": 4298,
+      "sha256": "c56be4fbc385ceac80bedb5f4b37ee3d4679ef8984ac29d309e7a854a7e5aa79"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/apple-icon-144x144.png",
+      "bytes": 5044,
+      "sha256": "8c96826896d32111583c482b20549b294d16cfdb8415fd892263555c2858dcb0"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/apple-icon-152x152.png",
+      "bytes": 5295,
+      "sha256": "b28b461d404780b9d72bc36b708b108fcc3a3753bf543793d2805519b4745bc1"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/apple-icon-180x180.png",
+      "bytes": 6164,
+      "sha256": "124c2f711a0cac47a6e445413b009dabd2325505e6e84042fe3984126dbd2859"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/apple-icon-57x57.png",
+      "bytes": 2303,
+      "sha256": "5e28397d6e2d253a88e899f8ced38c2a7ff1be8ecca09d1080ef7f3403e8968b"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/apple-icon-60x60.png",
+      "bytes": 2295,
+      "sha256": "3d99477793c2138ce5cb332d178969756339d75927d4f5c01a755f679e877f1d"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/apple-icon-72x72.png",
+      "bytes": 2599,
+      "sha256": "ec554fb98d6e4d542ce38105e2e5af62824c7e3d4fe42256b9b8e2a3ce4c8b34"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/apple-icon-76x76.png",
+      "bytes": 2754,
+      "sha256": "d47266b6388f0019925a041adc28ab2f3ea8f603232befd6177e6aff898a41b3"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/apple-icon-precomposed.png",
+      "bytes": 6415,
+      "sha256": "230122f59048a5d0dfd6d850d479780f1f66f2d9ce0e8d4cdfda6bbc38e16903"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/apple-icon.png",
+      "bytes": 6415,
+      "sha256": "230122f59048a5d0dfd6d850d479780f1f66f2d9ce0e8d4cdfda6bbc38e16903"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/apple-touch-icon-precomposed.png",
+      "bytes": 6164,
+      "sha256": "124c2f711a0cac47a6e445413b009dabd2325505e6e84042fe3984126dbd2859"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/apple-touch-icon.png",
+      "bytes": 6164,
+      "sha256": "124c2f711a0cac47a6e445413b009dabd2325505e6e84042fe3984126dbd2859"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/favicon-16x16.png",
+      "bytes": 654,
+      "sha256": "653d809e0059aaf7a1134b85af109eb68432051a9ddc6010ae5a617c89327aba"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/favicon-32x32.png",
+      "bytes": 1448,
+      "sha256": "e69e0db9ceab2bad2035117682b239f2bef89ca2ca856885192915b1ed7cb6e3"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/favicon-512x512.png",
+      "bytes": 19297,
+      "sha256": "2e15a30ef866f9cf49a3123a6bed336071201a010c5ed08f4b92fa31560a5556"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/favicon-96x96.png",
+      "bytes": 3738,
+      "sha256": "4e35f7620d9f6a76adc9eac6c2b8c58ba28b8b05d8068c6d83010296d6e7ddb6"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/favicon-badge-16x16.png",
+      "bytes": 779,
+      "sha256": "8a3ee3b979896befc2d2210bd74a8ba10e16e35d605d494962f943c6d0f1d301"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/favicon-badge-32x32.png",
+      "bytes": 1764,
+      "sha256": "66288c9cdda1230af8ade3fd0cc1b31330d755dc38cacf7f1e41643363c1429a"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/favicon-badge-96x96.png",
+      "bytes": 5150,
+      "sha256": "464805165e8421fb6a66c237a4ae36c67823550301f437a609a962abb52db064"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/ms-icon-144x144.png",
+      "bytes": 5044,
+      "sha256": "8c96826896d32111583c482b20549b294d16cfdb8415fd892263555c2858dcb0"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/ms-icon-150x150.png",
+      "bytes": 5100,
+      "sha256": "33b9555221bde303042ac933b7580440450b04871729517f3b4a00d803d2d416"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/ms-icon-310x310.png",
+      "bytes": 10457,
+      "sha256": "310f38e443c0c8b39c24d459905d8cc6b97eba8e219c77829d14031536cf6fd3"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/pwa/ms-icon-70x70.png",
+      "bytes": 2659,
+      "sha256": "7221f485fb6e9a8cb97ec3a1610b75d57d8320e942813d98ebcb9379f8084282"
+    },
+    {
+      "path": "public/brand-assets/acelerachat/symbol.svg",
+      "bytes": 655,
+      "sha256": "3f7b43bacc3e4536d0420af847a92b0324c25edc583073b3c8462ae1a82b0f32"
+    },
+    {
+      "path": "public/dashboard/images/integrations/nemmo-dark.png",
+      "bytes": 24690,
+      "sha256": "b4f04b96df1745a3ba5d375572b6cffcb952dccfa075ed442e5dbe59d795d2b2"
+    },
+    {
+      "path": "public/dashboard/images/integrations/nemmo.png",
+      "bytes": 23638,
+      "sha256": "ba1d4521db68e96b5860f0e3cf24d2c2db4566532fb04da253ab0152e760da58"
+    }
+  ]
+}

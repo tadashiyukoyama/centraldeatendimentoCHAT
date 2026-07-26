@@ -63,7 +63,8 @@ class SuperAdmin::AppConfigsController < SuperAdmin::ApplicationController
     message = "#{@config.titleize} settings updated successfully"
     return message unless restart_required_config_saved?
 
-    "#{message.delete_suffix('.')}. Restart Chatwoot web and worker processes to apply this change everywhere."
+    installation_name = GlobalConfig.get_value('INSTALLATION_NAME').presence || 'AceleraChat'
+    "#{message.delete_suffix('.')}. Restart #{installation_name} web and worker processes to apply this change everywhere."
   end
 
   def success_flash

@@ -6,6 +6,7 @@ import { useToggle } from '@vueuse/core';
 import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import { assistantAvatar } from 'shared/helpers/publicBrand';
 
 const props = defineProps({
   note: {
@@ -53,11 +54,7 @@ onMounted(() => {
       <div class="flex items-center gap-1.5 min-w-0">
         <Avatar
           :name="note?.user?.name || 'Bot'"
-          :src="
-            note?.user?.name
-              ? note?.user?.thumbnail
-              : '/assets/images/chatwoot_bot.png'
-          "
+          :src="note?.user?.name ? note?.user?.thumbnail : assistantAvatar()"
           :size="16"
           rounded-full
         />

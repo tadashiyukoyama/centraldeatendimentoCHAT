@@ -86,9 +86,11 @@ Metrics/BlockLength:
     - '**/routes.rb'
     - 'config/environments/*'
     - db/schema.rb
+    - lib/tasks/acelerachat.rake
 
 Metrics/ModuleLength:
   Exclude:
+    - lib/public_brand.rb
     - lib/seeders/message_seeder.rb
     - spec/support/slack_stubs.rb
 

@@ -1,39 +1,51 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <% pwa_asset_base = @global_config['PWA_ASSET_BASE_URL'].presence || '' %>
+    <% theme_color = @global_config['THEME_COLOR'].presence || '#1f93ff' %>
+    <% manifest_url = @global_config['MANIFEST_URL'].presence || '/manifest.json' %>
     <title>
       <%= @global_config['INSTALLATION_NAME'] %>
     </title>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=0"/>
+    <meta name="description" content="<%= @global_config['PUBLIC_META_DESCRIPTION'].presence || "#{@global_config['INSTALLATION_NAME']} is a customer support platform." %>">
+    <meta property="og:title" content="<%= @global_config['INSTALLATION_NAME'] %>">
+    <meta property="og:description" content="<%= @global_config['PUBLIC_META_DESCRIPTION'].presence || "#{@global_config['INSTALLATION_NAME']} is a customer support platform." %>">
+    <% if @global_config['OPEN_GRAPH_IMAGE_URL'].present? %>
+      <meta property="og:image" content="<%= @global_config['OPEN_GRAPH_IMAGE_URL'] %>">
+    <% end %>
     <% if @global_config['DISPLAY_MANIFEST'] %>
-      <meta name="msapplication-TileColor" content="#1f93ff">
-      <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
-      <meta name="theme-color" content="#1f93ff">
-      <meta name="description" content="<%= @global_config['INSTALLATION_NAME'] %> is a customer support solution that helps companies engage customers over Messenger, Twitter, Telegram, WeChat, Whatsapp. Simply connect your channels and converse with your customers from a single place. Easily add new agents to your system and have them own and resolve conversations with customers. <%= @global_config['INSTALLATION_NAME'] %> also gives you real-time reports to measure your team's performance, canned responses to easily respond to frequently asked questions and private notes for agents to collaborate among themselves.">
+      <meta name="msapplication-TileColor" content="<%= theme_color %>">
+      <meta name="msapplication-TileImage" content="<%= pwa_asset_base %>/ms-icon-144x144.png">
+      <meta name="theme-color" content="<%= theme_color %>">
+      <meta name="color-scheme" content="light dark">
+      <% if @global_config['BROWSER_CONFIG_URL'].present? %>
+        <meta name="msapplication-config" content="<%= @global_config['BROWSER_CONFIG_URL'] %>">
+      <% end %>
       <% if ENV['IOS_APP_IDENTIFIER'].present? %>
         <meta name="apple-itunes-app" content='app-id=<%= ENV['IOS_APP_IDENTIFIER'] %>'>
       <% end %>
-      <link rel="apple-touch-icon" sizes="57x57" href="/apple-icon-57x57.png">
-      <link rel="apple-touch-icon" sizes="60x60" href="/apple-icon-60x60.png">
-      <link rel="apple-touch-icon" sizes="72x72" href="/apple-icon-72x72.png">
-      <link rel="apple-touch-icon" sizes="76x76" href="/apple-icon-76x76.png">
-      <link rel="apple-touch-icon" sizes="114x114" href="/apple-icon-114x114.png">
-      <link rel="apple-touch-icon" sizes="120x120" href="/apple-icon-120x120.png">
-      <link rel="apple-touch-icon" sizes="144x144" href="/apple-icon-144x144.png">
-      <link rel="apple-touch-icon" sizes="152x152" href="/apple-icon-152x152.png">
-      <link rel="apple-touch-icon" sizes="180x180" href="/apple-icon-180x180.png">
-      <link rel="icon" type="image/png" sizes="192x192"  href="/android-icon-192x192.png">
-      <link class="favicon" rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-      <link class="favicon" rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
-      <link class="favicon" rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-      <link rel="manifest" href="/manifest.json">
+      <link rel="apple-touch-icon" sizes="57x57" href="<%= pwa_asset_base %>/apple-icon-57x57.png">
+      <link rel="apple-touch-icon" sizes="60x60" href="<%= pwa_asset_base %>/apple-icon-60x60.png">
+      <link rel="apple-touch-icon" sizes="72x72" href="<%= pwa_asset_base %>/apple-icon-72x72.png">
+      <link rel="apple-touch-icon" sizes="76x76" href="<%= pwa_asset_base %>/apple-icon-76x76.png">
+      <link rel="apple-touch-icon" sizes="114x114" href="<%= pwa_asset_base %>/apple-icon-114x114.png">
+      <link rel="apple-touch-icon" sizes="120x120" href="<%= pwa_asset_base %>/apple-icon-120x120.png">
+      <link rel="apple-touch-icon" sizes="144x144" href="<%= pwa_asset_base %>/apple-icon-144x144.png">
+      <link rel="apple-touch-icon" sizes="152x152" href="<%= pwa_asset_base %>/apple-icon-152x152.png">
+      <link rel="apple-touch-icon" sizes="180x180" href="<%= pwa_asset_base %>/apple-icon-180x180.png">
+      <link rel="icon" type="image/png" sizes="192x192" href="<%= pwa_asset_base %>/android-icon-192x192.png">
+      <link class="favicon" rel="icon" type="image/png" sizes="32x32" href="<%= pwa_asset_base %>/favicon-32x32.png" data-normal-href="<%= pwa_asset_base %>/favicon-32x32.png">
+      <link class="favicon" rel="icon" type="image/png" sizes="96x96" href="<%= pwa_asset_base %>/favicon-96x96.png" data-normal-href="<%= pwa_asset_base %>/favicon-96x96.png">
+      <link class="favicon" rel="icon" type="image/png" sizes="16x16" href="<%= pwa_asset_base %>/favicon-16x16.png" data-normal-href="<%= pwa_asset_base %>/favicon-16x16.png">
+      <link rel="manifest" href="<%= manifest_url %>">
     <% end %>
-    <link rel="icon" type="image/png" sizes="512x512" href="<%= @global_config['LOGO_THUMBNAIL'] %>">
+    <link rel="icon" sizes="512x512" href="<%= @global_config['LOGO_THUMBNAIL'] %>">
     <%= csrf_meta_tags %>
     <script>
       window.chatwootConfig = {
         hostURL: '<%= ENV.fetch('FRONTEND_URL', '') %>',
-        helpCenterURL: '<%= ENV.fetch('HELPCENTER_URL', '') %>',
+        helpCenterURL: '<%= @global_config['HELP_CENTER_URL'].presence || ENV.fetch('HELPCENTER_URL', '') %>',
         fbAppId: '<%= @global_config['FB_APP_ID'] %>',
         instagramAppId: '<%= @global_config['INSTAGRAM_APP_ID'] %>',
         tiktokAppId: '<%= @global_config['TIKTOK_APP_ID'] %>',

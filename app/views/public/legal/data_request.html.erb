@@ -1,0 +1,33 @@
+<h1><%= @document.title %></h1>
+<article><%= @content_html %></article>
+
+<% if @privacy_request.errors.any? %>
+  <div class="errors" role="alert">
+    <strong><%= english? ? 'Review the fields below.' : 'Revise os campos abaixo.' %></strong>
+    <ul><% @privacy_request.errors.full_messages.each do |message| %><li><%= message %></li><% end %></ul>
+  </div>
+<% end %>
+
+<%= form_with model: @privacy_request, url: legal_data_request_create_path(lang: current_legal_locale), method: :post, class: 'form-grid' do |form| %>
+  <%= form.label :email do %>
+    <%= english? ? 'Email to verify the request' : 'E-mail para verificar a solicitação' %>
+    <%= form.email_field :email, required: true, autocomplete: 'email', maxlength: 254 %>
+  <% end %>
+
+  <%= form.label :request_type do %>
+    <%= english? ? 'Request type' : 'Tipo de solicitação' %>
+    <% request_labels = PrivacyRequest::REQUEST_TYPE_LABELS.fetch(current_legal_locale) %>
+    <%= form.select :request_type, PrivacyRequest.request_types.keys.map { |key| [request_labels.fetch(key), key] }, {}, required: true %>
+  <% end %>
+
+  <%= form.label :details do %>
+    <%= english? ? 'Details (do not include passwords, tokens, or documents)' : 'Detalhes (não inclua senhas, tokens ou documentos)' %>
+    <%= form.text_area :details, maxlength: 5000 %>
+  <% end %>
+
+  <% if hcaptcha_site_key.present? %>
+    <div class="h-captcha" data-sitekey="<%= hcaptcha_site_key %>"></div>
+    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+  <% end %>
+  <button type="submit"><%= english? ? 'Submit request' : 'Enviar solicitação' %></button>
+<% end %>

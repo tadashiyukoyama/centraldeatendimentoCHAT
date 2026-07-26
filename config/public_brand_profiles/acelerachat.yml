@@ -1,0 +1,106 @@
+version: 1
+profile_name: acelerachat
+help_center_slug: acelerachat
+help_locales:
+  - pt_BR
+  - en
+global_config:
+  PUBLIC_BRAND_PROFILE: acelerachat
+  INSTALLATION_NAME: AceleraChat
+  BRAND_NAME: AceleraChat
+  ASSISTANT_PUBLIC_NAME: Nemmo
+  PUBLIC_PLAN_NAME: PRO
+  LOGO: /brand-assets/acelerachat/logo.svg
+  LOGO_DARK: /brand-assets/acelerachat/logo-dark.svg
+  LOGO_THUMBNAIL: /brand-assets/acelerachat/symbol.svg
+  ASSISTANT_AVATAR_URL: /brand-assets/acelerachat/nemmo-avatar.png
+  ASSISTANT_ASSET_BASE_URL: /assets/images/dashboard/nemmo
+  BRAND_URL: https://atendimento.meugerenciador.pro
+  WIDGET_BRAND_URL: https://atendimento.meugerenciador.pro
+  HELP_CENTER_URL: /hc/acelerachat
+  SUPPORT_URL: /hc/acelerachat/articles/suporte-e-sla
+  TERMS_URL: /legal/terms
+  PRIVACY_URL: /legal/privacy
+  COOKIES_URL: /legal/cookies
+  DATA_REQUEST_URL: /legal/data-request
+  MANIFEST_URL: /brand-assets/acelerachat/manifest.json
+  BROWSER_CONFIG_URL: /brand-assets/acelerachat/browserconfig.xml
+  PWA_ASSET_BASE_URL: /brand-assets/acelerachat/pwa
+  OPEN_GRAPH_IMAGE_URL: https://atendimento.meugerenciador.pro/brand-assets/acelerachat/open-graph.png
+  CHANGELOG_URL:
+  STATUS_URL:
+  BILLING_URL:
+  CLOUD_ANALYTICS_TOKEN:
+  ENABLE_GOOGLE_OAUTH_LOGIN: false
+  DISPLAY_MANIFEST: true
+  THEME_COLOR: '#2563EB'
+  BACKGROUND_COLOR: '#F8FAFC'
+  PUBLIC_META_DESCRIPTION: Atendimento omnicanal com colaboração entre equipes e automação inteligente.
+  MAILER_SUPPORT_EMAIL: suporte@meugerenciador.pro
+help_articles:
+  agent_bots:
+    pt_BR: agentes-virtuais
+    en: agent-bots-en
+  agents:
+    pt_BR: usuarios-papeis-e-permissoes
+    en: users-roles-and-permissions-en
+  audit_logs:
+    pt_BR: logs-de-auditoria
+    en: audit-logs-en
+  campaigns:
+    pt_BR: campanhas
+    en: campaigns-en
+  canned_responses:
+    pt_BR: respostas-prontas
+    en: canned-responses-en
+  channel_email:
+    pt_BR: canal-de-email
+    en: email-channel-en
+  channel_facebook:
+    pt_BR: canal-do-facebook
+    en: facebook-channel-en
+  custom_attributes:
+    pt_BR: atributos-personalizados
+    en: custom-attributes-en
+  dashboard_apps:
+    pt_BR: aplicativos-de-dashboard
+    en: dashboard-apps-en
+  help_center:
+    pt_BR: central-de-ajuda
+    en: help-center-en
+  inboxes:
+    pt_BR: caixas-de-entrada-e-setores
+    en: inboxes-and-teams-en
+  integrations:
+    pt_BR: integracoes
+    en: integrations-en
+  labels:
+    pt_BR: etiquetas
+    en: labels-en
+  macros:
+    pt_BR: macros-e-automacoes
+    en: macros-and-automations-en
+  reports:
+    pt_BR: relatorios
+    en: reports-en
+  sla:
+    pt_BR: suporte-e-sla
+    en: support-and-sla-en
+  team_management:
+    pt_BR: setores-e-privacidade
+    en: teams-and-privacy-en
+  webhook:
+    pt_BR: webhooks-e-api
+    en: webhooks-and-api-en
+  billing:
+    pt_BR: planos-e-cobranca
+    en: plans-and-billing-en
+  saml:
+    pt_BR: login-sso-saml
+    en: sso-saml-login-en
+  captain:
+    pt_BR: nemmo-visao-geral
+    en: nemmo-overview-en
+  captain_billing:
+    pt_BR: nemmo-creditos-e-limites
+    en: nemmo-credits-and-limits-en

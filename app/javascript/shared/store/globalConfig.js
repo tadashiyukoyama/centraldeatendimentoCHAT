@@ -25,6 +25,16 @@ const {
   DISABLE_USER_PROFILE_UPDATE: disableUserProfileUpdate,
   DEPLOYMENT_ENV: deploymentEnv,
   ACTIVE_PLATFORM_BANNERS: activePlatformBanners,
+  PUBLIC_BRAND_PROFILE: publicBrandProfile,
+  ASSISTANT_PUBLIC_NAME: assistantPublicName,
+  PUBLIC_PLAN_NAME: publicPlanName,
+  ASSISTANT_AVATAR_URL: assistantAvatarURL,
+  ASSISTANT_ASSET_BASE_URL: assistantAssetBaseURL,
+  HELP_CENTER_URL: helpCenterURL,
+  SUPPORT_URL: supportURL,
+  STATUS_URL: statusURL,
+  BILLING_URL: billingURL,
+  CHANGELOG_URL: changelogURL,
 } = window.globalConfig || {};
 
 const state = {
@@ -51,13 +61,23 @@ const state = {
   widgetBrandURL,
   isEnterprise: parseBoolean(isEnterprise),
   activePlatformBanners: activePlatformBanners || [],
+  publicBrandProfile,
+  assistantPublicName,
+  publicPlanName,
+  assistantAvatarURL,
+  assistantAssetBaseURL,
+  helpCenterURL,
+  supportURL,
+  statusURL,
+  billingURL,
+  changelogURL,
 };
 
 export const getters = {
   get: $state => $state,
   isOnChatwootCloud: $state => $state.deploymentEnv === 'cloud',
-  isACustomBrandedInstance: $state => $state.installationName !== 'Chatwoot',
-  isAChatwootInstance: $state => $state.installationName === 'Chatwoot',
+  isACustomBrandedInstance: $state => Boolean($state.publicBrandProfile),
+  isAChatwootInstance: $state => !$state.publicBrandProfile,
 };
 
 export const actions = {};

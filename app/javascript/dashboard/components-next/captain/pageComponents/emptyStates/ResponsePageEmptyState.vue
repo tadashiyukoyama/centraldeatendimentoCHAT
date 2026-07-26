@@ -6,6 +6,8 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import ResponseCard from 'dashboard/components-next/captain/assistant/ResponseCard.vue';
 import FeatureSpotlight from 'dashboard/components-next/feature-spotlight/FeatureSpotlight.vue';
 import { responsesList } from 'dashboard/components-next/captain/pageComponents/emptyStates/captainEmptyStateContent.js';
+import { assistantAsset } from 'shared/helpers/publicBrand';
+import { getHelpUrlForFeature } from 'dashboard/helper/featureHelper';
 
 import { computed } from 'vue';
 
@@ -43,9 +45,9 @@ const onClearFilters = () => {
     v-if="isApproved"
     :title="$t('CAPTAIN.RESPONSES.EMPTY_STATE.FEATURE_SPOTLIGHT.TITLE')"
     :note="$t('CAPTAIN.RESPONSES.EMPTY_STATE.FEATURE_SPOTLIGHT.NOTE')"
-    fallback-thumbnail="/assets/images/dashboard/captain/faqs-light.svg"
-    fallback-thumbnail-dark="/assets/images/dashboard/captain/faqs-dark.svg"
-    learn-more-url="https://chwt.app/captain-faq"
+    :fallback-thumbnail="assistantAsset('faqs-light.svg')"
+    :fallback-thumbnail-dark="assistantAsset('faqs-dark.svg')"
+    :learn-more-url="getHelpUrlForFeature('captain')"
     :hide-actions="!isOnChatwootCloud"
     class="mb-8"
   />

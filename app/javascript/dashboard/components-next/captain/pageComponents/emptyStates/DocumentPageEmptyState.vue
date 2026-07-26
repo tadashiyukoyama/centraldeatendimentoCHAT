@@ -6,6 +6,8 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import DocumentCard from 'dashboard/components-next/captain/assistant/DocumentCard.vue';
 import FeatureSpotlight from 'dashboard/components-next/feature-spotlight/FeatureSpotlight.vue';
 import { documentsList } from 'dashboard/components-next/captain/pageComponents/emptyStates/captainEmptyStateContent.js';
+import { assistantAsset } from 'shared/helpers/publicBrand';
+import { getHelpUrlForFeature } from 'dashboard/helper/featureHelper';
 
 const emit = defineEmits(['click']);
 const { isOnChatwootCloud } = useAccount();
@@ -21,9 +23,9 @@ const onClick = () => {
   <FeatureSpotlight
     :title="$t('CAPTAIN.DOCUMENTS.EMPTY_STATE.FEATURE_SPOTLIGHT.TITLE')"
     :note="$t('CAPTAIN.DOCUMENTS.EMPTY_STATE.FEATURE_SPOTLIGHT.NOTE')"
-    fallback-thumbnail="/assets/images/dashboard/captain/document-light.svg"
-    fallback-thumbnail-dark="/assets/images/dashboard/captain/document-dark.svg"
-    learn-more-url="https://chwt.app/captain-document"
+    :fallback-thumbnail="assistantAsset('document-light.svg')"
+    :fallback-thumbnail-dark="assistantAsset('document-dark.svg')"
+    :learn-more-url="getHelpUrlForFeature('captain')"
     :hide-actions="!isOnChatwootCloud"
     class="mb-8"
   />

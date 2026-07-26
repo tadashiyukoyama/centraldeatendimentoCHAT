@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Nemmo assistant</title>
+  <rect width="512" height="512" rx="64" fill="#0F172A"/>
+  <rect x="48" y="72" width="416" height="368" rx="44" fill="#1E293B" stroke="#06B6D4" stroke-opacity=".35" stroke-width="4"/>
+  <circle cx="120" cy="116" r="32" fill="#2563EB"/>
+  <path d="M104 120h33l-10-18m10 18-10 18" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M258 158c47 0 86 34 86 76s-39 76-86 76c-13 0-26-3-37-8l-50 31 12-51c-8-13-12-30-12-48 0-42 39-76 87-76Zm-33 65a12 12 0 1 0 0 24 12 12 0 0 0 0-24Zm66 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24Z" fill="#2563EB"/>
+  <rect x="160" y="374" width="192" height="18" rx="9" fill="#06B6D4" opacity=".65"/>
+</svg>

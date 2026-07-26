@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 168" role="img" aria-labelledby="title">
+  <title id="title">AceleraChat</title>
+  <g transform="translate(8 4) scale(.3125)">
+  <title id="title">AceleraChat</title>
+  <path fill="#2563EB" d="M72 64h296c44 0 80 36 80 80v176c0 44-36 80-80 80h-66l-91 65c-14 10-33 0-31-17l8-48H144c-44 0-80-36-80-80V144c0-44 36-80 80-80Z"/>
+  <path fill="#FFFFFF" d="M171 299c-9 0-15-10-10-18l79-134c7-12 25-12 32 0l78 134c5 8-1 18-10 18h-42l-40-72-43 72h-44Z"/>
+  <path fill="#06B6D4" d="M128 192h62l-22 38h-62c-11 0-18-12-12-21l10-16c5-8 14-13 24-13v12Zm-24 73h64l-22 38H82c-11 0-18-12-12-21l10-16c5-8 14-13 24-13v12Z"/>
+  <rect width="84" height="24" x="214" y="297" fill="#06B6D4" rx="12"/>
+</g>
+  <text x="184" y="108" fill="#FFFFFF" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="70" font-weight="700" letter-spacing="-2">Acelera<tspan fill="#2563EB">Chat</tspan></text>
+</svg>

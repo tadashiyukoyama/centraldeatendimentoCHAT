@@ -24,6 +24,8 @@ import FeatureSpotlightPopover from 'dashboard/components-next/feature-spotlight
 import LimitBanner from 'dashboard/components-next/captain/pageComponents/document/LimitBanner.vue';
 import CaptainDocumentAPI from 'dashboard/api/captain/document';
 import { useI18n } from 'vue-i18n';
+import { assistantAsset } from 'shared/helpers/publicBrand';
+import { getHelpUrlForFeature } from 'dashboard/helper/featureHelper';
 
 const route = useRoute();
 const store = useStore();
@@ -371,9 +373,9 @@ onUnmounted(() => {
         :title="$t('CAPTAIN.DOCUMENTS.EMPTY_STATE.FEATURE_SPOTLIGHT.TITLE')"
         :note="$t('CAPTAIN.DOCUMENTS.EMPTY_STATE.FEATURE_SPOTLIGHT.NOTE')"
         :hide-actions="!isOnChatwootCloud"
-        fallback-thumbnail="/assets/images/dashboard/captain/document-popover-light.svg"
-        fallback-thumbnail-dark="/assets/images/dashboard/captain/document-popover-dark.svg"
-        learn-more-url="https://chwt.app/captain-document"
+        :fallback-thumbnail="assistantAsset('document-popover-light.svg')"
+        :fallback-thumbnail-dark="assistantAsset('document-popover-dark.svg')"
+        :learn-more-url="getHelpUrlForFeature('captain')"
       />
     </template>
 

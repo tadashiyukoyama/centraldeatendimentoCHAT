@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_23_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_25_120000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -446,8 +446,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_23_120000) do
     t.integer "status", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["account_id"], name: "index_captain_faq_suggestions_on_account_id"
     t.index ["account_id", "assistant_id", "status", "language"], name: "idx_cap_faq_suggestions_on_account_assistant_status_language"
+    t.index ["account_id"], name: "index_captain_faq_suggestions_on_account_id"
     t.index ["assistant_id"], name: "index_captain_faq_suggestions_on_assistant_id"
     t.index ["embedding"], name: "vector_idx_captain_faq_suggestions_embedding", opclass: :vector_cosine_ops, using: :ivfflat
   end
@@ -1275,6 +1275,50 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_23_120000) do
     t.index ["user_id"], name: "index_portals_members_on_user_id"
   end
 
+  create_table "privacy_request_events", force: :cascade do |t|
+    t.bigint "privacy_request_id", null: false
+    t.string "event_type", null: false
+    t.string "from_status"
+    t.string "to_status"
+    t.string "actor_type"
+    t.bigint "actor_id"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["actor_type", "actor_id"], name: "index_privacy_request_events_on_actor_type_and_actor_id"
+    t.index ["privacy_request_id"], name: "index_privacy_request_events_on_privacy_request_id"
+  end
+
+  create_table "privacy_requests", force: :cascade do |t|
+    t.string "protocol", null: false
+    t.integer "request_type", null: false
+    t.integer "status", default: 0, null: false
+    t.string "locale", default: "pt_BR", null: false
+    t.text "email"
+    t.text "details"
+    t.text "resolution_notes"
+    t.string "verification_token_digest", null: false
+    t.string "status_token_digest", null: false
+    t.datetime "verification_expires_at", null: false
+    t.datetime "verified_at"
+    t.datetime "due_at"
+    t.datetime "completed_at"
+    t.datetime "purged_at"
+    t.datetime "metadata_expires_at"
+    t.bigint "account_id"
+    t.jsonb "subprocessor_actions", default: [], null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_privacy_requests_on_account_id"
+    t.index ["metadata_expires_at"], name: "index_privacy_requests_on_metadata_expires_at"
+    t.index ["protocol"], name: "index_privacy_requests_on_protocol", unique: true
+    t.index ["status", "completed_at"], name: "index_privacy_requests_on_status_and_completed_at"
+    t.index ["status", "created_at"], name: "index_privacy_requests_on_status_and_created_at"
+    t.index ["status", "due_at"], name: "index_privacy_requests_on_status_and_due_at"
+    t.index ["status_token_digest"], name: "index_privacy_requests_on_status_token_digest", unique: true
+    t.index ["verification_token_digest"], name: "index_privacy_requests_on_verification_token_digest", unique: true
+  end
+
   create_table "related_categories", force: :cascade do |t|
     t.bigint "category_id"
     t.bigint "related_category_id"
@@ -1461,6 +1505,19 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_23_120000) do
     t.index ["uid", "provider"], name: "index_users_on_uid_and_provider", unique: true
   end
 
+  create_table "webhooks", force: :cascade do |t|
+    t.integer "account_id"
+    t.integer "inbox_id"
+    t.text "url"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "webhook_type", default: 0
+    t.jsonb "subscriptions", default: ["conversation_status_changed", "conversation_updated", "conversation_created", "contact_created", "contact_updated", "message_created", "message_updated", "webwidget_triggered"]
+    t.string "name"
+    t.string "secret"
+    t.index ["account_id", "url"], name: "index_webhooks_on_account_id_and_url", unique: true
+  end
+
   create_table "whatsapp_evolution_events", force: :cascade do |t|
     t.bigint "provisioning_id", null: false
     t.string "event_key", null: false
@@ -1501,19 +1558,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_23_120000) do
     t.index ["whatsapp_channel_id"], name: "index_whatsapp_evolution_provisionings_on_whatsapp_channel_id", unique: true
   end
 
-  create_table "webhooks", force: :cascade do |t|
-    t.integer "account_id"
-    t.integer "inbox_id"
-    t.text "url"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.integer "webhook_type", default: 0
-    t.jsonb "subscriptions", default: ["conversation_status_changed", "conversation_updated", "conversation_created", "contact_created", "contact_updated", "message_created", "message_updated", "webwidget_triggered"]
-    t.string "name"
-    t.string "secret"
-    t.index ["account_id", "url"], name: "index_webhooks_on_account_id_and_url", unique: true
-  end
-
   create_table "working_hours", force: :cascade do |t|
     t.bigint "inbox_id"
     t.bigint "account_id"
@@ -1533,6 +1577,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_23_120000) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "privacy_request_events", "privacy_requests"
+  add_foreign_key "privacy_requests", "accounts"
   add_foreign_key "user_sessions", "users"
   add_foreign_key "whatsapp_evolution_events", "whatsapp_evolution_provisionings", column: "provisioning_id"
   add_foreign_key "whatsapp_evolution_provisionings", "accounts"

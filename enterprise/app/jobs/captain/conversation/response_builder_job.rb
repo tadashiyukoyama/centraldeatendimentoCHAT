@@ -180,7 +180,7 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
 
     I18n.with_locale(@assistant.account.locale) do
       create_outgoing_message(
-        'Captain could not generate a response automatically. Human follow-up is required.',
+        'Nemmo could not generate a response automatically. Human follow-up is required.',
         private_note: true
       )
       @conversation.bot_handoff!

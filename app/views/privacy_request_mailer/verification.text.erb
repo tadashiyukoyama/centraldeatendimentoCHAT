@@ -1,0 +1,11 @@
+<%= @brand_name %>
+
+<%= @locale == 'en' ? 'Confirm your privacy request' : 'Confirme sua solicitação de privacidade' %>
+<%= @locale == 'en' ? 'Protocol' : 'Protocolo' %>: <%= @privacy_request.protocol %>
+
+<%= @verification_url %>
+
+<%= @locale == 'en' ? 'Protected status link' : 'Link protegido para consultar o status' %>:
+<%= @status_url %>
+
+<%= @locale == 'en' ? 'Do not forward this message. The verification link expires in 24 hours.' : 'Não encaminhe esta mensagem. O link de verificação expira em 24 horas.' %>

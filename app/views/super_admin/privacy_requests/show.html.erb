@@ -1,0 +1,62 @@
+<% content_for(:title) { "LGPD #{@privacy_request.protocol}" } %>
+
+<header class="main-content__header" role="banner">
+  <h1 class="main-content__page-title" id="page-title"><%= @privacy_request.protocol %></h1>
+  <%= link_to 'Voltar à fila', super_admin_privacy_requests_path, class: 'text-sm text-blue-600' %>
+</header>
+
+<section class="main-content__body">
+  <div class="grid grid-cols-2 gap-4 mb-8 max-w-3xl">
+    <div><strong>Status</strong><br><%= @privacy_request.status_label('pt_BR') %></div>
+    <div><strong>Tipo</strong><br><%= @privacy_request.request_type_label('pt_BR') %></div>
+    <div><strong>E-mail criptografado</strong><br><%= @privacy_request.email || 'Expurgado' %></div>
+    <div><strong>Conta vinculada</strong><br><%= @privacy_request.account ? link_to("##{@privacy_request.account_id} — #{@privacy_request.account.name}", super_admin_account_path(@privacy_request.account)) : 'Não vinculada' %></div>
+    <div><strong>Verificação</strong><br><%= @privacy_request.verified_at&.strftime('%d/%m/%Y %H:%M') || 'Pendente' %></div>
+    <div><strong>Prazo</strong><br><%= @privacy_request.due_at&.strftime('%d/%m/%Y') || '—' %></div>
+  </div>
+
+  <h2 class="text-base font-semibold mb-2">Detalhes informados</h2>
+  <div class="border border-slate-100 rounded-md p-4 mb-8 whitespace-pre-wrap"><%= @privacy_request.details.presence || 'Nenhum detalhe informado ou conteúdo já expurgado.' %></div>
+
+  <% if @privacy_request.resolution_notes.present? || @privacy_request.subprocessor_actions.any? %>
+    <h2 class="text-base font-semibold mb-2">Decisão e ações externas</h2>
+    <div class="border border-slate-100 rounded-md p-4 mb-8">
+      <p class="whitespace-pre-wrap"><%= @privacy_request.resolution_notes.presence || 'Sem nota de decisão.' %></p>
+      <% if @privacy_request.subprocessor_actions.any? %>
+        <ul class="list-disc pl-5 mt-3"><% @privacy_request.subprocessor_actions.each do |action| %><li><%= action %></li><% end %></ul>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% transitions = { 'verified' => %w[in_review completed rejected], 'in_review' => %w[completed rejected] }.fetch(@privacy_request.status, []) %>
+  <% if transitions.any? %>
+    <h2 class="text-base font-semibold mb-2">Análise manual</h2>
+    <% if @privacy_request.request_type_deletion? %>
+      <div class="border border-amber-300 bg-amber-50 rounded-md p-4 mb-4 max-w-3xl">
+        Vincule a conta correta, valide a identidade e use o procedimento de exclusão de conta já existente. Esta fila não executa exclusão automática. Registre abaixo cada ação exigida por subprocessadores e backups.
+      </div>
+    <% end %>
+    <%= form_with model: [:super_admin, @privacy_request], method: :patch, local: true, class: 'max-w-3xl space-y-4 mb-10' do |form| %>
+      <div><%= form.label :account_id, 'ID da conta vinculada (opcional)', class: 'block text-sm font-medium' %><%= form.number_field :account_id, min: 1, class: 'border border-slate-200 rounded-md p-2 w-full' %></div>
+      <div><%= form.label :status, 'Novo status', class: 'block text-sm font-medium' %><%= form.select :status, transitions.map { |status| [PrivacyRequest::STATUS_LABELS.fetch('pt_BR').fetch(status), status] }, {}, class: 'border border-slate-200 rounded-md p-2 w-full' %></div>
+      <div><%= form.label :resolution_notes, 'Notas da decisão (criptografadas)', class: 'block text-sm font-medium' %><%= form.text_area :resolution_notes, rows: 5, class: 'border border-slate-200 rounded-md p-2 w-full', maxlength: 5000 %></div>
+      <div><%= form.label :subprocessor_actions, 'Ações manuais em subprocessadores (uma por linha)', class: 'block text-sm font-medium' %><%= form.text_area :subprocessor_actions, value: @privacy_request.subprocessor_actions.join("\n"), rows: 4, class: 'border border-slate-200 rounded-md p-2 w-full' %></div>
+      <%= form.submit 'Registrar decisão', class: 'border border-blue-600 bg-blue-600 text-white px-4 py-2 rounded-md cursor-pointer' %>
+    <% end %>
+  <% end %>
+
+  <h2 class="text-base font-semibold mb-2">Trilha de auditoria</h2>
+  <table class="w-full text-sm border border-slate-100 rounded-md">
+    <thead><tr><th>Data</th><th>Evento</th><th>Transição</th><th>Ator</th></tr></thead>
+    <tbody>
+      <% @privacy_request.events.order(created_at: :desc).each do |event| %>
+        <tr class="border-t border-slate-100">
+          <td><%= event.created_at.strftime('%d/%m/%Y %H:%M:%S') %></td>
+          <td><%= event.event_type.humanize %></td>
+          <td><%= [event.from_status, event.to_status].compact.join(' → ') %></td>
+          <td><%= event.actor_type ? "#{event.actor_type} ##{event.actor_id}" : 'Sistema/público' %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</section>

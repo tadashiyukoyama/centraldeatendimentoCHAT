@@ -3,7 +3,7 @@
 # name:               the name to be used internally in the code
 # display_name:       the name to be used in the UI
 # enabled:            whether the feature is enabled by default
-# column:             the account bitset column used to store the flag. Defaults to feature_flags. 
+# column:             the account bitset column used to store the flag. Defaults to feature_flags.
 #                     Use feature_flags_ext_1 for extension flags. Each bigint column supports 63 flags.
 # help_url:           the url to the help center article
 # chatwoot_internal:  whether the feature is internal to Chatwoot and should not be shown in the UI for other self hosted installations
@@ -20,11 +20,11 @@
 - name: channel_email
   display_name: Email Channel
   enabled: true
-  help_url: https://chwt.app/hc/email
+  help_url: /hc/acelerachat/articles/canal-de-email
 - name: channel_facebook
   display_name: Facebook Channel
   enabled: true
-  help_url: https://chwt.app/hc/fb
+  help_url: /hc/acelerachat/articles/canal-do-facebook
 - name: conversation_unread_counts
   display_name: Conversation Unread Counts
   enabled: false
@@ -42,11 +42,11 @@
 - name: help_center
   display_name: Help Center
   enabled: true
-  help_url: https://chwt.app/hc/help-center
+  help_url: /hc/acelerachat/articles/central-de-ajuda
 - name: agent_bots
   display_name: Agent Bots
   enabled: true
-  help_url: https://chwt.app/hc/agent-bots
+  help_url: /hc/acelerachat/articles/agentes-virtuais
 - name: macros
   display_name: Macros
   enabled: true
@@ -56,29 +56,29 @@
 - name: team_management
   display_name: Team Management
   enabled: true
-  help_url: https://chwt.app/hc/teams
+  help_url: /hc/acelerachat/articles/setores-e-privacidade
 - name: inbox_management
   display_name: Inbox Management
   enabled: true
 - name: labels
   display_name: Labels
   enabled: true
-  help_url: https://chwt.app/hc/labels
+  help_url: /hc/acelerachat/articles/etiquetas
 - name: custom_attributes
   display_name: Custom Attributes
   enabled: true
-  help_url: https://chwt.app/hc/custom-attributes
+  help_url: /hc/acelerachat/articles/atributos-personalizados
 - name: automations
   display_name: Automations
   enabled: true
 - name: canned_responses
   display_name: Canned Responses
   enabled: true
-  help_url: https://chwt.app/hc/canned
+  help_url: /hc/acelerachat/articles/respostas-prontas
 - name: integrations
   display_name: Integrations
   enabled: true
-  help_url: https://chwt.app/hc/integrations
+  help_url: /hc/acelerachat/articles/integracoes
 - name: voice_recorder
   display_name: Voice Recorder
   enabled: true
@@ -91,11 +91,11 @@
 - name: campaigns
   display_name: Campaigns
   enabled: true
-  help_url: https://chwt.app/hc/campaigns
+  help_url: /hc/acelerachat/articles/campanhas
 - name: reports
   display_name: Reports
   enabled: true
-  help_url: https://chwt.app/hc/reports
+  help_url: /hc/acelerachat/articles/relatorios
 - name: crm
   display_name: CRM
   enabled: true
@@ -132,7 +132,7 @@
   display_name: SLA
   enabled: false
   premium: true
-  help_url: https://chwt.app/hc/sla
+  help_url: /hc/acelerachat/articles/suporte-e-sla
 - name: help_center_embedding_search
   display_name: Help Center Embedding Search
   enabled: false
@@ -142,7 +142,7 @@
   display_name: Linear Integration
   enabled: false
 - name: captain_integration
-  display_name: Captain
+  display_name: Nemmo
   enabled: false
   premium: true
 - name: custom_roles
@@ -150,15 +150,15 @@
   enabled: false
   premium: true
 - name: chatwoot_v4
-  display_name: Chatwoot V4
+  display_name: AceleraChat V4
   enabled: true
 - name: captain_v1_action_classifier
-  display_name: Captain V1 Action Classifier
+  display_name: Nemmo V1 Action Classifier
   enabled: false
   premium: true
   chatwoot_internal: true
 - name: contact_chatwoot_support_team
-  display_name: Contact Chatwoot Support Team
+  display_name: Contact AceleraChat Support Team
   enabled: true
   chatwoot_internal: true
 - name: shopify_integration
@@ -183,7 +183,7 @@
   display_name: Notion Integration
   enabled: false
 - name: captain_integration_v2
-  display_name: Captain V2
+  display_name: Nemmo V2
   enabled: false
   premium: true
 - name: whatsapp_embedded_signup
@@ -201,7 +201,7 @@
   display_name: Assignment V2
   enabled: true
 - name: captain_document_auto_sync
-  display_name: Captain Document Auto Sync
+  display_name: Nemmo Document Auto Sync
   enabled: false
   premium: true
 - name: advanced_search
@@ -239,7 +239,7 @@
   enabled: false
   premium: true
 - name: captain_tasks
-  display_name: Captain Tasks
+  display_name: Nemmo Tasks
   enabled: true
 - name: conversation_required_attributes
   display_name: Required Conversation Attributes

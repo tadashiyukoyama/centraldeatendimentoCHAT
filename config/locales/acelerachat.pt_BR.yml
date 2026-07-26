@@ -1,0 +1,5 @@
+pt_BR:
+  acelerachat:
+    privacy_requests:
+      invalid_transition: "Transição de status inválida."
+      updated: "Solicitação atualizada e registrada na trilha de auditoria."

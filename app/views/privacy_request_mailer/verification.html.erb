@@ -1,0 +1,10 @@
+<!DOCTYPE html><html><body style="margin:0;background:#f8fafc;font-family:Arial,sans-serif;color:#0f172a">
+<div style="max-width:640px;margin:24px auto;background:white;border:1px solid #e2e8f0;border-radius:16px;padding:32px">
+  <% if @logo_url.present? %><img src="<%= @logo_url %>" alt="<%= @brand_name %>" width="190"><% end %>
+  <h1><%= @locale == 'en' ? 'Confirm your privacy request' : 'Confirme sua solicitação de privacidade' %></h1>
+  <p><strong><%= @locale == 'en' ? 'Protocol' : 'Protocolo' %>:</strong> <%= @privacy_request.protocol %></p>
+  <p><%= @locale == 'en' ? "The confirmation link expires in 24 hours. #{@brand_name} will not automatically delete data after confirmation." : "O link de confirmação expira em 24 horas. A #{@brand_name} não excluirá dados automaticamente após a confirmação." %></p>
+  <p><a href="<%= @verification_url %>" style="display:inline-block;background:#2563eb;color:white;text-decoration:none;padding:12px 18px;border-radius:9px;font-weight:bold"><%= @locale == 'en' ? 'Confirm email' : 'Confirmar e-mail' %></a></p>
+  <p><a href="<%= @status_url %>"><%= @locale == 'en' ? 'Protected status link' : 'Link protegido para consultar o status' %></a></p>
+  <p style="color:#64748b;font-size:13px"><%= @locale == 'en' ? 'Do not forward this message: both links contain private access tokens.' : 'Não encaminhe esta mensagem: os dois links contêm tokens privados de acesso.' %></p>
+</div></body></html>

@@ -4,6 +4,23 @@ Este é o documento canônico do estado operacional do
 `CENTRAL_ATENDIMENTO_CHAT`. O estado observado no Git sempre prevalece sobre
 qualquer valor copiado neste documento.
 
+## Frente ativa: rebranding AceleraChat
+
+- SHA-base fixado: `901a23fbed68b0e0cf2a2c8e850eab6ab454ad5f`.
+- Branch: `release/strict-team-conversation-privacy`.
+- Marca pública: AceleraChat; assistente: Nemmo; camada comercial: PRO.
+- Implementação local concluída em código, assets, ajuda, jurídico, e-mails,
+  SuperAdmin e fluxo LGPD; ainda sem push ou deploy.
+- Rollback de produção fixado em `b8932617338a4cd3762fa5cf89540fc68cdae5eb`.
+- Gates Ruby/Docker, fatos jurídicos, DNS de e-mail, sync conectado e smoke de
+  produção continuam obrigatórios antes do corte.
+- Runbook canônico:
+  [`ACELERACHAT-REBRAND-RELEASE-RUNBOOK.md`](ACELERACHAT-REBRAND-RELEASE-RUNBOOK.md).
+
+O Acelera Control permanece desativado e não tem autoridade sobre a marca.
+Nomes internos `Chatwoot`, `Captain` e `enterprise` permanecem por
+compatibilidade.
+
 ## Identidade e controle de versão
 
 - Repositório canônico: `tadashiyukoyama/centraldeatendimentoCHAT`.

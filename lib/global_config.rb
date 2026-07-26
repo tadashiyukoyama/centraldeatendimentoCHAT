@@ -13,11 +13,11 @@ class GlobalConfig
       end
 
       typecast_config(config)
-      config.with_indifferent_access
+      PublicBrand.apply(config)
     end
 
     def get_value(arg)
-      load_from_cache(arg)
+      PublicBrand.value(arg, load_from_cache(arg))
     end
 
     def clear_cache

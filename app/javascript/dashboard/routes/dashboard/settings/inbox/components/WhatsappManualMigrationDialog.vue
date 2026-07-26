@@ -23,7 +23,8 @@ const emit = defineEmits(['reconnect']);
 const { t } = useI18n();
 const { replaceInstallationName } = useBranding();
 
-const WHATSAPP_MANUAL_MIGRATION_GUIDE_URL = 'https://chwt.app/migrate-whatsapp';
+const WHATSAPP_MANUAL_MIGRATION_GUIDE_URL =
+  window.chatwootConfig?.helpUrls?.inboxes || '/hc/acelerachat';
 
 const dialogRef = ref(null);
 const currentStep = ref(0);

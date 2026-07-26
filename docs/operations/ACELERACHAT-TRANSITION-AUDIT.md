@@ -10,6 +10,13 @@
 - Produção inspecionada: `https://atendimento.meugerenciador.pro`.
 - Escopo: inventário e plano de migração; nenhuma alteração funcional ou deploy faz parte desta auditoria.
 
+> Atualização de implementação — 25 de julho de 2026: o plano foi implementado
+> localmente a partir de `901a23fbed68b0e0cf2a2c8e850eab6ab454ad5f`. O
+> estado executável, os gates e o rito de corte estão em
+> `docs/operations/ACELERACHAT-REBRAND-RELEASE-RUNBOOK.md`. As contagens e
+> descrições abaixo permanecem como evidência da auditoria anterior, não como
+> indicação de que o rebranding ainda está por fazer.
+
 Anexo detalhado e normativo para imagens e links de apoio:
 `docs/operations/ACELERACHAT-BRANDING-ASSETS-AND-SUPPORT-LINKS.md`.
 

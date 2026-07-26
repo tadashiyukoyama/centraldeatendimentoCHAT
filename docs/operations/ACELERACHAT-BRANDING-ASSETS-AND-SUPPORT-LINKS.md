@@ -11,7 +11,15 @@
   implementada.
 
 Este documento é o anexo executável da
-`docs/operations/ACELERACHAT-TRANSITION-AUDIT.md`. Ele registra os ativos
+`docs/operations/ACELERACHAT-TRANSITION-AUDIT.md`.
+
+> Atualização de implementação — 25 de julho de 2026: os 55 ativos foram
+> gerados em caminhos próprios AceleraChat, os 22 links passaram a ter registro
+> canônico e 76 documentos `pt_BR`/`en` foram versionados. O inventário abaixo
+> continua sendo a matriz de rastreabilidade. O estado de aceite e release está
+> em `docs/operations/ACELERACHAT-REBRAND-RELEASE-RUNBOOK.md`.
+
+Este documento registra os ativos
 visuais e os links de apoio que precisam ser substituídos, editados ou
 explicitamente preservados. Nomes técnicos internos, licenças e referências
 históricas não são autorização para exibir a marca antiga ao usuário.

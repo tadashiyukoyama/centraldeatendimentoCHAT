@@ -36,6 +36,8 @@ export default {
     shouldShowBanner() {
       return (
         !this.userDismissedBanner &&
+        Boolean(this.globalConfig.changelogURL) &&
+        !this.globalConfig.publicBrandProfile &&
         this.globalConfig.displayManifest &&
         this.updateAvailable &&
         !this.isVersionNotificationDismissed(this.latestChatwootVersion) &&
@@ -73,7 +75,7 @@ export default {
     v-if="shouldShowBanner"
     color-scheme="primary"
     :banner-message="bannerMessage"
-    href-link="https://github.com/chatwoot/chatwoot/releases"
+    :href-link="globalConfig.changelogURL"
     :href-link-text="$t('GENERAL_SETTINGS.LEARN_MORE')"
     has-close-button
     @close="dismissUpdateBanner"

@@ -21,6 +21,15 @@
 
 <% if @portal.logo.present? %>
   <link rel="icon" href="<%= url_for(@portal.logo) %>">
+<% elsif PublicBrand.active? %>
+  <link rel="icon" href="<%= PublicBrand.value('LOGO_THUMBNAIL') %>">
+<% end %>
+
+<% if PublicBrand.active? %>
+  <meta name="theme-color" content="<%= PublicBrand.value('THEME_COLOR', '#2563EB') %>">
+  <meta name="description" content="<%= PublicBrand.value('PUBLIC_META_DESCRIPTION') %>">
+  <meta property="og:site_name" content="<%= GlobalConfig.get_value('BRAND_NAME').presence || 'AceleraChat' %>">
+  <meta property="og:image" content="<%= PublicBrand.value('OPEN_GRAPH_IMAGE_URL') %>">
 <% end %>
 
 <% unless @theme_from_params.blank? %>

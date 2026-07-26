@@ -8,6 +8,7 @@ import {
   ON_UNREAD_MESSAGE_CLICK,
 } from '../constants/widgetBusEvents';
 import { emitter } from 'shared/helpers/mitt';
+import { assistantAvatar } from 'shared/helpers/publicBrand';
 
 export default {
   name: 'UnreadMessage',
@@ -51,7 +52,7 @@ export default {
       // eslint-disable-next-line
       const displayImage = this.useInboxAvatarForBot
         ? this.inboxAvatarUrl
-        : '/assets/images/chatwoot_bot.png';
+        : assistantAvatar();
       if (this.isSenderExist(this.sender)) {
         const { avatar_url: avatarUrl } = this.sender;
         return avatarUrl;

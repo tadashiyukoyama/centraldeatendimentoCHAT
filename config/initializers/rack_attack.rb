@@ -1,3 +1,5 @@
+require 'digest'
+
 class Rack::Attack
   ### Configure Cache ###
 
@@ -135,6 +137,26 @@ class Rack::Attack
   ## Resend confirmation throttling (authenticated)
   throttle('resend_confirmation_auth/ip', limit: 5, period: 30.minutes) do |req|
     req.ip if req.path_without_extensions == '/api/v1/profile/resend_confirmation' && req.post?
+  end
+
+  ## Public LGPD request throttling. Responses remain neutral, while IP and
+  ## normalized email limits reduce automated submission and token guessing.
+  throttle('privacy_request/ip', limit: 5, period: 1.hour) do |req|
+    req.ip if req.path_without_extensions == '/legal/data-request' && req.post?
+  end
+
+  throttle('privacy_request/email', limit: 3, period: 1.day) do |req|
+    if req.path_without_extensions == '/legal/data-request' && req.post?
+      email = ActionDispatch::Request.new(req.env).params.dig('privacy_request', 'email')
+      normalized_email = email.to_s.downcase.gsub(/\s+/, '').presence
+      Digest::SHA256.hexdigest(normalized_email) if normalized_email
+    end
+  rescue ActionDispatch::Http::Parameters::ParseError
+    req.ip
+  end
+
+  throttle('privacy_request/token_routes', limit: 30, period: 1.hour) do |req|
+    req.ip if req.path_without_extensions.start_with?('/legal/data-request/verify/', '/legal/data-request/status/')
   end
 
   ## MFA throttling - prevent brute force attacks

@@ -13,6 +13,8 @@ describe('useBranding', () => {
     mockGlobalConfig = {
       value: {
         installationName: 'MyCompany',
+        assistantPublicName: 'Nemmo',
+        publicPlanName: 'PRO',
       },
     };
 
@@ -73,13 +75,19 @@ describe('useBranding', () => {
       expect(result).toBe('Welcome to our platform');
     });
 
-    it('should be case-sensitive for "Chatwoot"', () => {
+    it('should replace brand names regardless of casing', () => {
       const { replaceInstallationName } = useBranding();
       const result = replaceInstallationName(
         'Welcome to chatwoot and CHATWOOT'
       );
 
-      expect(result).toBe('Welcome to chatwoot and CHATWOOT');
+      expect(result).toBe('Welcome to MyCompany and MyCompany');
+    });
+
+    it('should replace public assistant and plan names', () => {
+      const { replaceInstallationName } = useBranding();
+
+      expect(replaceInstallationName('Captain Enterprise')).toBe('Nemmo PRO');
     });
 
     it('should handle special characters in installation name', () => {

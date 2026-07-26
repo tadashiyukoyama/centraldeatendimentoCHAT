@@ -1,0 +1,8 @@
+<h1><%= @verified ? (english? ? 'Email verified' : 'E-mail verificado') : (english? ? 'Verification failed' : 'Falha na verificação') %></h1>
+<div class="<%= @verified ? 'notice' : 'errors' %>">
+  <%= if @verified
+        english? ? 'The request entered the review queue. Use the protected status link from the original email to follow it.' : 'A solicitação entrou na fila de análise. Use o link protegido do e-mail original para acompanhá-la.'
+      else
+        english? ? 'The link is invalid, expired, or has already been used.' : 'O link é inválido, expirou ou já foi utilizado.'
+      end %>
+</div>

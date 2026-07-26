@@ -3,6 +3,8 @@ import { useAccount } from 'dashboard/composables/useAccount';
 import EmptyStateLayout from 'dashboard/components-next/EmptyStateLayout.vue';
 import FeatureSpotlight from 'dashboard/components-next/feature-spotlight/FeatureSpotlight.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import { assistantAsset } from 'shared/helpers/publicBrand';
+import { getHelpUrlForFeature } from 'dashboard/helper/featureHelper';
 
 const emit = defineEmits(['click']);
 const { isOnChatwootCloud } = useAccount();
@@ -16,9 +18,9 @@ const onClick = () => {
   <FeatureSpotlight
     :title="$t('CAPTAIN.CUSTOM_TOOLS.EMPTY_STATE.FEATURE_SPOTLIGHT.TITLE')"
     :note="$t('CAPTAIN.CUSTOM_TOOLS.EMPTY_STATE.FEATURE_SPOTLIGHT.NOTE')"
-    fallback-thumbnail="/assets/images/dashboard/captain/assistant-light.svg"
-    fallback-thumbnail-dark="/assets/images/dashboard/captain/assistant-dark.svg"
-    learn-more-url="https://chwt.app/hc/captain-tools"
+    :fallback-thumbnail="assistantAsset('assistant-light.svg')"
+    :fallback-thumbnail-dark="assistantAsset('assistant-dark.svg')"
+    :learn-more-url="getHelpUrlForFeature('captain')"
     class="mb-8"
     :hide-actions="!isOnChatwootCloud"
   />

@@ -1,0 +1,34 @@
+<% content_for(:title) { 'Solicitações LGPD' } %>
+
+<header class="main-content__header" role="banner">
+  <h1 class="main-content__page-title" id="page-title">Solicitações LGPD</h1>
+</header>
+
+<section class="main-content__body">
+  <p class="text-sm text-slate-600 mb-5">Fila manual e auditável. Nenhuma exclusão é executada automaticamente.</p>
+  <div class="flex gap-2 mb-5 flex-wrap">
+    <%= link_to 'Todos', super_admin_privacy_requests_path, class: 'border border-slate-200 px-3 py-1.5 rounded-md text-sm' %>
+    <% PrivacyRequest.statuses.each_key do |status| %>
+      <%= link_to PrivacyRequest::STATUS_LABELS.fetch('pt_BR').fetch(status), super_admin_privacy_requests_path(status: status), class: "border px-3 py-1.5 rounded-md text-sm #{status == @status ? 'border-blue-500 bg-blue-50' : 'border-slate-200'}" %>
+    <% end %>
+  </div>
+
+  <table class="w-full text-sm border border-slate-100 rounded-md">
+    <thead class="text-left text-xs text-slate-500 bg-slate-25">
+      <tr><th>Protocolo</th><th>Tipo</th><th>Status</th><th>Verificada</th><th>Prazo</th><th>Criada</th></tr>
+    </thead>
+    <tbody>
+      <% @privacy_requests.each do |request_record| %>
+        <tr class="border-t border-slate-100">
+          <td><%= link_to request_record.protocol, super_admin_privacy_request_path(request_record), class: 'font-semibold text-blue-600' %></td>
+          <td><%= request_record.request_type_label('pt_BR') %></td>
+          <td><%= request_record.status_label('pt_BR') %></td>
+          <td><%= request_record.verified_at&.strftime('%d/%m/%Y %H:%M') || '—' %></td>
+          <td><%= request_record.due_at&.strftime('%d/%m/%Y') || '—' %></td>
+          <td><%= request_record.created_at.strftime('%d/%m/%Y %H:%M') %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <div class="mt-5"><%= paginate @privacy_requests %></div>
+</section>

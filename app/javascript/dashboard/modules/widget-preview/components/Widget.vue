@@ -215,8 +215,8 @@ const handleToggleWidget = () => {
           >
             <img
               v-if="!isWidgetVisible"
-              src="~dashboard/assets/images/bubble-logo.svg"
-              alt=""
+              :src="globalConfig.logoThumbnail"
+              :alt="globalConfig.installationName"
               draggable="false"
               class="w-6 h-6 mx-auto"
             />
@@ -243,7 +243,7 @@ const handleToggleWidget = () => {
           :script="widgetScript"
           lang="html"
           class="!text-start"
-          :codepen-title="`${websiteName} - Chatwoot Widget Test`"
+          :codepen-title="`${websiteName} - AceleraChat Widget Test`"
           enable-code-pen
         />
       </div>

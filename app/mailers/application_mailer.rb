@@ -1,7 +1,7 @@
 class ApplicationMailer < ActionMailer::Base
   include ActionView::Helpers::SanitizeHelper
 
-  default from: ENV.fetch('MAILER_SENDER_EMAIL', 'Chatwoot <accounts@chatwoot.com>')
+  default from: ENV.fetch('MAILER_SENDER_EMAIL', 'AceleraChat <no-reply@meugerenciador.pro>')
   before_action { ensure_current_account(params.try(:[], :account)) }
   around_action :switch_locale
   layout 'mailer/base'
@@ -12,7 +12,7 @@ class ApplicationMailer < ActionMailer::Base
   helper :frontend_urls
   helper do
     def global_config
-      @global_config ||= GlobalConfig.get('BRAND_NAME', 'BRAND_URL')
+      @global_config ||= GlobalConfig.get('BRAND_NAME', 'BRAND_URL', 'LOGO', 'MAILER_SUPPORT_EMAIL')
     end
   end
 
@@ -54,13 +54,24 @@ class ApplicationMailer < ActionMailer::Base
   def liquid_locals
     # expose variables you want to be exposed in liquid
     locals = {
-      global_config: GlobalConfig.get('BRAND_NAME', 'BRAND_URL'),
+      global_config: mailer_global_config,
       action_url: @action_url
     }
 
     locals.merge({ attachment_url: @attachment_url }) if @attachment_url
     locals.merge({ failed_contacts: @failed_contacts, imported_contacts: @imported_contacts })
     locals
+  end
+
+  def mailer_global_config
+    config = GlobalConfig.get('BRAND_NAME', 'BRAND_URL', 'LOGO', 'MAILER_SUPPORT_EMAIL')
+    logo = config['LOGO'].to_s
+    if logo.start_with?('/')
+      public_base_url = config['BRAND_URL'].presence || ENV.fetch('FRONTEND_URL', '')
+      public_base_url = public_base_url.to_s.chomp('/')
+      config['LOGO'] = "#{public_base_url}#{logo}" if public_base_url.start_with?('https://')
+    end
+    config
   end
 
   def locale_from_account(account)
