@@ -5,9 +5,13 @@
 - Data da auditoria: 25 de julho de 2026.
 - Repositório: `D:\dev\workspaces\centraldeatendimentoCHAT\server`.
 - Branch auditada: `release/strict-team-conversation-privacy`.
-- SHA-base: `2fb8bd4c69160fcd2140bbbb70f24e0b976b9674`.
+- SHA-base original: `2fb8bd4c69160fcd2140bbbb70f24e0b976b9674`.
+- SHA-base da revisão atual: `b8932617338a4cd3762fa5cf89540fc68cdae5eb`.
 - Produção inspecionada: `https://atendimento.meugerenciador.pro`.
 - Escopo: inventário e plano de migração; nenhuma alteração funcional ou deploy faz parte desta auditoria.
+
+Anexo detalhado e normativo para imagens e links de apoio:
+`docs/operations/ACELERACHAT-BRANDING-ASSETS-AND-SUPPORT-LINKS.md`.
 
 Esta auditoria separa três conceitos:
 
@@ -35,23 +39,28 @@ O caminho recomendado é uma migração em fases, com bloqueio explícito de tr�
 
 Inventário aproximado no código de runtime:
 
-| Termo/domínio | `app` | `config` | `enterprise` | `lib` | Observação |
-|---|---:|---:|---:|---:|---|
-| `Chatwoot` | 1.026 arquivos | 68 | 43 | 17 | Inclui interface, traduções, mailers e classes internas |
-| `chatwoot.com` | 187 arquivos | 3 | 3 | 1 | Links, remetentes, APIs e exemplos |
-| `chwt.app` | 12 arquivos | 2 | 0 | 1 | Atalhos para documentação e páginas comerciais |
-| `chatwoot.help` | 56 arquivos | 0 | 0 | 0 | Links de apoio, principalmente nas traduções |
-| `Captain`/`captain` | 203/— | 58/— | 155/— | 15/— | O nome interno aparece milhares de vezes |
+| Termo/domínio       |                            `app` | `config` | `enterprise` |  `lib` | `public` | Observação                                                      |
+| ------------------- | -------------------------------: | -------: | -----------: | -----: | -------: | --------------------------------------------------------------- |
+| `Chatwoot`          | 3.963 ocorrências/1.242 arquivos |   365/72 |       110/47 |  78/30 |      2/1 | Inclui interface, traduções, mailers, testes e classes internas |
+| `chatwoot.com`      |                          558/183 |      5/2 |          5/2 |    1/1 |      0/0 | Links, remetentes, APIs, exemplos e testes                      |
+| `chwt.app`          |                            34/13 |     13/2 |          0/0 |    2/2 |      0/0 | Atalhos para documentação e páginas comerciais                  |
+| `chatwoot.help`     |                            59/57 |      0/0 |          0/0 |    1/1 |      0/0 | Links de apoio, principalmente nas traduções                    |
+| `Captain`/`captain` |                        4.211/295 |   596/62 |      865/198 | 128/21 |      0/0 | A maior parte deve permanecer como compatibilidade interna      |
+
+Os números acima foram recalculados na revisão atual, sem diferenciar
+maiúsculas e minúsculas. O formato de cada célula é
+`ocorrências/arquivos`; por isso não deve ser comparado diretamente com a
+contagem aproximada da auditoria original.
 
 Inventário estrutural no repositório:
 
-- referência literal a `enterprise/`: 80 ocorrências em 20 arquivos;
-- namespace `Enterprise::`: 244 ocorrências em 148 arquivos;
-- método `enterprise?`: 44 ocorrências em 24 arquivos;
-- `IS_ENTERPRISE`: 4 ocorrências em 3 arquivos;
-- `INSTALLATION_PRICING_PLAN`: 15 ocorrências em 8 arquivos;
-- `Captain`: 3.264 ocorrências em 495 arquivos;
-- `captain`: 4.840 ocorrências em 659 arquivos.
+- referência literal a `enterprise/`: 92 ocorrências em 22 arquivos;
+- namespace `Enterprise::`: 246 ocorrências em 148 arquivos;
+- método `enterprise?`: 57 ocorrências em 31 arquivos;
+- `IS_ENTERPRISE`: 6 ocorrências em 4 arquivos;
+- `INSTALLATION_PRICING_PLAN`: 24 ocorrências em 11 arquivos;
+- literal `Captain`: 3.545 ocorrências em 580 arquivos;
+- literal `captain`: 2.577 ocorrências em 465 arquivos.
 
 Conclusão: a varredura deve distinguir referências públicas, integrações operacionais, compatibilidade interna e avisos legais. Uma substituição global de texto quebraria rotas, traduções, tabelas, autoload, APIs e compatibilidade de dados.
 
@@ -65,6 +74,13 @@ A inspeção autenticada confirmou:
 - rodapé com `v4.15.1 Build 2fb8bd4`;
 - login do SuperAdmin com título `SuperAdmin | Chatwoot`;
 - logos `logo.svg` e `logo_dark.svg` com texto alternativo “Chatwoot”.
+- rota `/app/login/sso` com logo Chatwoot, título em inglês e nome antigo na
+  aba;
+- favicon da aba ainda com o símbolo Chatwoot.
+
+A revisão posterior confirmou produção no SHA
+`b8932617338a4cd3762fa5cf89540fc68cdae5eb`. A marca permaneceu inalterada por
+decisão de escopo: esse deploy entregou Acelera Control, não o rebranding.
 
 O nome “AI Food Manager PRO” visto na conta é o nome da conta/cliente, não a marca da plataforma.
 
@@ -95,12 +111,12 @@ O arquivo privado atual `private/env/chatwoot.production.env` não define o conj
 
 ### 5.2 Vocabulário aprovado
 
-| Atual | Destino público | Tratamento interno inicial |
-|---|---|---|
-| Chatwoot | AceleraChat | Renomear apresentação e integrações; preservar apenas referências técnicas/licenças inevitáveis até revisão |
-| Captain/Capitão | Nemmo | Manter classes, tabelas e rotas internas `Captain`/`captain` nesta etapa |
-| Enterprise | PRO | Manter pasta `enterprise/`, namespace `Enterprise::`, contratos, tabelas e chaves internas |
-| Community | Plano base, se existir | Definir na nova matriz comercial |
+| Atual           | Destino público        | Tratamento interno inicial                                                                                  |
+| --------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Chatwoot        | AceleraChat            | Renomear apresentação e integrações; preservar apenas referências técnicas/licenças inevitáveis até revisão |
+| Captain/Capitão | Nemmo                  | Manter classes, tabelas e rotas internas `Captain`/`captain` nesta etapa                                    |
+| Enterprise      | PRO                    | Manter pasta `enterprise/`, namespace `Enterprise::`, contratos, tabelas e chaves internas                  |
+| Community       | Plano base, se existir | Definir na nova matriz comercial                                                                            |
 
 Não deve haver na interface termos como “Enterprise edition”, “Community Support” ou instruções para adquirir planos externos.
 
@@ -136,6 +152,10 @@ Locais principais a substituir:
 - `public/browserconfig.xml`;
 - favicons e famílias Apple/Android/Microsoft em `public/`.
 
+O inventário fechado contém 55 ativos obrigatórios, suas duplicidades, locais
+de uso e ação esperada. A lista completa está em
+`docs/operations/ACELERACHAT-BRANDING-ASSETS-AND-SUPPORT-LINKS.md`.
+
 `public/manifest.json` ainda contém nome “Chatwoot” e a cor azul `#1f93ff`. Foram encontrados também arquivos Apple Touch vazios; devem ser removidos ou regenerados corretamente.
 
 ## 7. Links que precisam ser trocados
@@ -167,6 +187,10 @@ Locais principais a substituir:
 `config/features.yml` repete links de ajuda para e-mail, Facebook, Central de Ajuda, bots, equipes, etiquetas, atributos, respostas prontas, integrações, campanhas, relatórios e SLA.
 
 Cada link deve apontar para um artigo AceleraChat existente. Não se deve substituir por uma página inicial genérica, pois isso reduz a utilidade do apoio contextual.
+
+O mapa aprovado registra as 22 chaves de ajuda, as 12 duplicações em
+`config/features.yml`, o destino lógico de cada artigo e os gates contra 404 no
+anexo de imagens e links.
 
 ### 7.2 Outros endpoints antigos
 
@@ -343,9 +367,10 @@ O SuperAdmin ainda possui títulos, logos, venda, suporte, “Community Support�
 
 O onboarding AceleraChat deve cadastrar cliente, assinatura, organização e instância sem enviar informações para serviços antigos.
 
-## 13. Como a camada Enterprise é liberada hoje
+## 13. Como a camada PRO é liberada hoje
 
-O código atual usa `lib/chatwoot_hub.rb` e `https://hub.2.chatwoot.com` para:
+Historicamente, o código usava `lib/chatwoot_hub.rb` e
+`https://hub.2.chatwoot.com` para:
 
 - `/ping`: sincronização de instalação, versão, ambiente, edição e métricas;
 - `/instances`: registro opcional de empresa e responsável;
@@ -353,7 +378,12 @@ O código atual usa `lib/chatwoot_hub.rb` e `https://hub.2.chatwoot.com` para:
 - `/send_push`: retransmissão de push;
 - `/billing`: cobrança.
 
-A instalação mantém um UUID em `InstallationConfig`. O job diário `Internal::CheckNewVersionsJob` sincroniza com o Hub e grava a última versão. A extensão em `enterprise/app/jobs/enterprise/internal/check_new_versions_job.rb` lê do retorno:
+O contrato de compatibilidade mantém um UUID em `InstallationConfig`. O job
+diário `Internal::CheckNewVersionsJob` continua chamando a fachada interna,
+mas ela só envia heartbeat ao Acelera Control quando a configuração própria
+está completa e explicitamente habilitada. A extensão em
+`enterprise/app/jobs/enterprise/internal/check_new_versions_job.rb` lê do
+retorno normalizado:
 
 - plano;
 - quantidade de assentos;
@@ -361,9 +391,25 @@ A instalação mantém um UUID em `InstallationConfig`. O job diário `Internal:
 
 `Internal::ReconcilePlanConfigService` usa o plano para reconfigurar a marca e desativar recursos premium. Entre eles estão remoção de marca, auditoria, SLA, papéis personalizados, Captain/Nemmo, sincronização de documentos, notas de CSAT e atributos obrigatórios.
 
-Detalhe importante: `DISABLE_TELEMETRY` reduz os dados enviados, mas não impede sozinho o `/ping`. A presença da camada é detectada por `ChatwootApp.enterprise?` verificando a pasta `enterprise`, salvo `DISABLE_ENTERPRISE`.
+`DISABLE_TELEMETRY` continua impedindo o envio da contagem opcional de uso. O
+heartbeat inteiro depende de `ACELERA_CONTROL_ENABLED=true`, URL, token e chave
+pública válidos. A presença da camada de código ainda é detectada por
+`ChatwootApp.enterprise?` verificando a pasta `enterprise`, salvo
+`DISABLE_ENTERPRISE`; isso é independente da ativação comercial do PRO.
 
-O contrato de produção versionado em `infra/compose/docker-compose.production.yaml` bloqueia `hub.2.chatwoot.com` para Rails e Sidekiq, e `docs/operations/PRODUCTION-RUNTIME-STATE.md` registra plano enterprise local. Isso precisa ser confirmado dentro dos containers em cada rito de release. O manifesto `infra/production/enterprise-runtime.yml` ainda referencia o SHA antigo `882b6...`, enquanto a produção está no SHA `2fb8bd4...`; essa divergência viola a rastreabilidade e deve ser corrigida no próximo deploy.
+No SHA atual, a fachada interna `ChatwootHub` é mantida por compatibilidade, mas
+a comunicação operacional foi substituída pelo cliente Acelera Control. O
+Control é opt-in, exige URL HTTPS, token e chave pública, valida entitlements
+assinados e permanece desativado enquanto não houver serviço próprio
+homologado. Push relay antigo, suporte, cobrança e changelog não usam fallback
+para domínios antigos.
+
+O contrato de produção em `infra/compose/docker-compose.production.yaml`
+continua bloqueando `hub.2.chatwoot.com` para Rails e Sidekiq. A especificação
+atual está em `docs/operations/ACELERA-CONTROL-CLIENT.md`. O manifesto histórico
+`infra/production/enterprise-runtime.yml` ainda precisa ser reconciliado com o
+SHA implantado em cada rito de release; ele não deve ser usado isoladamente
+como prova do runtime atual.
 
 ## 14. Como AceleraChat deve liberar o PRO
 
@@ -392,14 +438,14 @@ Criar um serviço próprio, provisoriamente chamado **Acelera Control**, com dom
 
 Mapeamento de compatibilidade:
 
-| Atual | Acelera Control |
-|---|---|
-| installation identifier | `instance_id` |
-| plan | `plan_code` |
-| plan quantity | `seat_limit` |
-| premium feature flags | `entitlements` |
+| Atual                     | Acelera Control                 |
+| ------------------------- | ------------------------------- |
+| installation identifier   | `instance_id`                   |
+| plan                      | `plan_code`                     |
+| plan quantity             | `seat_limit`                    |
+| premium feature flags     | `entitlements`                  |
 | support token/hash/script | configuração própria de suporte |
-| latest version | `latest_release` + SHA |
+| latest version            | `latest_release` + SHA          |
 
 Requisitos de segurança e disponibilidade:
 
