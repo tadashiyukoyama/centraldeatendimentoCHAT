@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_25_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_26_120000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -348,6 +348,35 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_25_120000) do
     t.datetime "updated_at", precision: nil, null: false
   end
 
+  create_table "captain_appointments", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "assistant_id", null: false
+    t.bigint "conversation_id", null: false
+    t.bigint "contact_id", null: false
+    t.bigint "specialist_id"
+    t.string "kind", default: "demo", null: false
+    t.integer "status", default: 0, null: false
+    t.datetime "starts_at", null: false
+    t.datetime "ends_at", null: false
+    t.string "timezone", null: false
+    t.text "notes"
+    t.string "idempotency_key", null: false
+    t.string "external_provider"
+    t.string "external_id"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "idempotency_key"], name: "index_captain_appointments_on_account_id_and_idempotency_key", unique: true
+    t.index ["account_id", "specialist_id", "starts_at"], name: "idx_captain_appointments_specialist_start"
+    t.index ["account_id", "status", "starts_at"], name: "idx_captain_appointments_status_start"
+    t.index ["account_id"], name: "index_captain_appointments_on_account_id"
+    t.index ["assistant_id"], name: "index_captain_appointments_on_assistant_id"
+    t.index ["contact_id"], name: "index_captain_appointments_on_contact_id"
+    t.index ["conversation_id"], name: "index_captain_appointments_on_conversation_id"
+    t.index ["external_provider", "external_id"], name: "idx_captain_appointments_external", unique: true, where: "((external_provider IS NOT NULL) AND (external_id IS NOT NULL))"
+    t.index ["specialist_id"], name: "index_captain_appointments_on_specialist_id"
+  end
+
   create_table "captain_assistant_responses", force: :cascade do |t|
     t.string "question", null: false
     t.text "answer", null: false
@@ -477,6 +506,36 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_25_120000) do
     t.index ["user_id"], name: "index_captain_message_reports_on_user_id"
   end
 
+  create_table "captain_payment_notices", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "assistant_id", null: false
+    t.bigint "conversation_id", null: false
+    t.bigint "contact_id", null: false
+    t.bigint "verified_by_id"
+    t.integer "status", default: 0, null: false
+    t.bigint "amount_cents"
+    t.string "currency", default: "BRL", null: false
+    t.datetime "reported_paid_at"
+    t.string "reference"
+    t.text "notes"
+    t.datetime "verified_at"
+    t.string "idempotency_key", null: false
+    t.string "external_provider"
+    t.string "external_id"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "contact_id", "created_at"], name: "idx_captain_payment_notices_contact_created"
+    t.index ["account_id", "idempotency_key"], name: "index_captain_payment_notices_on_account_id_and_idempotency_key", unique: true
+    t.index ["account_id", "status", "created_at"], name: "idx_captain_payment_notices_status_created"
+    t.index ["account_id"], name: "index_captain_payment_notices_on_account_id"
+    t.index ["assistant_id"], name: "index_captain_payment_notices_on_assistant_id"
+    t.index ["contact_id"], name: "index_captain_payment_notices_on_contact_id"
+    t.index ["conversation_id"], name: "index_captain_payment_notices_on_conversation_id"
+    t.index ["external_provider", "external_id"], name: "idx_captain_payment_notices_external", unique: true, where: "((external_provider IS NOT NULL) AND (external_id IS NOT NULL))"
+    t.index ["verified_by_id"], name: "index_captain_payment_notices_on_verified_by_id"
+  end
+
   create_table "captain_scenarios", force: :cascade do |t|
     t.string "title"
     t.text "description"
@@ -491,6 +550,29 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_25_120000) do
     t.index ["assistant_id", "enabled"], name: "index_captain_scenarios_on_assistant_id_and_enabled"
     t.index ["assistant_id"], name: "index_captain_scenarios_on_assistant_id"
     t.index ["enabled"], name: "index_captain_scenarios_on_enabled"
+  end
+
+  create_table "captain_tool_executions", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "assistant_id", null: false
+    t.bigint "conversation_id"
+    t.bigint "contact_id"
+    t.string "tool_name", null: false
+    t.integer "status", default: 0, null: false
+    t.jsonb "request_summary", default: {}, null: false
+    t.jsonb "result_summary", default: {}, null: false
+    t.string "error_code"
+    t.string "idempotency_key"
+    t.datetime "started_at", null: false
+    t.datetime "finished_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "tool_name", "created_at"], name: "idx_captain_tool_executions_account_tool_created"
+    t.index ["account_id", "tool_name", "idempotency_key"], name: "idx_captain_tool_executions_idempotency", unique: true, where: "(idempotency_key IS NOT NULL)"
+    t.index ["account_id"], name: "index_captain_tool_executions_on_account_id"
+    t.index ["assistant_id"], name: "index_captain_tool_executions_on_assistant_id"
+    t.index ["contact_id"], name: "index_captain_tool_executions_on_contact_id"
+    t.index ["conversation_id"], name: "index_captain_tool_executions_on_conversation_id"
   end
 
   create_table "categories", force: :cascade do |t|
@@ -1576,6 +1658,20 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_25_120000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "captain_appointments", "accounts", on_delete: :cascade
+  add_foreign_key "captain_appointments", "captain_assistants", column: "assistant_id", on_delete: :cascade
+  add_foreign_key "captain_appointments", "contacts", on_delete: :cascade
+  add_foreign_key "captain_appointments", "conversations", on_delete: :cascade
+  add_foreign_key "captain_appointments", "users", column: "specialist_id", on_delete: :nullify
+  add_foreign_key "captain_payment_notices", "accounts", on_delete: :cascade
+  add_foreign_key "captain_payment_notices", "captain_assistants", column: "assistant_id", on_delete: :cascade
+  add_foreign_key "captain_payment_notices", "contacts", on_delete: :cascade
+  add_foreign_key "captain_payment_notices", "conversations", on_delete: :cascade
+  add_foreign_key "captain_payment_notices", "users", column: "verified_by_id", on_delete: :nullify
+  add_foreign_key "captain_tool_executions", "accounts", on_delete: :cascade
+  add_foreign_key "captain_tool_executions", "captain_assistants", column: "assistant_id", on_delete: :cascade
+  add_foreign_key "captain_tool_executions", "contacts", on_delete: :nullify
+  add_foreign_key "captain_tool_executions", "conversations", on_delete: :nullify
   add_foreign_key "inboxes", "portals"
   add_foreign_key "privacy_request_events", "privacy_requests"
   add_foreign_key "privacy_requests", "accounts"

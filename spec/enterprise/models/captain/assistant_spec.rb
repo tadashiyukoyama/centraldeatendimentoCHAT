@@ -38,5 +38,35 @@ RSpec.describe Captain::Assistant do
         an_instance_of(Captain::Tools::HandoffTool)
       )
     end
+
+    it 'enables operational tools only through explicit assistant features' do
+      assistant.update!(
+        config: assistant.config.merge(
+          'feature_contact_attributes' => true,
+          'feature_demo_scheduling' => true,
+          'feature_payment_notices' => true
+        )
+      )
+
+      tools = assistant.send(:agent_tools)
+
+      expect(tools).to include(
+        an_instance_of(Captain::Tools::CaptureContactProfileTool),
+        an_instance_of(Captain::Tools::ScheduleDemoTool),
+        an_instance_of(Captain::Tools::RecordPaymentNoticeTool),
+        an_instance_of(Captain::Tools::LookupPaymentStatusTool)
+      )
+    end
+
+    it 'does not expose operational tools to an assistant without the feature flags' do
+      tools = assistant.send(:agent_tools)
+
+      expect(tools).not_to include(
+        an_instance_of(Captain::Tools::CaptureContactProfileTool),
+        an_instance_of(Captain::Tools::ScheduleDemoTool),
+        an_instance_of(Captain::Tools::RecordPaymentNoticeTool),
+        an_instance_of(Captain::Tools::LookupPaymentStatusTool)
+      )
+    end
   end
 end

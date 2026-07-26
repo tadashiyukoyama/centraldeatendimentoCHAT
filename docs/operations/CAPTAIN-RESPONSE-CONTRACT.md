@@ -94,6 +94,18 @@ As únicas etiquetas de ciclo comercial são:
 `Captain::Conversation::LeadClassificationService` valida sinais do último
 contato no servidor. A classificação é monotônica dentro do episódio: um
 `lead_quente` não volta para `lead_morno` por uma resposta posterior do modelo.
+Um agendamento concluído pela ferramenta é um sinal confiável de `lead_quente`,
+mesmo quando a última mensagem do contato é apenas a aceitação de uma oferta.
+
+## Perfil, agenda e financeiro
+
+As ferramentas operacionais são documentadas em
+`docs/operations/CAPTAIN-OPERATIONAL-TOOLS.md`.
+
+Dados de perfil só podem ser gravados quando aparecem explicitamente no episódio
+atual. A agenda exige aceite, perfil completo, data com fuso e ausência de
+conflito. Um aviso de pagamento nunca equivale a confirmação bancária: começa
+como pendente e deve ser validado pelo financeiro ou por uma fonte integrada.
 
 ## Handoff
 

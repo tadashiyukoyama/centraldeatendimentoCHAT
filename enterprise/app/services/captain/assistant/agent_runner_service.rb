@@ -146,12 +146,16 @@ class Captain::Assistant::AgentRunnerService
   end
 
   def add_usage_metadata_callback(runner)
-    handoff_tool_name = Captain::Tools::HandoffTool.new(@assistant).name
+    handoff_tool_names = [
+      Captain::Tools::HandoffTool,
+      Captain::Tools::ScheduleDemoTool,
+      Captain::Tools::RecordPaymentNoticeTool
+    ].map { |tool_class| tool_class.new(@assistant).name }
 
     # Tool tracking always runs — process_response in the job consumes the resulting
     # handoff_tool_called flag regardless of whether OTEL is enabled.
     runner.on_tool_complete do |tool_name, tool_result, context_wrapper|
-      track_handoff_usage(tool_name, handoff_tool_name, tool_result, context_wrapper)
+      track_handoff_usage(tool_name, handoff_tool_names, tool_result, context_wrapper)
     end
 
     if ChatwootApp.otel_enabled?
@@ -162,9 +166,9 @@ class Captain::Assistant::AgentRunnerService
     runner
   end
 
-  def track_handoff_usage(tool_name, handoff_tool_name, tool_result, context_wrapper)
+  def track_handoff_usage(tool_name, handoff_tool_names, tool_result, context_wrapper)
     return unless context_wrapper&.context
-    return unless tool_name.to_s == handoff_tool_name
+    return unless Array(handoff_tool_names).include?(tool_name.to_s)
     return unless tool_result.to_s.start_with?('Conversation handed off to ')
 
     # Mirror the flag onto the instance so error_response can surface it even when

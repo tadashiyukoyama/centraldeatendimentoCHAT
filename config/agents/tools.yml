@@ -30,6 +30,26 @@
   description: 'Apply the canonical lead classification to a conversation'
   icon: 'tag'
 
+- id: capture_contact_profile
+  title: 'Capture Contact Profile'
+  description: 'Save name, phone, email, and company explicitly provided by the contact'
+  icon: 'contact'
+
+- id: schedule_demo
+  title: 'Schedule Demonstration'
+  description: 'Create a real demonstration appointment and transfer it to the responsible specialist'
+  icon: 'calendar'
+
+- id: record_payment_notice
+  title: 'Record Payment Notice'
+  description: 'Record a payment notice as pending verification and route it to finance'
+  icon: 'receipt'
+
+- id: lookup_payment_status
+  title: 'Lookup Payment Status'
+  description: 'Read the verification status of payment notices for the current contact'
+  icon: 'search'
+
 - id: faq_lookup
   title: 'FAQ Lookup'
   description: 'Search FAQ responses using semantic similarity'

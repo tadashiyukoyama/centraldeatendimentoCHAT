@@ -150,7 +150,7 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
 
       context 'when the latest customer message is only a greeting' do
         before do
-          conversation.messages.delete_all
+          Message.where(conversation_id: conversation.id).delete_all
           create(:message, conversation: conversation, inbox: inbox, account: account, message_type: :incoming, content: 'Olá')
         end
 
@@ -166,7 +166,8 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
 
       context 'when the customer accepts the previous Captain handoff offer' do
         before do
-          conversation.messages.delete_all
+          create(:user, account: account, role: :administrator)
+          Message.where(conversation_id: conversation.id).delete_all
           create(
             :message,
             conversation: conversation,
@@ -197,7 +198,7 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
 
       context 'when a previous customer message had a commercial signal but the latest message is outgoing' do
         before do
-          conversation.messages.delete_all
+          Message.where(conversation_id: conversation.id).delete_all
           create(:message, conversation: conversation, inbox: inbox, account: account, message_type: :incoming, content: 'Quero saber o preço')
           create(
             :message,
@@ -258,6 +259,9 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
     let!(:team) { create(:team, account: account, name: 'financeiro') }
 
     it 'assigns a department and leaves the conversation open for a human' do
+      create(:message, conversation: conversation, inbox: inbox, account: account, message_type: :incoming,
+                       sender: contact, content: 'Preciso falar com o financeiro sobre um pagamento')
+
       result = tool.perform(tool_context, reason: 'Customer asked about an invoice', destination: 'financeiro')
 
       expect(result).to include('financeiro')
@@ -267,6 +271,8 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
 
     it 'assigns the first account administrator for owner handoff' do
       admin = create(:user, account: account, role: :administrator)
+      create(:message, conversation: conversation, inbox: inbox, account: account, message_type: :incoming,
+                       sender: contact, content: 'Quero agendar uma demo com um especialista')
 
       tool.perform(tool_context, reason: 'Customer requested a demo', destination: 'owner')
 
@@ -288,6 +294,11 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
   end
 
   describe 'out of office message after handoff' do
+    before do
+      create(:message, conversation: conversation, inbox: inbox, account: account, message_type: :incoming,
+                       sender: contact, content: 'Preciso de suporte humano')
+    end
+
     context 'when outside business hours' do
       before do
         inbox.update!(

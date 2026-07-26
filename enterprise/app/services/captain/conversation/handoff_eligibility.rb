@@ -19,8 +19,27 @@ class Captain::Conversation::HandoffEligibility
     | adquirir
     | orcamento
   )\b/ix
+  PAYMENT_SIGNAL_PATTERN = /\b(?:
+    paguei
+    | pagamento
+    | comprovante
+    | pix
+    | transferencia bancaria
+  )\b/ix
   ACCEPTANCE_PATTERN = /\A\s*(?:ok(?:ay)?|sim|pode(?: ser)?|quero|claro|tudo bem|ta bom|esta bom|aceito|vamos)\b/ix
-  HANDOFF_OFFER_PATTERN = /\b(?:especialista|atendimento humano|falar com|transfer(?:ir|a)|equipe responsavel|setor)\b/ix
+  HANDOFF_OFFER_PATTERN = /\b(?:
+    especialista
+    | atendimento humano
+    | falar com
+    | transfer(?:ir|a)
+    | equipe responsavel
+    | setor
+    | demonstracao
+    | demo
+    | agendar
+    | agenda
+    | conhecer na pratica
+  )\b/ix
 
   DENIED_MESSAGE = 'Handoff is not appropriate for the latest customer message. Reply to the customer and keep the conversation with Captain.'.freeze
 
@@ -47,7 +66,10 @@ class Captain::Conversation::HandoffEligibility
 
   def explicit_handoff_signal?
     content = normalized_content(latest_customer_message)
-    content.match?(HUMAN_REQUEST_PATTERN) || content.match?(DEPARTMENT_PATTERN) || content.match?(COMMERCIAL_SIGNAL_PATTERN) ||
+    content.match?(HUMAN_REQUEST_PATTERN) ||
+      content.match?(DEPARTMENT_PATTERN) ||
+      content.match?(COMMERCIAL_SIGNAL_PATTERN) ||
+      content.match?(PAYMENT_SIGNAL_PATTERN) ||
       accepts_previous_handoff_offer?(content)
   end
 

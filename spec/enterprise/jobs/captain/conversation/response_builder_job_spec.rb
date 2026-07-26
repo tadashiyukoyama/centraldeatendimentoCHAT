@@ -383,14 +383,7 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         create(:message, conversation: conversation, content: 'Fresh question', message_type: :incoming, created_at: same_second,
                          updated_at: same_second)
 
-        expected_messages = [
-          { content: 'Hello', role: 'user' },
-          {
-            content: Captain::Conversation::MessageHistoryBuilderService::RESOLUTION_MARKER,
-            role: 'assistant'
-          },
-          { content: 'Fresh question', role: 'user' }
-        ]
+        expected_messages = [{ content: 'Fresh question', role: 'user' }]
 
         expect(mock_agent_runner_service).to receive(:generate_response).with(
           message_history: expected_messages
@@ -440,7 +433,7 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         expect(conversation.status).to eq('open')
         expect(conversation.messages.outgoing.where(private: false)).to be_empty
         expect(conversation.messages.outgoing.where(private: true).last.content)
-          .to eq('Captain could not generate a response automatically. Human follow-up is required.')
+          .to eq('Nemmo could not generate a response automatically. Human follow-up is required.')
       end
     end
 
@@ -567,7 +560,7 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
           subject_type: 'Conversation',
           result_id: conversation.messages.outgoing.last.id,
           result_type: 'Message',
-          llm_model: 'openai-gpt-5.2',
+          llm_model: "#{Llm::Models.provider_for(assistant.agent_model)}-#{assistant.agent_model}",
           credits_consumed: 1.0,
           faq_ids: [7, 9],
           document_ids: [3],

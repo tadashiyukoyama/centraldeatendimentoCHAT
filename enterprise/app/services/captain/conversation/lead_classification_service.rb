@@ -23,8 +23,10 @@ class Captain::Conversation::LeadClassificationService
     @conversation = conversation
   end
 
-  def perform(classification: nil)
-    normalized_classification = safe_classification(classification)
+  TRUSTED_SIGNALS = %w[demo_scheduled].freeze
+
+  def perform(classification: nil, trusted_signal: nil)
+    normalized_classification = trusted_classification(trusted_signal) || safe_classification(classification)
     source = @classification_source || 'model'
 
     if normalized_classification.blank?
@@ -46,6 +48,13 @@ class Captain::Conversation::LeadClassificationService
   end
 
   private
+
+  def trusted_classification(trusted_signal)
+    return unless TRUSTED_SIGNALS.include?(trusted_signal.to_s)
+
+    @classification_source = 'trusted_tool'
+    'lead_quente'
+  end
 
   def normalize(classification)
     value = classification.to_s.strip.downcase

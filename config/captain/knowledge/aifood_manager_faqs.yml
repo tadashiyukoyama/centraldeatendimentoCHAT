@@ -1,4 +1,4 @@
-version: 1
+version: 2
 source: AIFOODMANAGER Dossie completo de funcionalidades
 definitions:
   - key: product_overview
@@ -123,19 +123,20 @@ definitions:
     legacy_ids: [19]
     question: Como funciona a automação de comentários do Instagram para DM?
     answer: >-
-      Uma campanha configurada pode observar comentários que correspondam a
-      palavras-chave e iniciar uma mensagem direta ou uma conversa no Instagram.
-      O fluxo depende da conta, da publicação, das permissões e das políticas da
-      Meta e deve ser testado com os dados reais da campanha.
+      A API da Meta permite receber comentários, responder publicamente e enviar
+      uma primeira resposta privada quando a conta, as permissões e os webhooks
+      estão aprovados. Esse módulo ainda precisa estar habilitado e validado na
+      caixa Instagram antes de ser oferecido como ativo. Sem confirmação do
+      módulo, o atendimento deve dizer que a automação está em implantação.
 
   - key: instagram_campaign_setup
     legacy_ids: [20]
     question: O que é necessário para configurar uma campanha do Instagram?
     answer: >-
-      É preciso selecionar a conta e a unidade corretas, configurar palavra-chave
-      e correspondência, informar a publicação quando aplicável e validar as
-      permissões da Meta. O histórico da campanha deve registrar se o envio foi
-      feito, falhou, foi duplicado ou ignorado.
+      Depois que o módulo estiver habilitado, é preciso selecionar a conta e a
+      unidade corretas, configurar palavra-chave e correspondência, informar a
+      publicação quando aplicável e validar as permissões da Meta. O histórico
+      precisa registrar se o envio foi feito, falhou, foi duplicado ou ignorado.
 
   - key: whatsapp_requirements
     legacy_ids: [21]
@@ -232,5 +233,55 @@ definitions:
     answer: >-
       A transferência ocorre quando o cliente pede atendimento humano, aceita
       uma oferta de especialista, solicita um setor ou demonstra intenção clara
-      de compra, como preço, proposta ou demonstração. Depois que a transferência
-      é concluída, o assistente deixa de responder e a equipe assume o histórico.
+      de compra. Quando o lead aceita conhecer os benefícios na prática, o agente
+      coleta os dados faltantes, combina data e horário, usa a ferramenta real de
+      agenda e só então transfere para o especialista. Depois da transferência,
+      o agente deixa de responder e a equipe assume o histórico.
+
+  - key: lead_profile
+    question: Quais dados o atendimento comercial coleta?
+    answer: >-
+      O atendimento identifica se a pessoa já é cliente ou se está conhecendo a
+      solução e coleta progressivamente apenas os dados necessários: nome,
+      telefone e empresa ou estabelecimento. Os dados só podem ser gravados
+      quando forem informados pelo próprio contato e devem ser usados para o
+      atendimento e acompanhamento comercial autorizado.
+
+  - key: demo_booking
+    question: Como funciona o agendamento de uma demonstração?
+    answer: >-
+      Depois que o lead aceita conhecer a solução na prática, o agente confirma
+      os dados de contato, solicita dia, horário e fuso e consulta a agenda real.
+      A demonstração só é considerada marcada quando a ferramenta de agenda
+      retorna sucesso. Em seguida, a conversa e o contexto são transferidos para
+      o especialista responsável.
+
+  - key: demo_booking_conflict
+    question: O que acontece se o horário da demonstração não estiver disponível?
+    answer: >-
+      O agente não confirma um horário indisponível. Ele informa que houve
+      conflito e pede outra opção de data ou horário. Nenhuma demonstração deve
+      ser apresentada como agendada sem o identificador retornado pela ferramenta.
+
+  - key: payment_notice
+    question: O cliente pode avisar que fez um pagamento pelo atendimento?
+    answer: >-
+      Sim. O agente pode registrar um aviso de pagamento como pendente de
+      conferência e encaminhar a conversa ao financeiro. Esse registro não
+      confirma recebimento bancário, liquidação da fatura ou conciliação.
+
+  - key: payment_status
+    question: O agente pode confirmar se um pagamento foi recebido?
+    answer: >-
+      O agente só pode informar o estado retornado por uma fonte financeira
+      integrada. Um aviso interno com estado pendente significa apenas que o
+      cliente comunicou o pagamento. Sem retorno confirmado da integração ou do
+      financeiro humano, o agente não pode afirmar que a fatura foi quitada.
+
+  - key: crm_integration
+    question: Os leads e atendimentos podem ser integrados a um CRM?
+    answer: >-
+      Os contatos, classificações, demonstrações e históricos podem ser
+      sincronizados com um CRM por uma integração autenticada e auditável.
+      Enquanto o CRM externo não estiver configurado, os registros operacionais
+      permanecem na central e não devem ser apresentados como sincronizados.

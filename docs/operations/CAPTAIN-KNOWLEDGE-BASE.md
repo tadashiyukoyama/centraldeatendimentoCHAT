@@ -36,6 +36,12 @@ Foi incluída uma resposta explícita para estoque, compras, caixa, cozinha,
 delivery e PDV. Esses itens aparecem no dossiê como customização ou integração,
 portanto permanecem fora das promessas de módulo transacional pronto.
 
+Também existem respostas aprovadas sobre coleta de dados, agenda de
+demonstração, conflitos de horário, avisos de pagamento e integração futura com
+CRM. A automação de comentário para DM permanece descrita como dependente da
+ativação e validação do módulo; ela não pode ser anunciada como ativa apenas
+porque a conta Meta possui permissões.
+
 ## Conteúdo deliberadamente não aprovado
 
 Não participam do `faq_lookup` as descrições que poderiam induzir o Captain a
@@ -51,8 +57,8 @@ afirmar, sem validação local:
 
 1. Atualizar a fonte YAML e registrar a origem da afirmação.
 2. Revisar a resposta para limitar escopo, pré-requisitos e condição de ativação.
-3. Aplicar a curadoria com `scripts/revise_captain_knowledge_base.rb` em ambiente
-   controlado.
+3. Executar `scripts/revise_captain_knowledge_base.rb` primeiro em modo `check`
+   e depois, em ambiente controlado, em modo `sync`.
 4. Validar semanticamente as respostas aprovadas e confirmar que conteúdo antigo
    não aprovado está `pending`.
 5. Executar smoke de uma pergunta de produto, uma pergunta fora do escopo, uma

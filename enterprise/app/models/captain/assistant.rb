@@ -18,6 +18,7 @@
 #
 class Captain::Assistant < ApplicationRecord
   DESCRIPTION_LENGTH_LIMIT = 500
+  BOOLEAN_TYPE = ActiveModel::Type::Boolean.new.freeze
 
   include Avatarable
   include Concerns::CaptainToolsHelpers
@@ -39,12 +40,24 @@ class Captain::Assistant < ApplicationRecord
   has_many :copilot_threads, dependent: :destroy_async
   has_many :scenarios, class_name: 'Captain::Scenario', dependent: :destroy_async
   has_many :agent_sessions, class_name: 'Captain::AgentSession', dependent: :destroy_async
+  has_many :tool_executions, class_name: 'Captain::ToolExecution', dependent: :destroy_async
+  has_many :appointments, class_name: 'Captain::Appointment', dependent: :restrict_with_error
+  has_many :payment_notices, class_name: 'Captain::PaymentNotice', dependent: :restrict_with_error
 
-  store_accessor :config, :temperature, :feature_faq, :feature_memory, :feature_contact_attributes, :product_name
+  store_accessor :config,
+                 :temperature,
+                 :feature_faq,
+                 :feature_memory,
+                 :feature_contact_attributes,
+                 :feature_demo_scheduling,
+                 :feature_payment_notices,
+                 :product_name,
+                 :demo_assignee_email
 
   validates :name, presence: true
   validates :description, presence: true, length: { maximum: DESCRIPTION_LENGTH_LIMIT }
   validates :account_id, presence: true
+  validate :validate_text_integrity
 
   scope :ordered, -> { order(created_at: :desc) }
 
@@ -91,18 +104,42 @@ class Captain::Assistant < ApplicationRecord
 
   private
 
+  def validate_text_integrity
+    values = {
+      name: name,
+      description: description,
+      config: config,
+      response_guidelines: response_guidelines,
+      guardrails: guardrails
+    }
+    Captain::TextIntegrity.errors(values).each { |error| errors.add(:base, error) }
+  end
+
   def agent_name
     name.parameterize(separator: '_')
   end
 
   def agent_tools
-    [
-      self.class.resolve_tool_class('faq_lookup').new(self),
-      self.class.resolve_tool_class('classify_lead').new(self),
-      self.class.resolve_tool_class('add_private_note').new(self),
-      self.class.resolve_tool_class('handoff').new(self),
-      *account.captain_custom_tools.enabled.map { |custom_tool| custom_tool.tool(self) }
-    ]
+    tools = build_tools(%w[faq_lookup classify_lead add_private_note handoff])
+    tools.concat(operational_tools)
+    tools.concat(account.captain_custom_tools.enabled.map { |custom_tool| custom_tool.tool(self) })
+    tools
+  end
+
+  def operational_tools
+    names = []
+    names << 'capture_contact_profile' if feature_enabled?(:feature_contact_attributes)
+    names << 'schedule_demo' if feature_enabled?(:feature_demo_scheduling)
+    names.push('record_payment_notice', 'lookup_payment_status') if feature_enabled?(:feature_payment_notices)
+    build_tools(names)
+  end
+
+  def build_tools(names)
+    names.map { |tool_name| self.class.resolve_tool_class(tool_name).new(self) }
+  end
+
+  def feature_enabled?(feature)
+    BOOLEAN_TYPE.cast(config[feature.to_s])
   end
 
   def prompt_context
@@ -111,6 +148,9 @@ class Captain::Assistant < ApplicationRecord
       system_name: PublicBrand.value('ASSISTANT_PUBLIC_NAME', 'Captain'),
       description: description,
       product_name: config['product_name'] || 'this product',
+      feature_contact_profile: feature_enabled?(:feature_contact_attributes),
+      feature_demo_scheduling: feature_enabled?(:feature_demo_scheduling),
+      feature_payment_notices: feature_enabled?(:feature_payment_notices),
       scenarios: scenarios.enabled.map do |scenario|
         {
           title: scenario.title,
