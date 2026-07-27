@@ -16,7 +16,10 @@ class Instagram::CommentAutomation::ConversationLinker
 
     ActiveRecord::Base.transaction do
       conversation.with_lock do
-        conversation.update!(additional_attributes: merged_attributes(conversation, event))
+        conversation.update!(
+          additional_attributes: merged_attributes(conversation, event),
+          **assistant_routing_attributes(conversation)
+        )
         conversation.add_labels(event.instagram_comment_automation.conversation_label)
       end
       event.update!(conversation: conversation)
@@ -57,5 +60,19 @@ class Instagram::CommentAutomation::ConversationLinker
         'matched_at' => event.received_at.iso8601
       }.compact
     )
+  end
+
+  def assistant_routing_attributes(conversation)
+    return {} unless @inbox.respond_to?(:captain_assistant)
+    return {} if @inbox.association(:captain_assistant).reload.blank?
+    return {} if conversation.pending? && conversation.assignee_id.blank? && conversation.team_id.blank?
+
+    {
+      status: :pending,
+      assignee_id: nil,
+      assignee_agent_bot_id: nil,
+      team_id: nil,
+      waiting_since: nil
+    }
   end
 end

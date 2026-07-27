@@ -51,6 +51,30 @@ RSpec.describe Instagram::CommentAutomation::ConversationLinker do
     expect(event.reload.conversation).to eq(conversation)
   end
 
+  it 'returns a reused human conversation to Nemmo before the incoming Direct message is created' do
+    assistant = create(:captain_assistant, account: account)
+    create(:captain_inbox, captain_assistant: assistant, inbox: inbox)
+    agent = create(:user)
+    create(:account_user, account: account, user: agent)
+    team = create(:team, account: account)
+    conversation.update!(
+      status: :open,
+      assignee: agent,
+      team: team,
+      waiting_since: Time.current
+    )
+
+    described_class.new(inbox: inbox, recipient_id: contact_inbox.source_id).call
+
+    conversation.reload
+    expect(conversation).to be_pending
+    expect(conversation.assignee_id).to be_nil
+    expect(conversation.assignee_agent_bot_id).to be_nil
+    expect(conversation.team_id).to be_nil
+    expect(conversation.waiting_since).to be_nil
+    expect(event.reload.conversation).to eq(conversation)
+  end
+
   it 'is idempotent once the event is linked' do
     linker = described_class.new(inbox: inbox, recipient_id: contact_inbox.source_id)
     linker.call
