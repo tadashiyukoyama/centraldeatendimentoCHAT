@@ -43,17 +43,17 @@ class Channel::Instagram < ApplicationRecord
   end
 
   def subscribe
-    # ref https://developers.facebook.com/docs/instagram-platform/webhooks#enable-subscriptions
-    HTTParty.post(
-      "https://graph.instagram.com/v22.0/#{instagram_id}/subscribed_apps",
-      query: {
-        subscribed_fields: %w[messages message_reactions messaging_seen],
-        access_token: access_token
-      }
+    result = Instagram::CommentAutomation::WebhookSubscriptionService.new(self).subscribe
+    return true if result.success?
+
+    Rails.logger.warn(
+      "[InstagramWebhookSubscription] account_id=#{account_id} channel_id=#{id} " \
+      "error_code=#{result.error_code} error_type=#{result.error_type}"
     )
+    false
   rescue StandardError => e
-    Rails.logger.debug { "Rescued: #{e.inspect}" }
-    true
+    ChatwootExceptionTracker.new(e, account: account).capture_exception
+    false
   end
 
   def unsubscribe

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_26_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_27_090000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1160,6 +1160,80 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_26_120000) do
     t.jsonb "settings", default: {}
   end
 
+  create_table "instagram_comment_automations", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.bigint "created_by_id"
+    t.bigint "updated_by_id"
+    t.string "name", null: false
+    t.boolean "enabled", default: false, null: false
+    t.integer "match_type", default: 0, null: false
+    t.jsonb "keywords", default: [], null: false
+    t.string "media_id"
+    t.boolean "include_nested_replies", default: false, null: false
+    t.boolean "public_reply_enabled", default: true, null: false
+    t.text "public_reply_template"
+    t.boolean "private_reply_enabled", default: true, null: false
+    t.text "private_reply_template"
+    t.text "conversation_context"
+    t.string "conversation_label"
+    t.integer "priority", default: 0, null: false
+    t.datetime "starts_at"
+    t.datetime "ends_at"
+    t.integer "lock_version", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "created_at"], name: "idx_ig_comment_automations_account_created"
+    t.index ["account_id"], name: "index_instagram_comment_automations_on_account_id"
+    t.index ["created_by_id"], name: "index_instagram_comment_automations_on_created_by_id"
+    t.index ["inbox_id", "enabled", "priority"], name: "idx_ig_comment_automations_inbox_enabled_priority"
+    t.index ["inbox_id", "name"], name: "idx_ig_comment_automations_inbox_name", unique: true
+    t.index ["inbox_id"], name: "index_instagram_comment_automations_on_inbox_id"
+    t.index ["updated_by_id"], name: "index_instagram_comment_automations_on_updated_by_id"
+    t.check_constraint "priority >= '-100'::integer AND priority <= 100", name: "chk_ig_comment_automations_priority"
+  end
+
+  create_table "instagram_comment_events", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.bigint "instagram_comment_automation_id"
+    t.bigint "conversation_id"
+    t.string "comment_id", null: false
+    t.string "sender_id"
+    t.string "sender_username"
+    t.string "media_id", null: false
+    t.string "media_product_type"
+    t.string "parent_comment_id"
+    t.text "comment_text", null: false
+    t.string "webhook_field", null: false
+    t.integer "status", default: 0, null: false
+    t.string "ignore_reason"
+    t.string "matched_keyword"
+    t.integer "public_reply_status", default: 0, null: false
+    t.string "public_reply_external_id"
+    t.string "public_reply_error_code"
+    t.integer "private_reply_status", default: 0, null: false
+    t.string "private_reply_recipient_id"
+    t.string "private_reply_external_id"
+    t.string "private_reply_error_code"
+    t.integer "processing_attempts", default: 0, null: false
+    t.datetime "processing_started_at"
+    t.datetime "received_at", null: false
+    t.datetime "processed_at"
+    t.datetime "retry_at"
+    t.integer "lock_version", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "status", "created_at"], name: "idx_ig_comment_events_account_status_created"
+    t.index ["account_id"], name: "index_instagram_comment_events_on_account_id"
+    t.index ["conversation_id"], name: "index_instagram_comment_events_on_conversation_id"
+    t.index ["inbox_id", "comment_id"], name: "idx_ig_comment_events_inbox_comment", unique: true
+    t.index ["inbox_id", "private_reply_recipient_id", "created_at"], name: "idx_ig_comment_events_recipient_created"
+    t.index ["inbox_id"], name: "index_instagram_comment_events_on_inbox_id"
+    t.index ["instagram_comment_automation_id"], name: "idx_ig_comment_events_automation"
+    t.index ["status", "retry_at"], name: "idx_ig_comment_events_status_retry"
+  end
+
   create_table "labels", force: :cascade do |t|
     t.string "title"
     t.text "description"
@@ -1673,6 +1747,14 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_26_120000) do
   add_foreign_key "captain_tool_executions", "contacts", on_delete: :nullify
   add_foreign_key "captain_tool_executions", "conversations", on_delete: :nullify
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "instagram_comment_automations", "accounts", on_delete: :cascade
+  add_foreign_key "instagram_comment_automations", "inboxes", on_delete: :cascade
+  add_foreign_key "instagram_comment_automations", "users", column: "created_by_id", on_delete: :nullify
+  add_foreign_key "instagram_comment_automations", "users", column: "updated_by_id", on_delete: :nullify
+  add_foreign_key "instagram_comment_events", "accounts", on_delete: :cascade
+  add_foreign_key "instagram_comment_events", "conversations", on_delete: :nullify
+  add_foreign_key "instagram_comment_events", "inboxes", on_delete: :cascade
+  add_foreign_key "instagram_comment_events", "instagram_comment_automations", on_delete: :nullify
   add_foreign_key "privacy_request_events", "privacy_requests"
   add_foreign_key "privacy_requests", "accounts"
   add_foreign_key "user_sessions", "users"

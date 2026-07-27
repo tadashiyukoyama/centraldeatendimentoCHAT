@@ -112,6 +112,7 @@ class Instagram::CallbacksController < ApplicationController
 
     # reauthorize channel, this code path only triggers when instagram auth is successful
     # reauthorized will also update cache keys for the associated inbox
+    channel_instagram.subscribe
     channel_instagram.reauthorized!
 
     [channel_instagram.inbox, channel_exists]

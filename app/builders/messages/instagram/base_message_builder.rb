@@ -100,12 +100,23 @@ class Messages::Instagram::BaseMessageBuilder < Messages::Messenger::MessageBuil
 
     return if message_content.blank? && all_unsupported_files?
 
+    link_comment_campaign
     @message = conversation.messages.create!(message_params)
     save_story_id
 
     attachments.each do |attachment|
       process_attachment(attachment)
     end
+  end
+
+  def link_comment_campaign
+    Instagram::CommentAutomation::ConversationLinker.new(
+      inbox: @inbox,
+      recipient_id: message_source_id,
+      conversation: conversation
+    ).call
+  rescue StandardError => e
+    ChatwootExceptionTracker.new(e, account: @inbox.account).capture_exception
   end
 
   def save_story_id

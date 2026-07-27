@@ -56,6 +56,36 @@ describe Messages::Instagram::MessageBuilder do
       expect(message.content).to eq('This is the first message from the customer')
     end
 
+    it 'links comment campaign context before dispatching the first Direct message' do
+      messaging = dm_params[:entry][0]['messaging'][0]
+      sender_id = messaging['sender']['id']
+      create_instagram_contact_for_sender(sender_id, instagram_inbox)
+      automation = create(
+        :instagram_comment_automation,
+        account: account,
+        inbox: instagram_inbox,
+        conversation_context: 'Lead pediu uma demonstração.',
+        conversation_label: 'instagram_demo'
+      )
+      event = create(
+        :instagram_comment_event,
+        account: account,
+        inbox: instagram_inbox,
+        instagram_comment_automation: automation,
+        private_reply_status: :succeeded,
+        private_reply_recipient_id: sender_id,
+        matched_keyword: 'demo'
+      )
+
+      described_class.new(messaging, instagram_inbox).perform
+
+      conversation = instagram_inbox.conversations.last
+      expect(conversation.additional_attributes.dig('instagram_comment_campaign', 'context'))
+        .to eq('Lead pediu uma demonstração.')
+      expect(conversation.label_list).to include('instagram_demo')
+      expect(event.reload.conversation).to eq(conversation)
+    end
+
     it 'discard echo message already sent by chatwoot' do
       messaging = dm_params[:entry][0]['messaging'][0]
       contact = create_instagram_contact_for_sender(messaging['sender']['id'], instagram_inbox)

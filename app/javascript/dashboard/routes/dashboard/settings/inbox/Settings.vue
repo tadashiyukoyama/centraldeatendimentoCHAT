@@ -27,6 +27,7 @@ import EvolutionConnectionPage from './settingsPage/EvolutionConnectionPage.vue'
 import VoiceConfigurationPage from './settingsPage/VoiceConfigurationPage.vue';
 import WhatsappCallingPage from './settingsPage/WhatsappCallingPage.vue';
 import CustomerSatisfactionPage from './settingsPage/CustomerSatisfactionPage.vue';
+import InstagramCommentAutomationPage from './settingsPage/InstagramCommentAutomationPage.vue';
 import CollaboratorsPage from './settingsPage/CollaboratorsPage.vue';
 import BotConfiguration from './components/BotConfiguration.vue';
 import AccountHealth from './components/AccountHealth.vue';
@@ -59,6 +60,7 @@ export default {
     VoiceConfigurationPage,
     WhatsappCallingPage,
     CustomerSatisfactionPage,
+    InstagramCommentAutomationPage,
     FacebookReauthorize,
     GreetingsEditor,
     PreChatFormSettings,
@@ -236,6 +238,15 @@ export default {
           {
             key: 'bot-configuration',
             name: this.$t('INBOX_MGMT.TABS.BOT_CONFIGURATION'),
+          },
+        ];
+      }
+      if (this.isAnInstagramChannel) {
+        visibleToAllChannelTabs = [
+          ...visibleToAllChannelTabs,
+          {
+            key: 'instagram-comments',
+            name: this.$t('INBOX_MGMT.TABS.INSTAGRAM_COMMENTS'),
           },
         ];
       }
@@ -1408,6 +1419,12 @@ export default {
         </div>
         <div v-if="selectedTabKey === 'bot-configuration'">
           <BotConfiguration :inbox="inbox" />
+        </div>
+        <div
+          v-if="selectedTabKey === 'instagram-comments'"
+          class="mx-6 max-w-6xl"
+        >
+          <InstagramCommentAutomationPage :inbox="inbox" />
         </div>
         <div v-if="selectedTabKey === 'whatsapp-health'">
           <AccountHealth

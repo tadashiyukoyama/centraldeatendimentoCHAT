@@ -356,6 +356,9 @@ Rails.application.routes.draw do
 
           namespace :instagram do
             resource :authorization, only: [:create]
+            resources :comment_automations, only: [:index, :show, :create, :update, :destroy]
+            resources :comment_events, only: [:index]
+            resource :comment_webhook_subscription, only: [:show, :create]
           end
 
           namespace :tiktok do

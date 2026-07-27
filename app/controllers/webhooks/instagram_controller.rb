@@ -7,14 +7,8 @@ class Webhooks::InstagramController < ActionController::API
     Rails.logger.info('Instagram webhook received events')
     if params['object'].casecmp('instagram').zero?
       entry_params = params.to_unsafe_hash[:entry]
-
-      if contains_echo_event?(entry_params)
-        # Add delay to prevent race condition where echo arrives before send message API completes
-        # This avoids duplicate messages when echo comes early during API processing
-        ::Webhooks::InstagramEventsJob.set(wait: 2.seconds).perform_later(entry_params)
-      else
-        ::Webhooks::InstagramEventsJob.perform_later(entry_params)
-      end
+      enqueue_comment_events(entry_params)
+      enqueue_message_events(entry_params)
 
       render json: :ok
     else
@@ -24,6 +18,53 @@ class Webhooks::InstagramController < ActionController::API
   end
 
   private
+
+  COMMENT_FIELDS = %w[comments live_comments].freeze
+
+  def enqueue_comment_events(entries)
+    comment_entries = Array(entries).select { |entry| comment_event?(entry.with_indifferent_access) }
+    ::Webhooks::InstagramCommentEventsJob.perform_later(comment_entries) if comment_entries.any?
+  end
+
+  def enqueue_message_events(entries)
+    filtered_entries = Array(entries).filter_map { |entry| message_entry(entry.with_indifferent_access) }
+    return if filtered_entries.empty?
+
+    if contains_echo_event?(filtered_entries)
+      # Add delay to prevent race condition where echo arrives before send message API completes.
+      ::Webhooks::InstagramEventsJob.set(wait: 2.seconds).perform_later(filtered_entries)
+    else
+      ::Webhooks::InstagramEventsJob.perform_later(filtered_entries)
+    end
+  end
+
+  def comment_event?(entry)
+    comment_changes(entry).any?
+  end
+
+  def message_entry(entry)
+    copy = entry.deep_dup
+    copy[:changes] = Array(copy[:changes]).reject do |change|
+      COMMENT_FIELDS.include?(change.with_indifferent_access[:field].to_s)
+    end
+    if COMMENT_FIELDS.include?(copy[:field].to_s)
+      copy.delete(:field)
+      copy.delete(:value)
+    end
+
+    return if copy[:messaging].blank? && copy[:standby].blank? && copy[:changes].blank?
+
+    copy
+  end
+
+  def comment_changes(entry)
+    changes = Array(entry[:changes]).select do |change|
+      COMMENT_FIELDS.include?(change.with_indifferent_access[:field].to_s)
+    end
+    return changes unless COMMENT_FIELDS.include?(entry[:field].to_s)
+
+    changes << { field: entry[:field], value: entry[:value] }
+  end
 
   def contains_echo_event?(entry_params)
     return false unless entry_params.is_a?(Array)
@@ -67,7 +108,10 @@ class Webhooks::InstagramController < ActionController::API
 
   def instagram_ids_from_entry(entry)
     messages = entry[:messaging].presence || entry[:standby] || []
-    messages.filter_map { |messaging| instagram_id_from_messaging(messaging.with_indifferent_access) }
+    [
+      entry[:id],
+      *messages.filter_map { |messaging| instagram_id_from_messaging(messaging.with_indifferent_access) }
+    ].compact.uniq
   end
 
   def instagram_id_from_messaging(messaging)

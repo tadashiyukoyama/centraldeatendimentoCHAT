@@ -104,5 +104,60 @@ RSpec.describe 'Webhooks::InstagramController', type: :request do
         expect(job_double).to have_received(:perform_later)
       end
     end
+
+    context 'when processing comment events' do
+      let(:comment_payload) do
+        {
+          object: 'instagram',
+          entry: [
+            {
+              id: '17841400000000001',
+              time: Time.current.to_i,
+              changes: [
+                {
+                  field: 'comments',
+                  value: {
+                    id: '18000000000000001',
+                    from: { id: '17840000000000999', username: 'cliente' },
+                    text: 'demo',
+                    media: { id: '18000000000000111', media_product_type: 'FEED' }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      end
+      let(:comment_body) { comment_payload.to_json }
+
+      it 'routes comment changes to the isolated comment job only' do
+        allow(Webhooks::InstagramCommentEventsJob).to receive(:perform_later)
+        allow(Webhooks::InstagramEventsJob).to receive(:perform_later)
+
+        post_instagram_webhook(comment_body)
+
+        expect(response).to have_http_status(:success)
+        expect(Webhooks::InstagramCommentEventsJob).to have_received(:perform_later).with(
+          [hash_including('id' => '17841400000000001')]
+        )
+        expect(Webhooks::InstagramEventsJob).not_to have_received(:perform_later)
+      end
+
+      it 'routes the direct field and value webhook shape without leaking it to the message job' do
+        direct_payload = comment_payload.deep_dup
+        change = direct_payload[:entry].first.delete(:changes).first
+        direct_payload[:entry].first.merge!(change)
+        allow(Webhooks::InstagramCommentEventsJob).to receive(:perform_later)
+        allow(Webhooks::InstagramEventsJob).to receive(:perform_later)
+
+        post_instagram_webhook(direct_payload.to_json)
+
+        expect(response).to have_http_status(:success)
+        expect(Webhooks::InstagramCommentEventsJob).to have_received(:perform_later).with(
+          [hash_including('field' => 'comments')]
+        )
+        expect(Webhooks::InstagramEventsJob).not_to have_received(:perform_later)
+      end
+    end
   end
 end

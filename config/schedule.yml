@@ -75,6 +75,13 @@ privacy_request_cleanup_job:
   class: 'PrivacyRequestCleanupJob'
   queue: purgable
 
+# Comment text and Instagram usernames are operational data, not permanent CRM
+# records. Remove the delivery ledger after the published 90-day retention.
+instagram_comment_automation_retention_job:
+  cron: '30 2 * * *'
+  class: 'Instagram::CommentAutomation::RetentionJob'
+  queue: purgable
+
 # executed every 12 hours
 # to remove orphan conversations without contact
 remove_orphan_conversations_job:
