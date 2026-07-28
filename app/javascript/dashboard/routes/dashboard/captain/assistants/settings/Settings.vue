@@ -12,6 +12,7 @@ import PageLayout from 'dashboard/components-next/captain/PageLayout.vue';
 import SettingsHeader from 'dashboard/components-next/captain/pageComponents/settings/SettingsHeader.vue';
 import AssistantBasicSettingsForm from 'dashboard/components-next/captain/pageComponents/assistant/settings/AssistantBasicSettingsForm.vue';
 import AssistantSystemSettingsForm from 'dashboard/components-next/captain/pageComponents/assistant/settings/AssistantSystemSettingsForm.vue';
+import AssistantOperationalToolsForm from 'dashboard/components-next/captain/pageComponents/assistant/settings/AssistantOperationalToolsForm.vue';
 import AssistantControlItems from 'dashboard/components-next/captain/pageComponents/assistant/settings/AssistantControlItems.vue';
 import DeleteDialog from 'dashboard/components-next/captain/pageComponents/DeleteDialog.vue';
 
@@ -139,6 +140,21 @@ const handleDeleteSuccess = () => {
               "
             />
             <AssistantSystemSettingsForm
+              :assistant="assistant"
+              @submit="handleSubmit"
+            />
+          </div>
+          <span class="h-px w-full bg-n-weak mt-2" />
+          <div class="flex flex-col gap-6">
+            <SettingsHeader
+              :heading="
+                t('CAPTAIN.ASSISTANTS.SETTINGS.OPERATIONAL_TOOLS.TITLE')
+              "
+              :description="
+                t('CAPTAIN.ASSISTANTS.SETTINGS.OPERATIONAL_TOOLS.DESCRIPTION')
+              "
+            />
+            <AssistantOperationalToolsForm
               :assistant="assistant"
               @submit="handleSubmit"
             />

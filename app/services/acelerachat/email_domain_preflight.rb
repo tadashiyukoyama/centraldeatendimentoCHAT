@@ -1,20 +1,25 @@
 require 'mail'
-require 'resolv'
+require 'net/smtp'
+require_relative 'email_domain_dns_preflight'
+require_relative 'smtp_connection_preflight'
 
 class Acelerachat::EmailDomainPreflight
+  AUTHENTICATION_METHODS = %w[plain login cram_md5].freeze
   REQUIRED_CONTACTS = %w[
     PRIVACY_CONTACT_EMAIL
     SUPPORT_CONTACT_EMAIL
   ].freeze
 
-  def initialize(env: ENV)
+  def initialize(env: ENV, smtp_factory: Net::SMTP)
     @env = env
+    @smtp_factory = smtp_factory
   end
 
   def call
     settings = preflight_settings
-    errors = preflight_errors(settings)
-    raise ArgumentError, errors.join('; ') if errors.any?
+    validate_configuration!(settings)
+    validate_dns!(settings)
+    validate_smtp_connection!(settings)
 
     success_result(settings)
   end
@@ -25,22 +30,104 @@ class Acelerachat::EmailDomainPreflight
     {
       addresses: required_addresses,
       domain: @env.fetch('SMTP_DOMAIN', '').strip.downcase.delete_suffix('.'),
-      selector: @env.fetch('MAILER_DKIM_SELECTOR', '').strip.downcase
+      selector: @env.fetch('MAILER_DKIM_SELECTOR', '').strip.downcase,
+      smtp: smtp_settings
     }
   end
 
-  def preflight_errors(settings)
-    configuration_errors(settings[:domain], settings[:selector]) +
-      mailbox_domain_errors(settings[:addresses], settings[:domain]) +
-      dns_preflight_errors(settings[:domain], settings[:selector])
+  def validate_configuration!(settings)
+    errors = configuration_errors(settings[:domain], settings[:selector], settings[:smtp])
+    errors.concat(mailbox_domain_errors(settings[:addresses], settings[:domain]))
+    raise ArgumentError, errors.join('; ') if errors.any?
   end
 
-  def configuration_errors(domain, selector)
+  def validate_dns!(settings)
+    Acelerachat::EmailDomainDnsPreflight.new(
+      domain: settings[:domain],
+      selector: settings[:selector]
+    ).call
+  end
+
+  def configuration_errors(domain, selector, smtp)
     errors = []
     errors << 'SMTP_DOMAIN is required' if domain.blank?
     errors << 'MAILER_DKIM_SELECTOR is required' if selector.blank?
     errors << 'MAILER_DKIM_SELECTOR has an invalid format' unless selector.blank? || selector.match?(/\A[a-z0-9_-]+\z/)
+    errors.concat(smtp_configuration_errors(smtp, domain))
     errors
+  end
+
+  def smtp_settings
+    {
+      address: @env.fetch('SMTP_ADDRESS', '').strip.downcase,
+      port: integer_port(@env.fetch('SMTP_PORT', '')),
+      username: @env.fetch('SMTP_USERNAME', '').strip,
+      password_present: @env.fetch('SMTP_PASSWORD', '').present?,
+      authentication: @env.fetch('SMTP_AUTHENTICATION', '').strip.downcase,
+      starttls: boolean_value('SMTP_ENABLE_STARTTLS_AUTO', true),
+      ssl: boolean_value('SMTP_SSL', false),
+      tls: boolean_value('SMTP_TLS', false),
+      verify_mode: @env.fetch('SMTP_OPENSSL_VERIFY_MODE', 'peer').strip.downcase
+    }
+  end
+
+  def integer_port(value)
+    Integer(value)
+  rescue ArgumentError, TypeError
+    nil
+  end
+
+  def boolean_value(key, default)
+    ActiveModel::Type::Boolean.new.cast(@env.fetch(key, default))
+  end
+
+  def smtp_configuration_errors(smtp, domain)
+    smtp_endpoint_errors(smtp) +
+      smtp_authentication_errors(smtp) +
+      smtp_transport_errors(smtp) +
+      smtp_username_errors(smtp[:username], domain)
+  end
+
+  def smtp_endpoint_errors(smtp)
+    errors = []
+    errors << 'SMTP_ADDRESS is required' if smtp[:address].blank?
+    errors << 'SMTP_ADDRESS must be a hostname without scheme or path' unless valid_smtp_hostname?(smtp[:address])
+    errors << 'SMTP_PORT must be between 1 and 65535' unless smtp[:port]&.between?(1, 65_535)
+    errors
+  end
+
+  def smtp_authentication_errors(smtp)
+    errors = []
+    errors << 'SMTP_USERNAME is required' if smtp[:username].blank?
+    errors << 'SMTP_PASSWORD is required' unless smtp[:password_present]
+    errors << 'SMTP_AUTHENTICATION must be plain, login, or cram_md5' unless
+      AUTHENTICATION_METHODS.include?(smtp[:authentication])
+    errors
+  end
+
+  def smtp_transport_errors(smtp)
+    errors = []
+    enabled_transports = smtp.values_at(:starttls, :tls, :ssl).count(true)
+    errors << 'SMTP transport must enable exactly one of STARTTLS, TLS, or SSL' unless enabled_transports == 1
+    errors << 'SMTP_OPENSSL_VERIFY_MODE must be peer' unless smtp[:verify_mode] == 'peer'
+    errors
+  end
+
+  def valid_smtp_hostname?(address)
+    address.present? &&
+      address.match?(/\A[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+\z/i)
+  end
+
+  def smtp_username_errors(username, domain)
+    return [] if username.blank?
+
+    address = Mail::Address.new(username)
+    return ['SMTP_USERNAME must be a valid email address'] if address.address.blank? || address.domain.blank?
+    return [] if domain.blank? || normalized_domain(address) == domain
+
+    ['SMTP_USERNAME must use SMTP_DOMAIN']
+  rescue Mail::Field::ParseError, Mail::Field::IncompleteParseError
+    ['SMTP_USERNAME must be a valid email address']
   end
 
   def mailbox_domain_errors(addresses, domain)
@@ -52,21 +139,38 @@ class Acelerachat::EmailDomainPreflight
     address.domain.to_s.downcase.delete_suffix('.')
   end
 
-  def dns_preflight_errors(domain, selector)
-    return [] unless domain.present? && selector.present?
-
-    dns_errors(domain, selector)
+  def validate_smtp_connection!(settings)
+    Acelerachat::SmtpConnectionPreflight.new(
+      settings: settings,
+      password: @env.fetch('SMTP_PASSWORD'),
+      smtp_factory: @smtp_factory
+    ).call
   end
 
   def success_result(settings)
     {
       domain: settings[:domain],
       mailboxes: settings[:addresses].map(&:address),
+      smtp: {
+        address: settings.dig(:smtp, :address),
+        port: settings.dig(:smtp, :port),
+        authentication: settings.dig(:smtp, :authentication),
+        authenticated: true,
+        transport_security: smtp_transport_security(settings[:smtp]),
+        verify_mode: settings.dig(:smtp, :verify_mode)
+      },
       spf: true,
       dkim: true,
       dmarc: true,
       mx: true
     }
+  end
+
+  def smtp_transport_security(smtp)
+    return 'ssl' if smtp[:ssl]
+    return 'tls' if smtp[:tls]
+
+    'starttls'
   end
 
   def required_addresses
@@ -82,34 +186,5 @@ class Acelerachat::EmailDomainPreflight
     end
   rescue Mail::Field::ParseError, Mail::Field::IncompleteParseError
     raise ArgumentError, 'A required AceleraChat mailbox is invalid'
-  end
-
-  def dns_errors(domain, selector)
-    Resolv::DNS.open do |dns|
-      validate_dns_records(dns, domain, selector)
-    end
-  rescue Resolv::ResolvError => e
-    ["DNS preflight failed: #{e.message}"]
-  end
-
-  def validate_dns_records(dns, domain, selector)
-    errors = []
-    errors << "Missing MX for #{domain}" if dns.getresources(domain, Resolv::DNS::Resource::IN::MX).empty?
-    errors << "Missing SPF for #{domain}" unless txt_record_starts_with?(dns, domain, 'v=spf1')
-    errors << "Missing DMARC for #{domain}" unless txt_record_starts_with?(dns, "_dmarc.#{domain}", 'v=dmarc1')
-    errors << "Missing DKIM for selector #{selector}" unless txt_record_includes?(dns, "#{selector}._domainkey.#{domain}", 'p=')
-    errors
-  end
-
-  def txt_record_starts_with?(dns, name, marker)
-    txt_values(dns, name).any? { |value| value.downcase.start_with?(marker) }
-  end
-
-  def txt_record_includes?(dns, name, marker)
-    txt_values(dns, name).any? { |value| value.downcase.include?(marker) }
-  end
-
-  def txt_values(dns, name)
-    dns.getresources(name, Resolv::DNS::Resource::IN::TXT).map { |record| record.strings.join }
   end
 end

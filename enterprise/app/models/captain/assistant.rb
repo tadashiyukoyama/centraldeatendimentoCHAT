@@ -23,6 +23,7 @@ class Captain::Assistant < ApplicationRecord
   include Avatarable
   include Concerns::CaptainToolsHelpers
   include Concerns::Agentable
+  include Concerns::CaptainAssistantOperationalConfiguration
 
   self.table_name = 'captain_assistants'
 
@@ -52,7 +53,9 @@ class Captain::Assistant < ApplicationRecord
                  :feature_demo_scheduling,
                  :feature_payment_notices,
                  :product_name,
-                 :demo_assignee_email
+                 :demo_assignee_email,
+                 :demo_assignee_id,
+                 :finance_team_id
 
   validates :name, presence: true
   validates :description, presence: true, length: { maximum: DESCRIPTION_LENGTH_LIMIT }

@@ -11,11 +11,15 @@ class Api::V1::Accounts::Captain::AssistantsController < Api::V1::Accounts::Base
   def show; end
 
   def create
-    @assistant = account_assistants.create!(assistant_params)
+    @assistant = account_assistants.new(assistant_params)
+    @assistant.save!
   end
 
   def update
-    @assistant.update!(assistant_params)
+    attributes = assistant_params
+    attributes[:config] = @assistant.config.merge(attributes[:config].to_h) if attributes[:config]
+    @assistant.assign_attributes(attributes)
+    @assistant.save!
   end
 
   def destroy
@@ -103,6 +107,8 @@ class Api::V1::Accounts::Captain::AssistantsController < Api::V1::Accounts::Base
                                                   config: [
                                                     :product_name, :feature_faq, :feature_memory, :feature_citation,
                                                     :feature_contact_attributes,
+                                                    :feature_demo_scheduling, :feature_payment_notices,
+                                                    :demo_assignee_id, :demo_assignee_email, :finance_team_id,
                                                     :welcome_message, :handoff_message, :resolution_message,
                                                     :instructions, :temperature
                                                   ])

@@ -124,9 +124,7 @@ class Captain::Tools::ScheduleDemoTool < Captain::Tools::BasePublicTool
   end
 
   def resolve_specialist!
-    configured_email = @assistant.config['demo_assignee_email'].to_s.downcase.presence
-    specialist = @assistant.account.users.find_by('LOWER(email) = ?', configured_email) if configured_email
-    specialist ||= @assistant.account.administrators.order(:id).first
+    specialist = @assistant.configured_demo_specialist
     return specialist if specialist
 
     reject_execution!('No demonstration specialist is configured.', code: 'specialist_not_configured')

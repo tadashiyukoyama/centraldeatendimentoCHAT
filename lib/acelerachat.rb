@@ -1,0 +1,2 @@
+module Acelerachat
+end

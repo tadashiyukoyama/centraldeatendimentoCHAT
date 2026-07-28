@@ -548,6 +548,29 @@
           "TITLE": "Configurações do sistema",
           "DESCRIPTION": "Personalize o que o assistente diz quando termina uma conversa ou transfere para um humano."
         },
+        "OPERATIONAL_TOOLS": {
+          "TITLE": "Ferramentas operacionais",
+          "DESCRIPTION": "Autorize ações reais do Nemmo e defina responsáveis da sua própria conta.",
+          "READ_ONLY": "Somente administradores podem alterar estas ferramentas.",
+          "INCOMPLETE_MESSAGE": "Selecione os responsáveis antes de ativar as ferramentas.",
+          "CONTACT_PROFILE": {
+            "TITLE": "Captura de dados do contato",
+            "DESCRIPTION": "Permite gravar nome, telefone, e-mail e empresa somente quando o próprio contato informar os dados.",
+            "REQUIRED_FOR_DEMO": "A captura de dados é obrigatória para agendar demonstrações."
+          },
+          "DEMO_SCHEDULING": {
+            "TITLE": "Agenda de demonstrações",
+            "DESCRIPTION": "Agenda um horário confirmado, evita conflitos e transfere a conversa para o especialista selecionado.",
+            "ASSIGNEE": "Especialista responsável",
+            "SELECT_ASSIGNEE": "Selecione um agente da conta"
+          },
+          "PAYMENT_NOTICES": {
+            "TITLE": "Avisos e consultas de pagamento",
+            "DESCRIPTION": "Registra avisos como pendentes de conferência. O Nemmo não confirma liquidação bancária sem uma fonte financeira real.",
+            "TEAM": "Setor responsável",
+            "SELECT_TEAM": "Selecione uma equipe da conta"
+          }
+        },
         "CONTROL_ITEMS": {
           "TITLE": "As Coisas Divertidas",
           "DESCRIPTION": "Adicione mais controle ao assistente. (algo mais visual como uma história: Consulta → cenários → saída) Força o usuário para realmente utilizá-los.",

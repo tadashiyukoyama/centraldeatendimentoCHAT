@@ -79,15 +79,16 @@ class Captain::Tools::BasePublicTool < Agents::Tool
     conversation.update_labels(conversation.label_list | [title])
   end
 
-  def route_and_handoff!(conversation, destination:, reason:, trusted: false, assignee: nil)
+  def route_and_handoff!(conversation, destination:, reason:, trusted: false, **routing)
     tool = Captain::Tools::HandoffTool.new(@assistant)
     result = if trusted
-               tool.perform_trusted(
+               trusted_arguments = {
                  conversation: conversation,
                  reason: reason,
-                 destination: destination,
-                 assignee: assignee
-               )
+                 destination: destination
+               }
+               trusted_arguments.merge!(routing.slice(:assignee, :team))
+               tool.perform_trusted(**trusted_arguments)
              else
                tool.perform(
                  Struct.new(:state).new({ conversation: { id: conversation.id } }),

@@ -279,6 +279,34 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
       expect(conversation.reload).to have_attributes(status: 'open', team_id: nil, assignee_id: admin.id)
     end
 
+    it 'uses an explicitly trusted team from the same account' do
+      configured_team = create(:team, account: account, name: 'cobranca')
+
+      result = tool.perform_trusted(
+        conversation: conversation,
+        reason: 'Payment notice requires review',
+        destination: 'financeiro',
+        team: configured_team
+      )
+
+      expect(result).to include('financeiro')
+      expect(conversation.reload).to have_attributes(status: 'open', team_id: configured_team.id, assignee_id: nil)
+    end
+
+    it 'rejects a trusted team from another account' do
+      external_team = create(:team)
+
+      result = tool.perform_trusted(
+        conversation: conversation,
+        reason: 'Invalid cross-account route',
+        destination: 'financeiro',
+        team: external_team
+      )
+
+      expect(result).to eq('Invalid team for this account')
+      expect(conversation.reload.team_id).to be_nil
+    end
+
     it 'rejects unknown destinations without changing the conversation' do
       result = tool.perform(tool_context, destination: 'unknown')
 

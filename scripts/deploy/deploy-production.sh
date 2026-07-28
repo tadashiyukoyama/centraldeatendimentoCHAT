@@ -260,6 +260,14 @@ unset registry_token
 docker pull "$image" >/dev/null
 docker logout ghcr.io >/dev/null 2>&1 || true
 
+export CHATWOOT_IMAGE="$image"
+# These gates use the new immutable image and the protected production
+# environment, but override the normal entrypoint so they neither wait for nor
+# mutate PostgreSQL. A missing/unsafe SMTP or Sentry setup stops the release
+# before a backup, the bootstrap marker, and all stateful Compose operations.
+run_compose run --rm --no-deps --entrypoint bundle rails \
+  exec rake acelerachat:email:check acelerachat:monitoring:check
+
 if [[ -n "$active_image" ]]; then
   create_database_backup
 fi
@@ -268,7 +276,6 @@ started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 write_bootstrap_marker started "$started_at"
 trap rollback_on_error ERR
 
-export CHATWOOT_IMAGE="$image"
 run_compose up -d postgres redis >/dev/null
 run_compose run --rm rails bundle exec rails db:chatwoot_prepare >/dev/null
 run_compose up -d rails sidekiq >/dev/null

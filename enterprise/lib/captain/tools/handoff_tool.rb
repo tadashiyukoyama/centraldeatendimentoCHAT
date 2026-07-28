@@ -35,15 +35,17 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
     'Failed to handoff conversation'
   end
 
-  def perform_trusted(conversation:, reason:, destination:, assignee: nil)
+  def perform_trusted(conversation:, reason:, destination:, assignee: nil, team: nil)
     return 'Conversation not found' unless conversation&.account_id == @assistant.account_id
 
     destination_key = normalize_destination(destination)
     return invalid_destination_message if invalid_destination?(destination, destination_key)
-    return 'Invalid assignee for this account' if assignee && !@assistant.account.users.exists?(id: assignee.id)
+
+    routing_error = trusted_routing_error(assignee, team)
+    return routing_error if routing_error
 
     log_handoff(conversation, reason, destination_key)
-    trigger_handoff(conversation, reason, destination_key, assignee: assignee)
+    trigger_handoff(conversation, reason, destination_key, assignee: assignee, team: team)
     handoff_response(destination_key, reason)
   rescue StandardError => e
     ChatwootExceptionTracker.new(e).capture_exception
@@ -51,6 +53,11 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
   end
 
   private
+
+  def trusted_routing_error(assignee, team)
+    return 'Invalid assignee for this account' if assignee && !@assistant.account.users.exists?(id: assignee.id)
+    return 'Invalid team for this account' if team && !@assistant.account.teams.exists?(id: team.id)
+  end
 
   def normalize_destination(destination)
     destination.to_s.strip.downcase.tr(' ', '_')
@@ -78,8 +85,8 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
     reason ? "#{response} (Reason: #{reason})" : response
   end
 
-  def trigger_handoff(conversation, reason, destination, assignee: nil)
-    route_conversation!(conversation, destination, assignee: assignee) if destination.present?
+  def trigger_handoff(conversation, reason, destination, assignee: nil, team: nil)
+    route_conversation!(conversation, destination, assignee: assignee, team: team) if destination.present?
 
     # post the reason as a private note
     conversation.messages.create!(
@@ -104,7 +111,7 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
     [reason, "Destino: #{DESTINATIONS.fetch(destination)}"].compact.join("\n")
   end
 
-  def route_conversation!(conversation, destination, assignee: nil)
+  def route_conversation!(conversation, destination, assignee: nil, team: nil)
     if destination == 'owner'
       owner = assignee || conversation.account.administrators.order(:id).first
       raise ActiveRecord::RecordNotFound, 'No account administrator is available for owner handoff' unless owner
@@ -114,10 +121,10 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
     end
 
     team_name = DESTINATIONS.fetch(destination)
-    team = conversation.account.teams.find_by('LOWER(name) = ?', team_name.downcase)
-    raise ActiveRecord::RecordNotFound, "Team '#{team_name}' is not configured" unless team
+    selected_team = team || conversation.account.teams.find_by('LOWER(name) = ?', team_name.downcase)
+    raise ActiveRecord::RecordNotFound, "Team '#{team_name}' is not configured" unless selected_team
 
-    conversation.update!(team_id: team.id, assignee_id: nil)
+    conversation.update!(team_id: selected_team.id, assignee_id: nil)
   end
 
   def send_out_of_office_message_if_applicable(conversation)

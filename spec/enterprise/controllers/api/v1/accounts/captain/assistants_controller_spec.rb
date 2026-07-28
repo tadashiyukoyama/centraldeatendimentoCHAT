@@ -216,6 +216,61 @@ RSpec.describe 'Api::V1::Accounts::Captain::Assistants', type: :request do
         expect(response).to have_http_status(:success)
         expect(json_response[:config][:feature_citation]).to be(false)
       end
+
+      it 'configures tenant-scoped operational tools without discarding existing config' do
+        specialist = create(:user, account: account)
+        finance_team = create(:team, account: account)
+        assistant.update!(config: { 'feature_faq' => true })
+
+        patch "/api/v1/accounts/#{account.id}/captain/assistants/#{assistant.id}",
+              params: {
+                assistant: {
+                  config: {
+                    feature_contact_attributes: true,
+                    feature_demo_scheduling: true,
+                    demo_assignee_id: specialist.id,
+                    feature_payment_notices: true,
+                    finance_team_id: finance_team.id
+                  }
+                }
+              },
+              headers: admin.create_new_auth_token,
+              as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(json_response[:config]).to include(
+          feature_faq: true,
+          feature_contact_attributes: true,
+          feature_demo_scheduling: true,
+          demo_assignee_id: specialist.id,
+          feature_payment_notices: true,
+          finance_team_id: finance_team.id
+        )
+        expect(json_response[:operational_tools]).to include(
+          demo_scheduling: include(ready: true, assignee_id: specialist.id),
+          payment_notices: include(ready: true, finance_team_id: finance_team.id)
+        )
+      end
+
+      it 'rejects scheduling without an explicitly selected specialist' do
+        patch "/api/v1/accounts/#{account.id}/captain/assistants/#{assistant.id}",
+              params: { assistant: { config: { feature_demo_scheduling: true } } },
+              headers: admin.create_new_auth_token,
+              as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(assistant.reload.config['feature_demo_scheduling']).not_to be(true)
+      end
+
+      it 'rejects payment notices without an explicitly selected finance team' do
+        patch "/api/v1/accounts/#{account.id}/captain/assistants/#{assistant.id}",
+              params: { assistant: { config: { feature_payment_notices: true } } },
+              headers: admin.create_new_auth_token,
+              as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(assistant.reload.config['feature_payment_notices']).not_to be(true)
+      end
     end
   end
 

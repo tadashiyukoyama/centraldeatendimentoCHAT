@@ -191,7 +191,11 @@ jobs:
           postgres_start = deploy_script.index('run_compose up -d postgres redis')
           migration = deploy_script.index('db:chatwoot_prepare')
           backup = deploy_script.rindex('create_database_backup')
-          assert domain_gate < backup < marker_creation < postgres_start < migration
+          operational_preflight = deploy_script.index(
+              'exec rake acelerachat:email:check acelerachat:monitoring:check'
+          )
+          assert domain_gate < operational_preflight < backup < marker_creation < postgres_start < migration
+          assert '--no-deps --entrypoint bundle rails' in deploy_script
           assert deploy_script.index('docker pull "$image"') < marker_creation
           assert deploy_script.index('docker logout ghcr.io') < marker_creation
           assert deploy_workflow.index('Preflight immutable image and public ingress') < deploy_workflow.index('Install production environment file')

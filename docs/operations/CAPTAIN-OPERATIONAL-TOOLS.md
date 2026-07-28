@@ -5,13 +5,32 @@
 As ferramentas fazem parte do catálogo global de `Captain::Assistant`, mas só
 entram em um agente quando as flags `feature_contact_attributes`,
 `feature_demo_scheduling` e `feature_payment_notices` correspondentes estão
-ativas. Toda execução é limitada à conta, conversa e contato autoritativo da
-conversa. Uma resposta do modelo nunca substitui o resultado da ferramenta.
+ativas. Toda execução é limitada à conta, à conversa e ao contato autoritativo
+da conversa. Uma resposta do modelo nunca substitui o resultado da ferramenta.
 
 Cada execução das ferramentas mutáveis gera um `Captain::ToolExecution` sem
 copiar dados pessoais para o resumo de auditoria. Os registros de agenda e
 financeiro possuem chave de idempotência e campos `external_provider` e
-`external_id` para futura sincronização com CRM/ERP.
+`external_id` para futura sincronização com CRM ou ERP.
+
+## Autosserviço
+
+Administradores configuram as ferramentas na seção **Ferramentas operacionais**
+do próprio assistente Nemmo:
+
+- captura do perfil do contato;
+- agendamento de demonstração e especialista responsável;
+- avisos de pagamento e equipe financeira responsável.
+
+Os seletores exibem somente agentes e equipes da mesma conta. O backend repete
+essa validação para impedir referências entre clientes, inclusive quando a API
+é chamada sem a interface. Agentes sem permissão administrativa veem o estado,
+mas não alteram a configuração.
+
+O frontend considera uma ferramenta pronta somente quando suas dependências
+estão selecionadas. O backend rejeita a ativação de agenda sem especialista e
+de financeiro sem equipe. Atualizações parciais preservam as demais
+configurações do assistente.
 
 ## Perfil do contato
 
@@ -33,7 +52,7 @@ e-mail já pertencem a outro registro.
 - nome, telefone e empresa já gravados;
 - data futura em ISO 8601 com fuso;
 - duração entre 10 e 120 minutos;
-- especialista configurado ou administrador da conta;
+- especialista da mesma conta configurado;
 - ausência de conflito na agenda.
 
 O sucesso cria um compromisso real na agenda interna `Captain::Appointment`,
@@ -47,9 +66,9 @@ Calendar, Outlook ou ERPNext.
 
 `record_payment_notice` registra apenas a declaração explícita da última
 mensagem do cliente e sempre começa como `pending_verification`. Valor, moeda
-não padrão e referência também precisam aparecer nessa mesma mensagem. Ele
-aplica `pagamento_informado` e transfere para o time `financeiro`, ou para o
-administrador quando o time não existe.
+não padrão e referência também precisam aparecer nessa mesma mensagem. A
+ferramenta aplica `pagamento_informado` e transfere para a equipe financeira
+selecionada na configuração do assistente.
 
 `lookup_payment_status` consulta o registro interno. O estado interno não é
 confirmação bancária. Integrações futuras com ERPNext ou outro provedor devem

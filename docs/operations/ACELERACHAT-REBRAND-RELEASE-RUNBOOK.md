@@ -114,10 +114,14 @@ No ambiente conectado ao PostgreSQL de produção, usando a imagem final, execut
 ```text
 bundle exec rake acelerachat:brand:audit
 bundle exec rake acelerachat:email:check
+bundle exec rake acelerachat:monitoring:check
 bundle exec rake acelerachat:public_content:check
 ```
 
-A tarefa agregada `acelerachat:release:preflight` executa os três gates quando o perfil AceleraChat está ativo e apenas informa `skipped` quando o perfil está vazio. Ela não deve substituir a leitura das saídas individuais na primeira publicação.
+A tarefa agregada `acelerachat:release:preflight` executa os quatro gates quando
+o perfil AceleraChat está ativo e apenas informa `skipped` quando o perfil está
+vazio. Ela não deve substituir a leitura das saídas individuais na primeira
+publicação.
 
 Critérios de aprovação:
 
@@ -131,7 +135,8 @@ Critérios de aprovação:
 - nenhum portal/artigo manual em colisão;
 - criptografia configurada;
 - fatos legais completos e válidos;
-- DNS e caixas postais aprovados.
+- DNS, autenticação SMTP e caixas postais aprovados;
+- Sentry próprio aprovado, sem PII e associado ao SHA completo.
 
 ## 6. GitHub, imagem e deploy
 
@@ -178,7 +183,8 @@ Essa tarefa sincroniza somente conteúdo marcado como gerenciado. Não executar 
 - portal raiz redireciona para `pt_BR` e inglês funciona;
 - quatro rotas legais em português e inglês;
 - pedido LGPD, e-mail, confirmação, protocolo, consulta protegida e fila SuperAdmin;
-- e-mails têm remetente, assunto, logo, assinatura e links AceleraChat.
+- e-mails têm remetente, assunto, logo, assinatura e links AceleraChat;
+- smoke transacional entregue e evento controlado recebido no Sentry com o SHA.
 
 ### Rede
 
@@ -186,10 +192,11 @@ Capturar a rede de sessão anônima e autenticada. O aceite exige zero requisiç
 
 ## 8. Rollback
 
-Alvo principal:
+Alvo principal: a imagem imutável registrada em `shared/active-image`
+imediatamente antes do corte. Copiar o SHA observado para a evidência da janela:
 
 ```text
-b8932617338a4cd3762fa5cf89540fc68cdae5eb
+<SHA_ATIVO_ANTES_DO_CORTE>
 ```
 
 Acionar o workflow existente `Roll back production image through ICP`, informar o SHA completo e a confirmação `ROLLBACK`.
@@ -204,17 +211,18 @@ Preencher sem segredos:
 
 | Evidência              | Valor                                           |
 | ---------------------- | ----------------------------------------------- |
-| SHA-base               | `901a23fbed68b0e0cf2a2c8e850eab6ab454ad5f`      |
+| SHA-base               | `4204f4147f1a9b43c9740d2d739ef843d5ead817`      |
 | SHA final              | pendente                                        |
 | Digest GHCR            | pendente                                        |
 | Workflow build         | pendente                                        |
 | Workflow deploy        | pendente                                        |
-| Imagem anterior        | `b8932617338a4cd3762fa5cf89540fc68cdae5eb`      |
+| Imagem anterior        | observar `shared/active-image` antes do corte   |
 | Backup PostgreSQL      | pendente                                        |
 | SHA-256 do backup      | pendente                                        |
 | `brand:audit`          | pendente no runtime Ruby                        |
 | `public_content:check` | pendente no runtime conectado                   |
 | `email:check`          | bloqueado: MX/SPF/DMARC ausentes; DKIM pendente |
+| `monitoring:check`     | bloqueado: DSNs Sentry próprios pendentes       |
 | `public_content:sync`  | pendente                                        |
 | Smoke                  | pendente                                        |
 | Captura de rede        | pendente                                        |
@@ -230,6 +238,6 @@ Preencher sem segredos:
 - Prettier: 134 arquivos aprovados; `config/newrelic.yml` usa ERB e não é analisável pelo parser YAML do Prettier;
 - Vite produção: 4.729 módulos, build aprovado em 1m22s;
 - sintaxe Ruby: 59 arquivos Ruby/Rake/schema aprovados com Ruby 3.4.9/Prism;
-- DNS público observado em 25/07/2026: sem MX, SPF ou DMARC para `meugerenciador.pro`; DKIM não pode ser testado sem seletor. O corte permanece bloqueado;
+- DNS público observado em 28/07/2026: sem MX, SPF ou DMARC para `meugerenciador.pro`; DKIM não pode ser testado sem seletor. O corte permanece bloqueado;
 - fatos jurídicos e e-mail do administrador autor ainda não foram fornecidos; conteúdo público não pode ser sincronizado;
 - RSpec não executado: o projeto exige Ruby 3.4.4, a estação tem 3.4.9 e faltam gems Git/plataforma; Docker também não está instalado. Ambos continuam gates obrigatórios antes do push.

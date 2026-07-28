@@ -20,6 +20,7 @@ import router, { initalizeRouter } from 'dashboard/routes';
 import store from 'dashboard/store';
 import constants from 'dashboard/constants/globals';
 import * as Sentry from '@sentry/vue';
+import { buildSentryOptions } from 'dashboard/helper/sentryHelper';
 import {
   initializeAnalyticsEvents,
   initializeChatwootEvents,
@@ -51,27 +52,13 @@ app.use(router);
 
 // [VITE] Disabled this, need to renable later
 if (window.errorLoggingConfig) {
-  Sentry.init({
-    app,
-    dsn: window.errorLoggingConfig,
-    denyUrls: [
-      // Chrome extensions
-      /^chrome:\/\//i,
-      /chrome-extension:/i,
-      /extensions\//i,
-
-      // Locally saved copies
-      /file:\/\//i,
-
-      // Safari extensions.
-      /safari-web-extension:/i,
-      /safari-extension:/i,
-    ],
-    integrations: [Sentry.browserTracingIntegration({ router })],
-    ignoreErrors: [
-      'ResizeObserver loop completed with undelivered notifications',
-    ],
-  });
+  Sentry.init(
+    buildSentryOptions(window.errorLoggingConfig, {
+      app,
+      router,
+      browserTracingIntegration: Sentry.browserTracingIntegration,
+    })
+  );
 }
 
 app.use(VueDOMPurifyHTML, domPurifyConfig);

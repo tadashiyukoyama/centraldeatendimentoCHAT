@@ -4,18 +4,27 @@ Este é o documento canônico do estado operacional do
 `CENTRAL_ATENDIMENTO_CHAT`. O estado observado no Git sempre prevalece sobre
 qualquer valor copiado neste documento.
 
-## Frente ativa: rebranding AceleraChat
+## Frente ativa: fundação operacional vendável
 
-- SHA-base fixado: `901a23fbed68b0e0cf2a2c8e850eab6ab454ad5f`.
+- SHA-base da frente: `4204f4147f1a9b43c9740d2d739ef843d5ead817`.
 - Branch: `release/strict-team-conversation-privacy`.
 - Marca pública: AceleraChat; assistente: Nemmo; camada comercial: PRO.
-- Implementação local concluída em código, assets, ajuda, jurídico, e-mails,
-  SuperAdmin e fluxo LGPD; ainda sem push ou deploy.
-- Rollback de produção fixado em `b8932617338a4cd3762fa5cf89540fc68cdae5eb`.
-- Gates Ruby/Docker, fatos jurídicos, DNS de e-mail, sync conectado e smoke de
-  produção continuam obrigatórios antes do corte.
-- Runbook canônico:
-  [`ACELERACHAT-REBRAND-RELEASE-RUNBOOK.md`](ACELERACHAT-REBRAND-RELEASE-RUNBOOK.md).
+- Implementação local concluída para SMTP transacional, monitoramento Sentry
+  com privacidade e autosserviço das ferramentas operacionais do Nemmo.
+- O deploy passa a bloquear antes de qualquer operação persistente quando o
+  domínio de e-mail ou o Sentry não passam no preflight.
+- Ainda não houve push, Action ou deploy desta frente.
+- Gates locais aprovados: Vite produção, Vitest direcionado, ESLint, Prettier,
+  RuboCop, sintaxe Ruby/Bash, contratos YAML/deploy/workspace e scanner de
+  segredos. A suíte Rails completa permanece obrigatória no workflow porque o
+  host local não possui o runtime Ruby 3.4.4 e os serviços da aplicação.
+- Dependências externas pendentes antes do corte: caixas e DNS próprios em
+  `meugerenciador.pro`, além dos DSNs dos projetos Sentry.
+- O rollback será a imagem ativa registrada imediatamente antes do corte; ele
+  deve ser confirmado no preflight e não inferido deste documento.
+- Runbooks:
+  - [`TRANSACTIONAL-EMAIL-SENTRY-NEMMO.md`](TRANSACTIONAL-EMAIL-SENTRY-NEMMO.md);
+  - [`ACELERACHAT-REBRAND-RELEASE-RUNBOOK.md`](ACELERACHAT-REBRAND-RELEASE-RUNBOOK.md).
 
 O Acelera Control permanece desativado e não tem autoridade sobre a marca.
 Nomes internos `Chatwoot`, `Captain` e `enterprise` permanecem por

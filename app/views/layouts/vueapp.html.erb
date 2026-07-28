@@ -75,7 +75,7 @@
       window.browserConfig = {
         browser_name: '<%= browser.name %>',
       }
-      window.errorLoggingConfig = '<%= ENV.fetch('SENTRY_FRONTEND_DSN', '') || ENV.fetch('SENTRY_DSN', '') %>'
+      window.errorLoggingConfig = <%= raw ERB::Util.json_escape(Acelerachat::SentryConfiguration.new.frontend_options.to_json) %>
     </script>
     <% if @global_config['CLOUD_ANALYTICS_TOKEN'].present? %>
     <script>

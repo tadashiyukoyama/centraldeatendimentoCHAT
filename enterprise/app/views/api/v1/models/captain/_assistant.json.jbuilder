@@ -6,4 +6,5 @@ json.guardrails resource.guardrails
 json.id resource.id
 json.name resource.name
 json.response_guidelines resource.response_guidelines
+json.operational_tools resource.operational_tools_configuration
 json.updated_at resource.updated_at.to_i

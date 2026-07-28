@@ -2,7 +2,10 @@ require 'rails_helper'
 
 RSpec.describe 'Captain payment notice tools', type: :model do
   let(:account) { create(:account) }
-  let(:assistant) { create(:captain_assistant, account: account) }
+  let!(:finance_team) { create(:team, account: account, name: 'financeiro') }
+  let(:assistant) do
+    create(:captain_assistant, account: account, config: { 'finance_team_id' => finance_team.id })
+  end
   let(:inbox) { create(:inbox, account: account) }
   let(:contact) { create(:contact, account: account, name: 'Cliente') }
   let(:conversation) { create(:conversation, account: account, inbox: inbox, contact: contact, status: :pending) }
@@ -14,7 +17,6 @@ RSpec.describe 'Captain payment notice tools', type: :model do
   end
 
   before do
-    create(:team, account: account, name: 'financeiro')
     create(
       :message,
       account: account,
@@ -39,6 +41,39 @@ RSpec.describe 'Captain payment notice tools', type: :model do
     expect(notice).to have_attributes(status: 'pending_verification', amount_cents: 15_000, reference: 'FAT-123')
     expect(conversation.reload.team.name).to eq('financeiro')
     expect(conversation.label_list).to include('pagamento_informado')
+  end
+
+  it 'routes to the explicitly configured finance team' do
+    configured_team = create(:team, account: account, name: 'cobranca')
+    assistant.update!(config: { 'finance_team_id' => configured_team.id })
+
+    result = Captain::Tools::RecordPaymentNoticeTool.new(assistant).perform(
+      tool_context,
+      amount: '150,00',
+      currency: 'BRL',
+      reference: 'FAT-123'
+    )
+
+    expect(result).to start_with('Conversation handed off to financeiro')
+    expect(conversation.reload).to have_attributes(team_id: configured_team.id, assignee_id: nil)
+  end
+
+  it 'rejects the operation when no finance team is configured' do
+    assistant.update!(config: {})
+
+    result = Captain::Tools::RecordPaymentNoticeTool.new(assistant).perform(
+      tool_context,
+      amount: '150,00',
+      currency: 'BRL',
+      reference: 'FAT-123'
+    )
+
+    expect(result).to include('No finance team is configured')
+    expect(Captain::PaymentNotice.count).to eq(0)
+    expect(Captain::ToolExecution.last).to have_attributes(
+      status: 'rejected',
+      error_code: 'finance_team_not_configured'
+    )
   end
 
   it 'rejects financial details not explicitly written by the customer' do

@@ -627,6 +627,29 @@
           "TITLE": "System settings",
           "DESCRIPTION": "Customize what the assistant says when ending a conversation or transferring to a human."
         },
+        "OPERATIONAL_TOOLS": {
+          "TITLE": "Operational tools",
+          "DESCRIPTION": "Authorize real Nemmo actions and select responsible people from your own account.",
+          "READ_ONLY": "Only administrators can change these tools.",
+          "INCOMPLETE_MESSAGE": "Select the responsible people before enabling these tools.",
+          "CONTACT_PROFILE": {
+            "TITLE": "Contact profile capture",
+            "DESCRIPTION": "Allows Nemmo to save name, phone number, email, and company only after the contact provides the data.",
+            "REQUIRED_FOR_DEMO": "Contact data capture is required to schedule demonstrations."
+          },
+          "DEMO_SCHEDULING": {
+            "TITLE": "Demonstration scheduling",
+            "DESCRIPTION": "Schedules a confirmed time, prevents conflicts, and hands the conversation to the selected specialist.",
+            "ASSIGNEE": "Responsible specialist",
+            "SELECT_ASSIGNEE": "Select an agent from this account"
+          },
+          "PAYMENT_NOTICES": {
+            "TITLE": "Payment notices and lookups",
+            "DESCRIPTION": "Records notices as pending review. Nemmo never claims bank settlement without a real financial source.",
+            "TEAM": "Responsible team",
+            "SELECT_TEAM": "Select a team from this account"
+          }
+        },
         "CONTROL_ITEMS": {
           "TITLE": "The Fun Stuff",
           "DESCRIPTION": "Add more control to the assistant. (a bit more visual like a story : Query guardrail → scenarios → output) Nudges user to actually utilise these.",

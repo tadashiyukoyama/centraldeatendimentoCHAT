@@ -28,10 +28,11 @@ class Captain::Tools::RecordPaymentNoticeTool < Captain::Tools::BasePublicTool
 
   def process_notice(conversation, contact, details)
     validate_payment_notice!(conversation, details)
+    team = configured_finance_team!
     details[:idempotency_key] = payment_notice_key(conversation, latest_customer_message(conversation))
     notice = create_notice!(conversation, contact, details)
     register_notice!(conversation, notice)
-    handoff_result = route_payment_notice!(conversation, notice)
+    handoff_result = route_payment_notice!(conversation, notice, team)
     "#{handoff_result}. Payment notice ##{notice.id} recorded as pending verification."
   end
 
@@ -101,12 +102,13 @@ class Captain::Tools::RecordPaymentNoticeTool < Captain::Tools::BasePublicTool
     end
   end
 
-  def route_payment_notice!(conversation, notice)
+  def route_payment_notice!(conversation, notice, team)
     route_and_handoff!(
       conversation,
-      destination: finance_destination,
+      destination: 'financeiro',
       reason: "Aviso de pagamento ##{notice.id} aguardando conferência.",
-      trusted: true
+      trusted: true,
+      team: team
     )
   end
 
@@ -150,8 +152,15 @@ class Captain::Tools::RecordPaymentNoticeTool < Captain::Tools::BasePublicTool
     )
   end
 
-  def finance_destination
-    @assistant.account.teams.exists?(['LOWER(name) = ?', 'financeiro']) ? 'financeiro' : 'owner'
+  def configured_finance_team
+    @assistant.configured_finance_team
+  end
+
+  def configured_finance_team!
+    configured_finance_team || reject_execution!(
+      'No finance team is configured for payment notices.',
+      code: 'finance_team_not_configured'
+    )
   end
 
   def present_fields(amount, reference)
