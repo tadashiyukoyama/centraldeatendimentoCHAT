@@ -119,11 +119,28 @@ export const prepareAttachmentPayload = (
   return files;
 };
 
+export const combineEmailRecipients = (primaryEmail, additionalEmails = '') => {
+  const recipients = [
+    primaryEmail,
+    ...additionalEmails.split(',').map(email => email.trim()),
+  ].filter(Boolean);
+
+  const seen = new Set();
+  return recipients.filter(email => {
+    const normalizedEmail = email.toLowerCase();
+    if (seen.has(normalizedEmail)) return false;
+
+    seen.add(normalizedEmail);
+    return true;
+  });
+};
+
 export const prepareNewMessagePayload = ({
   targetInbox,
   selectedContact,
   message,
   subject,
+  additionalToEmails,
   ccEmails,
   bccEmails,
   currentUser,
@@ -147,6 +164,13 @@ export const prepareNewMessagePayload = ({
 
   if (subject) {
     payload.mailSubject = subject;
+  }
+
+  if (targetInbox.channelType === INBOX_TYPES.EMAIL) {
+    payload.message.to_emails = combineEmailRecipients(
+      selectedContact.email,
+      additionalToEmails
+    ).join(',');
   }
 
   if (ccEmails) {

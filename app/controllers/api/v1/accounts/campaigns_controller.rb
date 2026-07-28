@@ -9,7 +9,9 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
   def show; end
 
   def create
-    @campaign = Current.account.campaigns.create!(campaign_params)
+    attributes = campaign_params
+    attributes[:sender_id] ||= current_user.id
+    @campaign = Current.account.campaigns.create!(attributes)
   end
 
   def update

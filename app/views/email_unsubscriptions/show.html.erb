@@ -1,0 +1,5 @@
+<h1><%= t('email_unsubscriptions.show.title') %></h1>
+<p><%= t('email_unsubscriptions.show.description') %></p>
+<%= form_with url: email_unsubscribe_path(token: @token, lang: current_legal_locale), method: :post, class: 'form-grid' do %>
+  <%= submit_tag t('email_unsubscriptions.show.confirm') %>
+<% end %>

@@ -17,6 +17,8 @@ import DeleteCustomViews from 'dashboard/routes/dashboard/customviews/DeleteCust
 import ConversationBulkActions from './widgets/conversation/conversationBulkActions/Index.vue';
 import TeleportWithDirection from 'dashboard/components-next/TeleportWithDirection.vue';
 import ConversationResolveAttributesModal from 'dashboard/components-next/ConversationWorkflow/ConversationResolveAttributesModal.vue';
+import ComposeConversation from 'dashboard/components-next/NewConversation/ComposeConversation.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
 
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useAlert } from 'dashboard/composables';
@@ -52,6 +54,7 @@ import {
 import { matchesFilters } from '../store/modules/conversations/helpers/filterHelpers';
 import { CONVERSATION_EVENTS } from '../helper/AnalyticsHelper/events';
 import { ASSIGNEE_TYPE_TAB_PERMISSIONS } from 'dashboard/constants/permissions.js';
+import { INBOX_TYPES } from 'dashboard/helper/inbox';
 
 const props = defineProps({
   conversationInbox: { type: [String, Number], default: 0 },
@@ -201,6 +204,9 @@ const currentPageFilterKey = computed(() => {
 });
 
 const inbox = useFunctionGetter('inboxes/getInbox', activeInbox);
+const isEmailInbox = computed(
+  () => inbox.value.channel_type === INBOX_TYPES.EMAIL
+);
 const currentPage = useFunctionGetter(
   'conversationPage/getCurrentPageFilter',
   activeAssigneeTab
@@ -904,7 +910,29 @@ watch(conversationFilters, (newVal, oldVal) => {
       @filters-modal="onToggleAdvanceFiltersModal"
       @reset-filters="resetAndFetchData"
       @basic-filter-change="onBasicFilterChange"
-    />
+    >
+      <template #actions>
+        <ComposeConversation
+          v-if="isEmailInbox"
+          :default-inbox-id="inbox.id"
+          :channel-type="INBOX_TYPES.EMAIL"
+          align="start"
+        >
+          <template #trigger="{ isOpen }">
+            <Button
+              v-tooltip.top-end="$t('COMPOSE_NEW_CONVERSATION.NEW_EMAIL')"
+              :label="$t('COMPOSE_NEW_CONVERSATION.NEW_EMAIL')"
+              icon="i-lucide-mail-plus"
+              slate
+              xs
+              faded
+              class="[&>.truncate]:hidden 2xl:[&>.truncate]:inline-flex"
+              :class="{ '!bg-n-alpha-2': isOpen }"
+            />
+          </template>
+        </ComposeConversation>
+      </template>
+    </ChatListHeader>
 
     <TeleportWithDirection
       v-if="showAddFoldersModal"

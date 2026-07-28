@@ -25,6 +25,13 @@ describe('#getters', () => {
     expect(getters.getSMSInboxes(state).length).toEqual(2);
   });
 
+  it('getEmailInboxes', () => {
+    const emailInbox = { id: 9, channel_type: 'Channel::Email' };
+    const state = { records: [...inboxList, emailInbox] };
+
+    expect(getters.getEmailInboxes(state)).toEqual([emailInbox]);
+  });
+
   it('getWhatsAppCampaignInboxes returns only official Cloud API inboxes', () => {
     const state = {
       records: [

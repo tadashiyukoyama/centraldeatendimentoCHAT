@@ -6,6 +6,17 @@ import * as helpers from '../composeConversationHelper';
 vi.mock('dashboard/api/contacts');
 
 describe('composeConversationHelper', () => {
+  describe('combineEmailRecipients', () => {
+    it('combines the primary recipient with unique additional recipients', () => {
+      expect(
+        helpers.combineEmailRecipients(
+          'primary@example.com',
+          'second@example.com, PRIMARY@example.com'
+        )
+      ).toEqual(['primary@example.com', 'second@example.com']);
+    });
+  });
+
   describe('generateLabelForContactableInboxesList', () => {
     const contact = {
       name: 'John Doe',
@@ -309,6 +320,25 @@ describe('composeConversationHelper', () => {
         },
         files: ['file1'],
       });
+    });
+
+    it('includes unique primary and additional recipients for email inboxes', () => {
+      const result = helpers.prepareNewMessagePayload({
+        ...baseParams,
+        targetInbox: {
+          ...baseParams.targetInbox,
+          channelType: INBOX_TYPES.EMAIL,
+        },
+        selectedContact: {
+          id: '2',
+          email: 'primary@example.com',
+        },
+        additionalToEmails: 'other@example.com,PRIMARY@example.com',
+      });
+
+      expect(result.message.to_emails).toBe(
+        'primary@example.com,other@example.com'
+      );
     });
   });
 

@@ -194,10 +194,11 @@ describe('#actions', () => {
 });
 
 describe('createMessagePayload', () => {
-  it('creates message payload with cc and bcc emails', () => {
+  it('creates message payload with to, cc and bcc emails', () => {
     const payload = new FormData();
     const message = {
       content: 'Test message content',
+      to_emails: 'to@example.com',
       cc_emails: 'cc@example.com',
       bcc_emails: 'bcc@example.com',
     };
@@ -205,11 +206,12 @@ describe('createMessagePayload', () => {
     createMessagePayload(payload, message);
 
     expect(payload.get('message[content]')).toBe(message.content);
+    expect(payload.get('message[to_emails]')).toBe(message.to_emails);
     expect(payload.get('message[cc_emails]')).toBe(message.cc_emails);
     expect(payload.get('message[bcc_emails]')).toBe(message.bcc_emails);
   });
 
-  it('creates message payload without cc and bcc emails', () => {
+  it('creates message payload without optional email recipients', () => {
     const payload = new FormData();
     const message = {
       content: 'Test message content',
@@ -218,6 +220,7 @@ describe('createMessagePayload', () => {
     createMessagePayload(payload, message);
 
     expect(payload.get('message[content]')).toBe(message.content);
+    expect(payload.get('message[to_emails]')).toBeNull();
     expect(payload.get('message[cc_emails]')).toBeNull();
     expect(payload.get('message[bcc_emails]')).toBeNull();
   });

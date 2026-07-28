@@ -97,4 +97,25 @@ export default [
     created_at: '2021-05-03T14:15:35.828Z',
     updated_at: '2021-05-03T14:15:35.828Z',
   },
+  {
+    id: 6,
+    title: 'Email update',
+    description: null,
+    account_id: 1,
+    campaign_type: 'one_off',
+    message: 'A product update for you',
+    enabled: true,
+    trigger_rules: {},
+    inbox: {
+      id: 6,
+      channel_type: 'Channel::Email',
+      name: 'Support email',
+    },
+    template_params: {
+      subject: 'Product update',
+      lawful_basis_confirmed: true,
+    },
+    created_at: '2021-05-03T15:15:35.828Z',
+    updated_at: '2021-05-03T15:15:35.828Z',
+  },
 ];

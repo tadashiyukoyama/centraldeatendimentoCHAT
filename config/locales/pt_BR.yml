@@ -18,6 +18,14 @@
 #available at https://guides.rubyonrails.org/i18n.html.
 pt_BR:
   hello: 'Olá, mundo'
+  email_unsubscriptions:
+    show:
+      title: Cancelar recebimento de e-mails
+      description: Confirme abaixo que não deseja mais receber campanhas de e-mail desta conta.
+      confirm: Confirmar cancelamento
+    create:
+      title: Recebimento cancelado
+      description: Seu endereço não receberá novas campanhas de e-mail desta conta.
   inbox:
     reauthorization:
       success: 'Canal reautenticado com sucesso'

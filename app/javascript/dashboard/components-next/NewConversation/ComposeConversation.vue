@@ -28,6 +28,14 @@ const props = defineProps({
     type: String,
     default: 'end',
   },
+  defaultInboxId: {
+    type: [String, Number],
+    default: null,
+  },
+  channelType: {
+    type: String,
+    default: '',
+  },
 });
 
 const emit = defineEmits(['close']);
@@ -49,6 +57,7 @@ const isSearching = ref(false);
 const formState = reactive({
   message: '',
   subject: '',
+  additionalToEmails: '',
   ccEmails: '',
   bccEmails: '',
   attachedFiles: [],
@@ -57,6 +66,7 @@ const formState = reactive({
 const clearFormState = () => {
   Object.assign(formState, {
     subject: '',
+    additionalToEmails: '',
     ccEmails: '',
     bccEmails: '',
     attachedFiles: [],
@@ -106,6 +116,22 @@ const resetContacts = () => {
   contacts.value = [];
 };
 
+const prepareAvailableInboxes = inboxes => {
+  const mergedInboxes = mergeInboxDetails(inboxes, inboxesList.value);
+  if (!props.channelType) return mergedInboxes;
+
+  return mergedInboxes.filter(inbox => inbox.channelType === props.channelType);
+};
+
+const selectDefaultInbox = contactInboxes => {
+  if (!props.defaultInboxId) return;
+
+  targetInbox.value =
+    contactInboxes.find(
+      inbox => Number(inbox.id) === Number(props.defaultInboxId)
+    ) || null;
+};
+
 const handleSelectedContact = async ({ value, action, ...rest }) => {
   let contact;
   if (action === 'create') {
@@ -127,10 +153,9 @@ const handleSelectedContact = async ({ value, action, ...rest }) => {
     try {
       const contactableInboxes = await fetchContactableInboxes(contact.id);
       // Merge the processed contactableInboxes with the inboxesList
-      selectedContact.value.contactInboxes = mergeInboxDetails(
-        contactableInboxes,
-        inboxesList.value
-      );
+      selectedContact.value.contactInboxes =
+        prepareAvailableInboxes(contactableInboxes);
+      selectDefaultInbox(selectedContact.value.contactInboxes);
 
       isFetchingInboxes.value = false;
     } catch (error) {
@@ -219,10 +244,12 @@ watch(
         currentContact.contactInboxes || []
       );
       // Then Merge processedInboxes with the inboxes list
+      const contactInboxes = prepareAvailableInboxes(processedInboxes);
       selectedContact.value = {
         ...currentContact,
-        contactInboxes: mergeInboxDetails(processedInboxes, inboxesList.value),
+        contactInboxes,
       };
+      selectDefaultInbox(contactInboxes);
     }
   },
   { immediate: true, deep: true }

@@ -40,6 +40,8 @@ Rails.application.routes.draw do
 
   get '/health', to: 'health#show'
   get '/api', to: 'api#index'
+  get '/email/unsubscribe/:token', to: 'email_unsubscriptions#show', as: :email_unsubscribe
+  post '/email/unsubscribe/:token', to: 'email_unsubscriptions#create'
 
   scope '/legal' do
     get 'terms', to: 'public/legal#terms', as: :legal_terms

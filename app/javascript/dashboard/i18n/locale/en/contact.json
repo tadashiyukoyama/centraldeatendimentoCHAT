@@ -611,6 +611,8 @@
   },
 
   "COMPOSE_NEW_CONVERSATION": {
+    "NEW_MESSAGE": "New message",
+    "NEW_EMAIL": "New email",
     "CONTACT_SEARCH": {
       "ERROR_MESSAGE": "We couldn’t complete the search. Please try again."
     },
@@ -629,6 +631,8 @@
         "BUTTON": "Show inboxes"
       },
       "EMAIL_OPTIONS": {
+        "ADDITIONAL_TO_LABEL": "More recipients:",
+        "ADDITIONAL_TO_PLACEHOLDER": "Add another primary recipient",
         "SUBJECT_LABEL": "Subject :",
         "SUBJECT_PLACEHOLDER": "Enter your email subject here",
         "CC_LABEL": "Cc:",

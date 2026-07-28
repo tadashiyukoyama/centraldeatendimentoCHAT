@@ -192,6 +192,54 @@ RSpec.describe Campaign do
       end
     end
 
+    context 'when Email campaign' do
+      let(:account) { create(:account) }
+      let(:email_channel) { create(:channel_email, account: account) }
+      let(:label) { create(:label, account: account) }
+      let(:sender) { create(:user, account: account) }
+      let(:campaign) do
+        build(
+          :campaign,
+          account: account,
+          inbox: email_channel.inbox,
+          sender: sender,
+          audience: [{ type: 'Label', id: label.id }],
+          template_params: {
+            subject: 'Product update',
+            lawful_basis_confirmed: true
+          }
+        )
+      end
+
+      it 'is a one-off campaign and invokes the email campaign service' do
+        email_service = instance_double(Email::OneoffCampaignService, perform: true)
+        allow(Email::OneoffCampaignService).to receive(:new).with(campaign: campaign).and_return(email_service)
+
+        campaign.save!
+        campaign.trigger!
+
+        expect(campaign.reload).to be_processing
+        expect(email_service).to have_received(:perform)
+      end
+
+      it 'requires a subject, a valid account label and recipient permission' do
+        campaign.audience = [{ type: 'Label', id: create(:label).id }]
+        campaign.template_params = {}
+
+        expect(campaign).not_to be_valid
+        expect(campaign.errors[:template_params]).to include('subject is required')
+        expect(campaign.errors[:template_params]).to include('recipient permission must be confirmed')
+        expect(campaign.errors[:audience]).to include('must include at least one valid account label')
+      end
+
+      it 'requires an accountable sender' do
+        campaign.sender = nil
+
+        expect(campaign).not_to be_valid
+        expect(campaign.errors[:sender]).to include('is required')
+      end
+    end
+
     context 'when Website campaign' do
       let(:campaign) { build(:campaign) }
 

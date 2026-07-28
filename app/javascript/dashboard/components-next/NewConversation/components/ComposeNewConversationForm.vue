@@ -60,6 +60,7 @@ const copilot = useCopilotReply();
 
 const showContactsDropdown = ref(false);
 const showInboxesDropdown = ref(false);
+const showToEmailsDropdown = ref(false);
 const showCcEmailsDropdown = ref(false);
 const showBccEmailsDropdown = ref(false);
 
@@ -68,6 +69,7 @@ const isCreating = computed(() => props.contactConversationsUiFlags.isCreating);
 const state = props.formState || {
   message: '',
   subject: '',
+  additionalToEmails: '',
   ccEmails: '',
   bccEmails: '',
   attachedFiles: [],
@@ -136,12 +138,20 @@ const validationStates = computed(() => ({
 }));
 
 const newMessagePayload = () => {
-  const { message, subject, ccEmails, bccEmails, attachedFiles } = state;
+  const {
+    message,
+    subject,
+    additionalToEmails,
+    ccEmails,
+    bccEmails,
+    attachedFiles,
+  } = state;
   return prepareNewMessagePayload({
     targetInbox: props.targetInbox,
     selectedContact: props.selectedContact,
     message,
     subject,
+    additionalToEmails,
     ccEmails,
     bccEmails,
     currentUser: props.currentUser,
@@ -167,6 +177,7 @@ const isAnyDropdownActive = computed(() => {
   return (
     showContactsDropdown.value ||
     showInboxesDropdown.value ||
+    showToEmailsDropdown.value ||
     showCcEmailsDropdown.value ||
     showBccEmailsDropdown.value
   );
@@ -178,7 +189,9 @@ const handleContactSearch = value => {
 };
 
 const handleDropdownUpdate = (type, value) => {
-  if (type === 'cc') {
+  if (type === 'to') {
+    showToEmailsDropdown.value = value;
+  } else if (type === 'cc') {
     showCcEmailsDropdown.value = value;
   } else if (type === 'bcc') {
     showBccEmailsDropdown.value = value;
@@ -187,7 +200,16 @@ const handleDropdownUpdate = (type, value) => {
   }
 };
 
+const searchToEmails = value => {
+  showCcEmailsDropdown.value = false;
+  showBccEmailsDropdown.value = false;
+  emit('resetContactSearch');
+  showToEmailsDropdown.value = value.trim().length >= 2;
+  emit('searchContacts', value);
+};
+
 const searchCcEmails = value => {
+  showToEmailsDropdown.value = false;
   showBccEmailsDropdown.value = false;
   emit('resetContactSearch');
   showCcEmailsDropdown.value = value.trim().length >= 2;
@@ -195,6 +217,7 @@ const searchCcEmails = value => {
 };
 
 const searchBccEmails = value => {
+  showToEmailsDropdown.value = false;
   showCcEmailsDropdown.value = false;
   emit('resetContactSearch');
   showBccEmailsDropdown.value = value.trim().length >= 2;
@@ -289,6 +312,7 @@ const clearForm = () => {
   Object.assign(state, {
     message: '',
     subject: '',
+    additionalToEmails: '',
     ccEmails: '',
     bccEmails: '',
     attachedFiles: [],
@@ -404,14 +428,17 @@ useKeyboardEvents({
 
       <EmailOptions
         v-if="inboxTypes.isEmail"
+        v-model:additional-to-emails="state.additionalToEmails"
         v-model:cc-emails="state.ccEmails"
         v-model:bcc-emails="state.bccEmails"
         v-model:subject="state.subject"
         :contacts="contacts"
+        :show-to-emails-dropdown="showToEmailsDropdown"
         :show-cc-emails-dropdown="showCcEmailsDropdown"
         :show-bcc-emails-dropdown="showBccEmailsDropdown"
         :is-loading="isLoading"
         :has-errors="validationStates.isSubjectInvalid"
+        @search-to-emails="searchToEmails"
         @search-cc-emails="searchCcEmails"
         @search-bcc-emails="searchBccEmails"
         @update-dropdown="handleDropdownUpdate"

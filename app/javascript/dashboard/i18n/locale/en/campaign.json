@@ -138,6 +138,65 @@
         }
       }
     },
+    "EMAIL": {
+      "HEADER_TITLE": "Email campaigns",
+      "NEW_CAMPAIGN": "Create campaign",
+      "CARD": {
+        "DELIVERY_COUNTS": "Preparing: {pending} · Queued: {queued} · Skipped: {skipped} · Failed: {failed}"
+      },
+      "EMPTY_STATE": {
+        "TITLE": "No email campaigns yet",
+        "SUBTITLE": "Send one traceable email per contact to an audience selected by labels."
+      },
+      "CREATE": {
+        "TITLE": "Create email campaign",
+        "FORM": {
+          "TITLE": {
+            "LABEL": "Internal title",
+            "PLACEHOLDER": "Campaign name",
+            "ERROR": "Title is required"
+          },
+          "SUBJECT": {
+            "LABEL": "Email subject",
+            "PLACEHOLDER": "Subject shown to recipients",
+            "ERROR": "Subject is required"
+          },
+          "MESSAGE": {
+            "LABEL": "Message",
+            "PLACEHOLDER": "Write the email message",
+            "ERROR": "Message is required"
+          },
+          "INBOXID": {
+            "ERROR": "Email inbox is required"
+          },
+          "INBOX": {
+            "LABEL": "Sender inbox",
+            "PLACEHOLDER": "Select an email inbox"
+          },
+          "SELECTEDAUDIENCE": {
+            "LABEL": "Audience labels",
+            "PLACEHOLDER": "Select contact labels",
+            "ERROR": "Select at least one audience label"
+          },
+          "SCHEDULEDAT": {
+            "LABEL": "Scheduled time",
+            "ERROR": "Scheduled time is required"
+          },
+          "LAWFULBASISCONFIRMED": {
+            "LABEL": "I confirm these contacts may receive this message. Blocked and unsubscribed contacts will be skipped.",
+            "ERROR": "Recipient permission must be confirmed"
+          },
+          "BUTTONS": {
+            "CREATE": "Schedule",
+            "CANCEL": "Cancel"
+          },
+          "API": {
+            "SUCCESS_MESSAGE": "Email campaign scheduled successfully",
+            "ERROR_MESSAGE": "The email campaign could not be created."
+          }
+        }
+      }
+    },
     "WHATSAPP": {
       "HEADER_TITLE": "WhatsApp campaigns",
       "NEW_CAMPAIGN": "Create campaign",

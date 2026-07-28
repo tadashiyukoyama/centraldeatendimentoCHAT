@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_27_090000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_28_120000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -313,6 +313,22 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_27_090000) do
     t.index ["account_id", "created_at"], name: "index_calls_on_account_id_and_created_at"
     t.index ["message_id"], name: "index_calls_on_message_id"
     t.index ["provider", "provider_call_id"], name: "index_calls_on_provider_and_provider_call_id", unique: true
+  end
+
+  create_table "campaign_deliveries", force: :cascade do |t|
+    t.bigint "campaign_id", null: false
+    t.bigint "contact_id", null: false
+    t.bigint "conversation_id"
+    t.integer "status", default: 0, null: false
+    t.text "error_message"
+    t.datetime "processed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["campaign_id", "contact_id"], name: "index_campaign_deliveries_on_campaign_id_and_contact_id", unique: true
+    t.index ["campaign_id", "status"], name: "index_campaign_deliveries_on_campaign_id_and_status"
+    t.index ["campaign_id"], name: "index_campaign_deliveries_on_campaign_id"
+    t.index ["contact_id"], name: "index_campaign_deliveries_on_contact_id"
+    t.index ["conversation_id"], name: "index_campaign_deliveries_on_conversation_id"
   end
 
   create_table "campaigns", force: :cascade do |t|
@@ -1732,6 +1748,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_27_090000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "campaign_deliveries", "campaigns", on_delete: :cascade
+  add_foreign_key "campaign_deliveries", "contacts", on_delete: :cascade
+  add_foreign_key "campaign_deliveries", "conversations", on_delete: :nullify
   add_foreign_key "captain_appointments", "accounts", on_delete: :cascade
   add_foreign_key "captain_appointments", "captain_assistants", column: "assistant_id", on_delete: :cascade
   add_foreign_key "captain_appointments", "contacts", on_delete: :cascade

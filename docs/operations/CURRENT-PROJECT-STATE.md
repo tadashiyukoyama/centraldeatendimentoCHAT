@@ -9,6 +9,16 @@ qualquer valor copiado neste documento.
 - SHA-base da frente: `4204f4147f1a9b43c9740d2d739ef843d5ead817`.
 - Branch: `release/strict-team-conversation-privacy`.
 - Marca pública: AceleraChat; assistente: Nemmo; camada comercial: PRO.
+- A frente de e-mail em preparação adiciona o compositor **Novo e-mail** nas
+  caixas `Channel::Email`, com destinatários adicionais, assunto, CC/BCC e
+  anexos pelo fluxo nativo. Também adiciona campanhas individualizadas por
+  etiquetas, snapshot idempotente por contato, descadastro assinado e estados
+  operacionais que distinguem enfileiramento de entrega confirmada.
+- A migration aditiva `20260728120000_create_campaign_deliveries.rb` exige o
+  backup PostgreSQL normal do deploy. O rollback de imagem pode conservar a
+  tabela sem uso; nenhuma reversão de schema é automática.
+- O contrato e o smoke seguro desta frente estão em
+  [`EMAIL-COMPOSE-AND-CAMPAIGNS.md`](EMAIL-COMPOSE-AND-CAMPAIGNS.md).
 - Implementação local concluída para SMTP transacional, monitoramento Sentry
   com privacidade e autosserviço das ferramentas operacionais do Nemmo.
 - O deploy passa a bloquear antes de qualquer operação persistente quando o

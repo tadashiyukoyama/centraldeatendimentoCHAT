@@ -608,6 +608,8 @@
     }
   },
   "COMPOSE_NEW_CONVERSATION": {
+    "NEW_MESSAGE": "Nova mensagem",
+    "NEW_EMAIL": "Novo e-mail",
     "CONTACT_SEARCH": {
       "ERROR_MESSAGE": "Não foi possível completar a pesquisa. Por favor, tente novamente."
     },
@@ -626,6 +628,8 @@
         "BUTTON": "Mostrar Caixas de Entrada"
       },
       "EMAIL_OPTIONS": {
+        "ADDITIONAL_TO_LABEL": "Mais destinatários:",
+        "ADDITIONAL_TO_PLACEHOLDER": "Adicione outro destinatário principal",
         "SUBJECT_LABEL": "Assunto:",
         "SUBJECT_PLACEHOLDER": "Digite o assunto do seu e-mail aqui",
         "CC_LABEL": "Cc:",

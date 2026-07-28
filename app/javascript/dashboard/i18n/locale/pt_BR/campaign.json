@@ -138,6 +138,65 @@
         }
       }
     },
+    "EMAIL": {
+      "HEADER_TITLE": "Campanhas de e-mail",
+      "NEW_CAMPAIGN": "Criar campanha",
+      "CARD": {
+        "DELIVERY_COUNTS": "Preparando: {pending} · Enfileirados: {queued} · Ignorados: {skipped} · Falhas: {failed}"
+      },
+      "EMPTY_STATE": {
+        "TITLE": "Nenhuma campanha de e-mail",
+        "SUBTITLE": "Envie um e-mail individual e rastreável por contato para um público selecionado por etiquetas."
+      },
+      "CREATE": {
+        "TITLE": "Criar campanha de e-mail",
+        "FORM": {
+          "TITLE": {
+            "LABEL": "Título interno",
+            "PLACEHOLDER": "Nome da campanha",
+            "ERROR": "O título é obrigatório"
+          },
+          "SUBJECT": {
+            "LABEL": "Assunto do e-mail",
+            "PLACEHOLDER": "Assunto exibido aos destinatários",
+            "ERROR": "O assunto é obrigatório"
+          },
+          "MESSAGE": {
+            "LABEL": "Mensagem",
+            "PLACEHOLDER": "Escreva a mensagem do e-mail",
+            "ERROR": "A mensagem é obrigatória"
+          },
+          "INBOXID": {
+            "ERROR": "Selecione a caixa de e-mail"
+          },
+          "INBOX": {
+            "LABEL": "Caixa remetente",
+            "PLACEHOLDER": "Selecione uma caixa de e-mail"
+          },
+          "SELECTEDAUDIENCE": {
+            "LABEL": "Etiquetas do público",
+            "PLACEHOLDER": "Selecione as etiquetas dos contatos",
+            "ERROR": "Selecione pelo menos uma etiqueta"
+          },
+          "SCHEDULEDAT": {
+            "LABEL": "Data e hora do envio",
+            "ERROR": "A data e hora são obrigatórias"
+          },
+          "LAWFULBASISCONFIRMED": {
+            "LABEL": "Confirmo que estes contatos podem receber esta mensagem. Contatos bloqueados ou descadastrados serão ignorados.",
+            "ERROR": "É necessário confirmar a permissão dos destinatários"
+          },
+          "BUTTONS": {
+            "CREATE": "Agendar",
+            "CANCEL": "Cancelar"
+          },
+          "API": {
+            "SUCCESS_MESSAGE": "Campanha de e-mail agendada com sucesso",
+            "ERROR_MESSAGE": "Não foi possível criar a campanha de e-mail."
+          }
+        }
+      }
+    },
     "WHATSAPP": {
       "HEADER_TITLE": "Campanhas do WhatsApp",
       "NEW_CAMPAIGN": "Criar campanha",

@@ -696,6 +696,11 @@ const menuItems = computed(() => {
           to: accountScopedRoute('campaigns_sms_index'),
         },
         {
+          name: 'Email',
+          label: t('SIDEBAR.EMAIL'),
+          to: accountScopedRoute('campaigns_email_index'),
+        },
+        {
           name: 'WhatsApp',
           label: t('SIDEBAR.WHATSAPP'),
           to: accountScopedRoute('campaigns_whatsapp_index'),
@@ -997,6 +1002,8 @@ const menuItems = computed(() => {
           <template #trigger="{ isOpen }">
             <Button
               icon="i-lucide-pen-line"
+              :title="t('COMPOSE_NEW_CONVERSATION.NEW_MESSAGE')"
+              :aria-label="t('COMPOSE_NEW_CONVERSATION.NEW_MESSAGE')"
               color="slate"
               size="sm"
               class="dark:hover:!bg-n-slate-9/30"

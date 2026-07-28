@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
-import { getInboxIconByType } from 'dashboard/helper/inbox';
+import { getInboxIconByType, INBOX_TYPES } from 'dashboard/helper/inbox';
 
 import CardLayout from 'dashboard/components-next/CardLayout.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -41,6 +41,10 @@ const props = defineProps({
   scheduledAt: {
     type: Number,
     default: 0,
+  },
+  deliveryCounts: {
+    type: Object,
+    default: () => ({}),
   },
 });
 
@@ -81,9 +85,17 @@ const campaignStatus = computed(() => {
 });
 
 const inboxName = computed(() => props.inbox?.name || '');
+const isEmailCampaign = computed(
+  () => props.inbox?.channel_type === INBOX_TYPES.EMAIL
+);
+const hasEmailDeliveries = computed(
+  () =>
+    isEmailCampaign.value &&
+    Object.values(props.deliveryCounts).some(count => Number(count) > 0)
+);
 
 const inboxIcon = computed(() => {
-  const { medium, channel_type: type } = props.inbox;
+  const { medium, channel_type: type } = props.inbox || {};
   return getInboxIconByType(type, medium);
 });
 </script>
@@ -121,6 +133,21 @@ const inboxIcon = computed(() => {
           :inbox-icon="inboxIcon"
           :scheduled-at="scheduledAt"
         />
+        <span
+          v-if="hasEmailDeliveries"
+          class="flex-1 text-xs truncate text-n-slate-11"
+        >
+          {{
+            t('CAMPAIGN.EMAIL.CARD.DELIVERY_COUNTS', {
+              pending:
+                Number(deliveryCounts.pending || 0) +
+                Number(deliveryCounts.processing || 0),
+              queued: Number(deliveryCounts.queued || 0),
+              skipped: Number(deliveryCounts.skipped || 0),
+              failed: Number(deliveryCounts.failed || 0),
+            })
+          }}
+        </span>
       </div>
     </div>
     <div class="flex items-center justify-end w-20 gap-2">

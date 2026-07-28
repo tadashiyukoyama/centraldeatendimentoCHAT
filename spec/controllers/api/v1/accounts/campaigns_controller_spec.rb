@@ -150,6 +150,32 @@ RSpec.describe 'Campaigns API', type: :request do
         expect(response_data[:scheduled_at]).to eq(scheduled_at.to_i)
         expect(response_data[:audience].pluck(:id)).to include(label1.id, label2.id)
       end
+
+      it 'creates a traceable email campaign with the current administrator as sender' do
+        email_channel = create(:channel_email, account: account)
+        label = create(:label, account: account)
+
+        post "/api/v1/accounts/#{account.id}/campaigns",
+             params: {
+               inbox_id: email_channel.inbox.id,
+               title: 'Product update',
+               message: 'Hello {{contact.name}}',
+               scheduled_at: 1.hour.from_now,
+               audience: [{ type: 'Label', id: label.id }],
+               template_params: {
+                 subject: 'News for {{contact.name}}',
+                 lawful_basis_confirmed: true
+               }
+             },
+             headers: administrator.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:success)
+        campaign = account.campaigns.order(:id).last
+        expect(campaign.inbox).to eq(email_channel.inbox)
+        expect(campaign.sender).to eq(administrator)
+        expect(campaign).to be_one_off
+      end
     end
   end
 

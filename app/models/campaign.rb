@@ -41,6 +41,7 @@ class Campaign < ApplicationRecord
   validate :sender_must_belong_to_account
   validate :inbox_must_belong_to_account
   validate :whatsapp_campaign_requires_cloud_provider
+  validate :validate_email_campaign
 
   belongs_to :account
   belongs_to :inbox
@@ -51,6 +52,7 @@ class Campaign < ApplicationRecord
   enum campaign_status: { active: 0, completed: 1, processing: 2 }
 
   has_many :conversations, dependent: :nullify, autosave: true
+  has_many :campaign_deliveries, dependent: :destroy
 
   before_validation :ensure_correct_campaign_attributes
   after_commit :set_display_id, unless: :display_id?
@@ -87,6 +89,8 @@ class Campaign < ApplicationRecord
       Sms::OneoffSmsCampaignService.new(campaign: self).perform
     when 'Whatsapp'
       Whatsapp::OneoffCampaignService.new(campaign: self).perform
+    when 'Email'
+      Email::OneoffCampaignService.new(campaign: self).perform
     end
   end
 
@@ -106,14 +110,15 @@ class Campaign < ApplicationRecord
   def validate_campaign_inbox
     return unless inbox
 
-    errors.add :inbox, 'Unsupported Inbox type' unless ['Website', 'Twilio SMS', 'Sms', 'Whatsapp'].include? inbox.inbox_type
+    supported_inboxes = ['Website', 'Twilio SMS', 'Sms', 'Whatsapp', 'Email']
+    errors.add :inbox, 'Unsupported Inbox type' unless supported_inboxes.include? inbox.inbox_type
   end
 
   # TO-DO we clean up with better validations when campaigns evolve into more inboxes
   def ensure_correct_campaign_attributes
     return if inbox.blank?
 
-    if ['Twilio SMS', 'Sms', 'Whatsapp'].include?(inbox.inbox_type)
+    if ['Twilio SMS', 'Sms', 'Whatsapp', 'Email'].include?(inbox.inbox_type)
       self.campaign_type = 'one_off'
       self.scheduled_at ||= Time.now.utc
     else
@@ -150,6 +155,45 @@ class Campaign < ApplicationRecord
     return if account.users.exists?(id: sender.id)
 
     errors.add(:sender_id, 'must belong to the same account as the campaign')
+  end
+
+  def validate_email_campaign
+    return unless inbox&.inbox_type == 'Email'
+
+    validate_email_sender
+    validate_email_subject
+    validate_email_audience
+    validate_email_recipient_permission
+  end
+
+  def validate_email_sender
+    errors.add(:sender, 'is required') if sender.blank?
+  end
+
+  def validate_email_subject
+    errors.add(:template_params, 'subject is required') if template_params&.dig('subject').blank?
+  end
+
+  def validate_email_recipient_permission
+    return if ActiveModel::Type::Boolean.new.cast(template_params&.dig('lawful_basis_confirmed'))
+
+    errors.add(:template_params, 'recipient permission must be confirmed')
+  end
+
+  def validate_email_audience
+    label_ids = email_audience_label_ids
+    valid_label_count = account.labels.where(id: label_ids).count
+    return if label_ids.any? && valid_label_count == label_ids.size
+
+    errors.add(:audience, 'must include at least one valid account label')
+  end
+
+  def email_audience_label_ids
+    Array(audience)
+      .select { |item| item['type'] == 'Label' }
+      .pluck('id')
+      .map(&:to_i)
+      .uniq
   end
 
   def prevent_completed_campaign_from_update

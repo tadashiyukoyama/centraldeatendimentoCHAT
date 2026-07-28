@@ -31,6 +31,14 @@
 
 en:
   hello: 'Hello world'
+  email_unsubscriptions:
+    show:
+      title: Unsubscribe from email
+      description: Confirm below that you no longer want to receive email campaigns from this account.
+      confirm: Confirm unsubscribe
+    create:
+      title: Unsubscribed
+      description: Your address will no longer receive email campaigns from this account.
   inbox:
     reauthorization:
       success: 'Channel reauthorized successfully'
