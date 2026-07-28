@@ -21,7 +21,8 @@ executar operações contra produção apenas para confirmar conectividade.
 
 ## Desenvolvimento local
 
-1. Copiar `infra/env/chatwoot.local.env.example` para a cápsula como `private/env/chatwoot.local.env`.
+1. Copiar `infra/env/chatwoot.local.env.example` para a cápsula como
+   `credenciais/chatwoot.local.env`.
 2. Ajustar `CHATWOOT_ENV_FILE`, `CHATWOOT_POSTGRES_DATA_DIR`, `CHATWOOT_REDIS_DATA_DIR` e `CHATWOOT_STORAGE_DIR` no ambiente do shell.
 3. Executar `docker compose --env-file $env:CHATWOOT_ENV_FILE -f infra/compose/docker-compose.local.yaml up -d --build`.
 4. Executar migrations/seeds pelos comandos oficiais do Chatwoot dentro do serviço Rails.

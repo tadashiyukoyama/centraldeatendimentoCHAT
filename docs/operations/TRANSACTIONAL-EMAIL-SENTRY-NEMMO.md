@@ -67,8 +67,8 @@ O release é sempre associado ao SHA completo da imagem.
 Configuração mínima:
 
 ```dotenv
-SENTRY_DSN=<dsn HTTPS do backend>
-SENTRY_FRONTEND_DSN=<dsn HTTPS opcional do frontend>
+SENTRY_DSN=<segredo PROD_SENTRY_DSN; DSN HTTPS do projeto AceleraChat>
+SENTRY_FRONTEND_DSN=<o deploy reutiliza PROD_SENTRY_DSN no frontend>
 SENTRY_ENVIRONMENT=production
 SENTRY_TRACES_SAMPLE_RATE=0.0
 SENTRY_SEND_DEFAULT_PII=false

@@ -18,8 +18,17 @@ qualquer valor copiado neste documento.
   RuboCop, sintaxe Ruby/Bash, contratos YAML/deploy/workspace e scanner de
   segredos. A suíte Rails completa permanece obrigatória no workflow porque o
   host local não possui o runtime Ruby 3.4.4 e os serviços da aplicação.
-- Dependências externas pendentes antes do corte: caixas e DNS próprios em
-  `meugerenciador.pro`, além dos DSNs dos projetos Sentry.
+- Dependências externas do corte configuradas e verificadas:
+  - conta Hostinger `suporte@aifoodmanager.pro`, com SMTP, IMAP, MX, SPF,
+    três seletores DKIM e DMARC validados;
+  - projeto Sentry `yukoyamaengine/acelerachat` no plano gratuito, com
+    rastreamento e PII desativados, scrubber de dados e bloqueio de IP ativos;
+  - secrets protegidos `PROD_SMTP_PASSWORD` e `PROD_SENTRY_DSN` cadastrados no
+    ambiente `production` do GitHub.
+- A pasta local canônica de credenciais é
+  `D:\dev\workspaces\centraldeatendimentoCHAT\credenciais`. O arquivo
+  `chatwoot.production.env` foi sincronizado em modo seguro com o ambiente
+  ativo da VPS; nenhum valor faz parte do Git.
 - O rollback será a imagem ativa registrada imediatamente antes do corte; ele
   deve ser confirmado no preflight e não inferido deste documento.
 - Runbooks:
@@ -34,8 +43,8 @@ compatibilidade.
 
 - Repositório canônico: `tadashiyukoyama/centraldeatendimentoCHAT`.
 - Upstream: `chatwoot/chatwoot`.
-- Base operacional atual: `main`; release da aplicação em
-  `882b6fb14f653b7b858a230bb41e96da2407b255`.
+- Base operacional atual: `main`; imagem ativa de produção em
+  `4204f4147f1a9b43c9740d2d739ef843d5ead817`.
 - Correção Evolution: branch `agent/evolution-webhook-concurrency-sanitization`;
   PR `#15`, squash merge confirmado.
 - Deploy de produção: workflow `30112148256`, com `headSha` igual ao SHA acima.
@@ -49,7 +58,8 @@ compatibilidade.
 centraldeatendimentoCHAT/
 ├── .workspace/       identidade, manifestos e ledger local
 ├── artifacts/        relatórios e entregáveis não versionados
-├── private/          envs reais, credenciais e recuperação do banco
+├── credenciais/      senhas, tokens, DSNs e chaves; fora do Git
+├── private/          recuperação do banco e dados privados sem credenciais
 ├── runtime/          dados, cache, logs, temporários e memória curta
 ├── worktrees/        worktrees adicionais autorizadas
 ├── server/           clone Git canônico do Chatwoot OSS
@@ -84,8 +94,9 @@ do `git-common-dir`. Os scripts em `scripts/` usam o contexto centralizado em
 - Redis 7 para cache, pub/sub e filas; localmente, `runtime/data/redis`.
 - Active Storage local em `runtime/data/storage`; produção usa volume do host
   ou armazenamento S3 compatível.
-- Segredos reais: `private/env` e `private/credentials`, ou secret store do
-  provedor.
+- Credenciais de acesso reais: `credenciais/`, na raiz externa do workspace,
+  ou secret store do provedor.
+- Envs reais com credenciais: `credenciais/`.
 - Dumps locais e recuperação: `private/recovery/database`; no host de produção,
   o gate usa `/opt/central-atendimento/shared/backups/postgres/`, fora do clone
   e dos volumes Docker.

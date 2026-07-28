@@ -7,7 +7,8 @@ estrutura abaixo é relativa e não depende de uma letra de disco:
 <workspace-root>/
 ├── .workspace/       identidade local, políticas e ledger
 ├── artifacts/        relatórios e entregáveis temporários
-├── private/          credenciais, envs reais e recuperação do banco
+├── credenciais/      senhas, tokens, DSNs e chaves; fora do Git
+├── private/          recuperação e dados privados sem credenciais de acesso
 ├── runtime/          dados locais, storage, cache, logs, temp e memória curta
 ├── worktrees/        até 2 worktrees adicionais ativas
 ├── server/           repositório Git do Chatwoot/projeto
@@ -36,6 +37,6 @@ scripts/               verificações operacionais seguras
 spec/ tests/            testes upstream e do projeto
 ```
 
-Não colocar `private/`, `runtime/`, `artifacts/` ou `worktrees/` dentro de
+Não colocar `credenciais/`, `private/`, `runtime/`, `artifacts/` ou `worktrees/` dentro de
 `server/`. Não criar `.codex` em `server/`, `mobile/` ou `worktrees/`; a
 configuração do Codex permanece no `CODEX_HOME` existente no disco D:.

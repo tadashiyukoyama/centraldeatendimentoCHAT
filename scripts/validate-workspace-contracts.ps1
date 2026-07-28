@@ -90,7 +90,7 @@ function Assert-FallbackContract {
     throw "${Label}: limite de worktrees incorreto."
   }
   if ($Label -eq 'portable') {
-    foreach ($field in @('serverRelativePath', 'mobileRelativePath', 'runtimeRelativePath', 'privateRelativePath', 'artifactsRelativePath', 'worktreesRelativePath')) {
+    foreach ($field in @('serverRelativePath', 'mobileRelativePath', 'runtimeRelativePath', 'privateRelativePath', 'credentialsRelativePath', 'artifactsRelativePath', 'worktreesRelativePath')) {
       $value = [string]$instance.$field
       if ($value -match '^[A-Za-z]:[\\/]' -or $value.StartsWith('/') -or $value.StartsWith('\')) {
         throw "${Label}: caminho absoluto em $field."
@@ -141,7 +141,7 @@ if ([int]$portable.maxAdditionalWorktrees -ne 2) {
   throw 'O limite do manifesto portatil deve ser duas worktrees adicionais.'
 }
 
-foreach ($field in @('serverRelativePath', 'mobileRelativePath', 'runtimeRelativePath', 'privateRelativePath', 'artifactsRelativePath', 'worktreesRelativePath')) {
+foreach ($field in @('serverRelativePath', 'mobileRelativePath', 'runtimeRelativePath', 'privateRelativePath', 'credentialsRelativePath', 'artifactsRelativePath', 'worktreesRelativePath')) {
   $value = [string]$portable.$field
   if ($value -match '^[A-Za-z]:[\\/]' -or $value.StartsWith('/') -or $value.StartsWith('\')) {
     throw "Caminho absoluto no manifesto portatil: $field"

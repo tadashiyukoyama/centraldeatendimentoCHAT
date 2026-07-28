@@ -223,6 +223,7 @@ jobs:
         env:
           PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
           PROD_SMTP_PASSWORD: ${{ secrets.PROD_SMTP_PASSWORD }}
+          PROD_SENTRY_DSN: ${{ secrets.PROD_SENTRY_DSN }}
           PROD_HOST: ${{ vars.PROD_HOST }}
           PROD_PORT: ${{ vars.PROD_PORT }}
           PROD_USER: ${{ vars.PROD_USER }}
@@ -230,8 +231,11 @@ jobs:
           set -euo pipefail
           test -n "$PROD_ENV_FILE"
           test -n "$PROD_SMTP_PASSWORD"
+          test -n "$PROD_SENTRY_DSN"
           [[ "$PROD_SMTP_PASSWORD" != *$'\n'* ]]
           [[ "$PROD_SMTP_PASSWORD" != *$'\r'* ]]
+          [[ "$PROD_SENTRY_DSN" != *$'\n'* ]]
+          [[ "$PROD_SENTRY_DSN" != *$'\r'* ]]
           public_email_env=infra/env/acelerachat.production.public.env.example
           test -s "$public_email_env"
           merged_env="$RUNNER_TEMP/chatwoot.production.env"
@@ -241,6 +245,11 @@ jobs:
             printf '\n'
             cat "$public_email_env"
             printf '\nSMTP_PASSWORD=%s\n' "$PROD_SMTP_PASSWORD"
+            printf 'SENTRY_DSN=%s\n' "$PROD_SENTRY_DSN"
+            printf 'SENTRY_FRONTEND_DSN=%s\n' "$PROD_SENTRY_DSN"
+            printf 'SENTRY_ENVIRONMENT=production\n'
+            printf 'SENTRY_TRACES_SAMPLE_RATE=0.0\n'
+            printf 'SENTRY_SEND_DEFAULT_PII=false\n'
           } > "$merged_env"
           ssh -i "$RUNNER_TEMP/prod-key" -p "$PROD_PORT" \
             -o IdentitiesOnly=yes \

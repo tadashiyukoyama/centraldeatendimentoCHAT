@@ -15,6 +15,7 @@
     "mobileRelativePath",
     "runtimeRelativePath",
     "privateRelativePath",
+    "credentialsRelativePath",
     "artifactsRelativePath",
     "worktreesRelativePath",
     "futureMobileRepository",
@@ -27,14 +28,19 @@
     "repository": { "const": "tadashiyukoyama/centraldeatendimentoCHAT" },
     "upstreamRepository": { "const": "chatwoot/chatwoot" },
     "defaultBranch": { "const": "main" },
-    "workspaceEnvironmentVariable": { "const": "CENTRAL_ATENDIMENTO_WORKSPACE_ROOT" },
+    "workspaceEnvironmentVariable": {
+      "const": "CENTRAL_ATENDIMENTO_WORKSPACE_ROOT"
+    },
     "serverRelativePath": { "const": "server" },
     "mobileRelativePath": { "const": "mobile" },
     "runtimeRelativePath": { "const": "runtime" },
     "privateRelativePath": { "const": "private" },
+    "credentialsRelativePath": { "const": "credenciais" },
     "artifactsRelativePath": { "const": "artifacts" },
     "worktreesRelativePath": { "const": "worktrees" },
-    "futureMobileRepository": { "const": "tadashiyukoyama/centraldeatendimentoCHAT-mobile" },
+    "futureMobileRepository": {
+      "const": "tadashiyukoyama/centraldeatendimentoCHAT-mobile"
+    },
     "futureMobileUpstream": { "const": "chatwoot/chatwoot-mobile-app" },
     "maxAdditionalWorktrees": {
       "type": "integer",

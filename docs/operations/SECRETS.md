@@ -2,15 +2,15 @@
 
 ## Onde cada coisa fica
 
-| Dado | Desenvolvimento local | Produção |
-|---|---|---|
-| Env real do Chatwoot | `private/env/chatwoot.local.env` | secret store ou `/opt/centraldeatendimentoCHAT/private/env/chatwoot.production.env` |
-| Chaves/certificados | `private/credentials/` | secret store/ACL restrita do host |
-| PostgreSQL vivo | `runtime/data/postgres/` | volume dedicado fora do clone |
-| Redis vivo | `runtime/data/redis/` | volume dedicado fora do clone |
-| Uploads/Active Storage | `runtime/data/storage/` | volume dedicado ou S3 compatível |
-| Dump e checksum | `private/recovery/database/` | armazenamento privado de backup |
-| Exemplo de configuração | `infra/env/*.example` | não usar diretamente em produção |
+| Dado                          | Desenvolvimento local                       | Produção                                                                      |
+| ----------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------- |
+| Env real do Chatwoot          | `credenciais/chatwoot.local.env`            | secret store ou `/opt/central-atendimento/shared/env/chatwoot.production.env` |
+| Senhas, tokens, DSNs e chaves | `credenciais/` na raiz externa do workspace | secret store/ACL do host                                                      |
+| PostgreSQL vivo               | `runtime/data/postgres/`                    | volume dedicado fora do clone                                                 |
+| Redis vivo                    | `runtime/data/redis/`                       | volume dedicado fora do clone                                                 |
+| Uploads/Active Storage        | `runtime/data/storage/`                     | volume dedicado ou S3 compatível                                              |
+| Dump e checksum               | `private/recovery/database/`                | armazenamento privado de backup                                               |
+| Exemplo de configuração       | `infra/env/*.example`                       | não usar diretamente em produção                                              |
 
 ## Segredos da Evolution API
 
@@ -31,6 +31,11 @@
 5. Backups de conversas e contatos são dados sensíveis e seguem a mesma proteção dos segredos operacionais.
 6. Em CI/CD, usar secrets/environments do GitHub e nunca escrever o valor no output.
 7. Em produção, o arquivo de ambiente deve ser montado no host e somente lido pelo Compose autorizado.
+8. `credenciais/` é acessível ao operador e ao Codex do projeto, fica fora do
+   repositório `server/` e é a única pasta local canônica para credenciais de
+   acesso.
+9. Arquivos `.env` reais que contenham senhas, tokens, chaves ou DSNs também
+   pertencem a `credenciais/`; `private/` não deve duplicá-los.
 
 ## Rotação e incidente
 

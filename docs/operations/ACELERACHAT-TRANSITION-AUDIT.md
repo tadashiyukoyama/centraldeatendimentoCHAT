@@ -110,7 +110,7 @@ O nome “AI Food Manager PRO” visto na conta é o nome da conta/cliente, não
 - `MAILER_SUPPORT_EMAIL`;
 - opções de suporte e widget de atendimento.
 
-O arquivo privado atual `private/env/chatwoot.production.env` não define o conjunto de marca nem os remetentes. Portanto, vários fallbacks ainda são os do produto anterior.
+O arquivo privado atual `credenciais/chatwoot.production.env` não define o conjunto de marca nem os remetentes. Portanto, vários fallbacks ainda são os do produto anterior.
 
 `app/javascript/shared/composables/useBranding.js` faz somente substituições exatas e sensíveis a maiúsculas de “Chatwoot” nos componentes que o chamam. Isso não limpa traduções, templates, e-mails, SuperAdmin ou conteúdo carregado fora desses componentes.
 

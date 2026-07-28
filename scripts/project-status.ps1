@@ -20,6 +20,7 @@ $statusText = Invoke-WorkspaceGit @('status', '--short')
   mobileRoot = $context.mobileRoot
   runtimeRoot = $context.runtimeRoot
   privateRoot = $context.privateRoot
+  credentialsRoot = $context.credentialsRoot
   artifactsRoot = $context.artifactsRoot
   worktreesRoot = $context.worktreesRoot
   isLinkedWorktree = $context.isLinkedWorktree

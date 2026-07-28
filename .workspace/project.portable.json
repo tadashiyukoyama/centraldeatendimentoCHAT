@@ -9,6 +9,7 @@
   "mobileRelativePath": "mobile",
   "runtimeRelativePath": "runtime",
   "privateRelativePath": "private",
+  "credentialsRelativePath": "credenciais",
   "artifactsRelativePath": "artifacts",
   "worktreesRelativePath": "worktrees",
   "futureMobileRepository": "tadashiyukoyama/centraldeatendimentoCHAT-mobile",

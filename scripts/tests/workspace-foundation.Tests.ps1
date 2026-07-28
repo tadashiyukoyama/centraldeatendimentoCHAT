@@ -10,6 +10,7 @@ $capsuleRoot = Join-Path $testRoot 'capsule'
 $serverRoot = Join-Path $capsuleRoot 'server'
 $mobileRoot = Join-Path $capsuleRoot 'mobile'
 $runtimeRoot = Join-Path $capsuleRoot 'runtime'
+$credentialsRoot = Join-Path $capsuleRoot 'credenciais'
 $worktreesRoot = Join-Path $capsuleRoot 'worktrees'
 $linkedRoot = Join-Path $worktreesRoot 'context-validation'
 $previousWorkspaceRoot = [Environment]::GetEnvironmentVariable('CENTRAL_ATENDIMENTO_WORKSPACE_ROOT', 'Process')
@@ -147,9 +148,8 @@ try {
   $requiredDirectories = @(
     $serverRoot,
     $mobileRoot,
+    $credentialsRoot,
     (Join-Path $capsuleRoot 'artifacts'),
-    (Join-Path $capsuleRoot 'private\credentials'),
-    (Join-Path $capsuleRoot 'private\env'),
     (Join-Path $capsuleRoot 'private\recovery\database'),
     (Join-Path $runtimeRoot 'data\postgres'),
     (Join-Path $runtimeRoot 'data\redis'),
@@ -201,6 +201,7 @@ try {
     Assert-SamePath $script:canonicalContext.checkoutRoot $serverRoot 'checkoutRoot canonico incorreto.'
     Assert-SamePath $script:canonicalContext.canonicalServerRoot $serverRoot 'canonicalServerRoot incorreto.'
     Assert-SamePath $script:canonicalContext.workspaceRoot $capsuleRoot 'workspaceRoot incorreto.'
+    Assert-SamePath $script:canonicalContext.credentialsRoot $credentialsRoot 'credentialsRoot incorreto.'
     Assert-True (-not $script:canonicalContext.isLinkedWorktree) 'Checkout canonico nao pode ser linked.'
   }
 

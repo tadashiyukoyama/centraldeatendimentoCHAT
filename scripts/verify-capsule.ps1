@@ -30,8 +30,7 @@ $requiredDirectories = @(
   $context.canonicalServerRoot,
   $context.mobileRoot,
   $context.artifactsRoot,
-  (Join-Path $context.privateRoot 'credentials'),
-  (Join-Path $context.privateRoot 'env'),
+  $context.credentialsRoot,
   (Join-Path $context.privateRoot 'recovery\database'),
   (Join-Path $context.runtimeRoot 'data\postgres'),
   (Join-Path $context.runtimeRoot 'data\redis'),
@@ -67,7 +66,7 @@ if ($additional.Count -gt $context.maxAdditionalWorktrees) {
 
 $trackedFiles = @((Invoke-WorkspaceGit @('ls-files')) -split "`r?`n" | Where-Object { $_ })
 $trackedViolations = @($trackedFiles | Where-Object {
-  $_ -match '(^|/)(private|runtime|worktrees|artifacts)/' -or
+  $_ -match '(^|/)(credenciais|private|runtime|worktrees|artifacts)/' -or
   $_ -match '(^|/)\.env$' -or
   $_ -match '^infra/env/[^/]+\.env$'
 })
@@ -95,6 +94,7 @@ if ($codexViolations.Count -gt 0) {
   mobileRoot = $context.mobileRoot
   runtimeRoot = $context.runtimeRoot
   privateRoot = $context.privateRoot
+  credentialsRoot = $context.credentialsRoot
   artifactsRoot = $context.artifactsRoot
   isLinkedWorktree = $context.isLinkedWorktree
   mobileReserved = $true

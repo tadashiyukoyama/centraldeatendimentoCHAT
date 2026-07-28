@@ -169,6 +169,7 @@ function Get-WorkspaceContext {
   $mobileRoot = ConvertTo-WorkspaceAbsolutePath (Join-Path $workspaceRoot (Get-WorkspaceManifestValue $portableManifest 'mobileRelativePath'))
   $runtimeRoot = ConvertTo-WorkspaceAbsolutePath (Join-Path $workspaceRoot (Get-WorkspaceManifestValue $portableManifest 'runtimeRelativePath'))
   $privateRoot = ConvertTo-WorkspaceAbsolutePath (Join-Path $workspaceRoot (Get-WorkspaceManifestValue $portableManifest 'privateRelativePath'))
+  $credentialsRoot = ConvertTo-WorkspaceAbsolutePath (Join-Path $workspaceRoot (Get-WorkspaceManifestValue $portableManifest 'credentialsRelativePath'))
   $artifactsRoot = ConvertTo-WorkspaceAbsolutePath (Join-Path $workspaceRoot (Get-WorkspaceManifestValue $portableManifest 'artifactsRelativePath'))
   $worktreesRoot = ConvertTo-WorkspaceAbsolutePath (Join-Path $workspaceRoot (Get-WorkspaceManifestValue $portableManifest 'worktreesRelativePath'))
 
@@ -181,6 +182,7 @@ function Get-WorkspaceContext {
     mobileRoot = $mobileRoot
     runtimeRoot = $runtimeRoot
     privateRoot = $privateRoot
+    credentialsRoot = $credentialsRoot
     artifactsRoot = $artifactsRoot
     isLinkedWorktree = (-not (Test-WorkspaceSamePath $checkoutRoot $canonicalServerRoot))
     origin = $origin

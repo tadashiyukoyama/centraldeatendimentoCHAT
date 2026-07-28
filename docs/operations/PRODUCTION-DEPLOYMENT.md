@@ -14,6 +14,8 @@ Secrets:
 - `PROD_SMTP_PASSWORD`: password for the approved global SMTP account; it is
   merged in memory with the versioned non-secret email overlay and is never
   printed.
+- `PROD_SENTRY_DSN`: HTTPS DSN of the AceleraChat Sentry project. The deploy
+  applies it to backend and frontend with tracing and default PII disabled.
 
 Variables:
 
@@ -35,12 +37,12 @@ The domain must be created through the ICP panel as a dedicated subdomain. TLS m
 4. The workflow checks out `inputs.image_tag`, proves that commit is present, proves it is an ancestor of `origin/main`, and verifies the deployment scripts are the blobs from that same commit.
 5. Before sending the environment file or token, the runner calculates the five contract hashes from the selected commit and calls the restricted `verify-contract` action. A mismatch aborts with `Production contract mismatch: remote root-owned files do not match the selected commit.` The workflow never updates root-owned files automatically.
 6. The runner pins the audited ED25519 SSH host key with `ssh-keyscan -t
-   ed25519`. It requires exactly one unique fingerprint, places only the
+ed25519`. It requires exactly one unique fingerprint, places only the
    validated ED25519 line in `known_hosts`, and uses the restricted deploy key.
 7. Before any mutating SSH command, the runner validates the immutable image exists in GHCR, validates `PROD_EXPECTED_IP`, checks that `PROD_DOMAIN` resolves exclusively to it, and performs strict HTTPS checks for the Chatwoot and ICP panel domains. HTTP 200-599 is accepted because the application may not be active yet; status 000 or invalid TLS blocks the operation.
 8. The protected base environment is merged with
    `infra/env/acelerachat.production.public.env.example` and
-   `PROD_SMTP_PASSWORD` in a
+   the protected `PROD_SMTP_PASSWORD` and `PROD_SENTRY_DSN` values in a
    runner-temporary file with mode 0600. The merged environment is sent over
    the authenticated SSH channel and stored with mode 0600; its values are
    never printed, and the runner copy is removed unconditionally.

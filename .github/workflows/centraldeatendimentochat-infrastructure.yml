@@ -46,7 +46,8 @@ jobs:
           Draft202012Validator(schema).validate(manifest)
           relative_fields = (
               'serverRelativePath', 'mobileRelativePath', 'runtimeRelativePath',
-              'privateRelativePath', 'artifactsRelativePath', 'worktreesRelativePath',
+              'privateRelativePath', 'credentialsRelativePath',
+              'artifactsRelativePath', 'worktreesRelativePath',
           )
           assert all(not re.match(r'^[A-Za-z]:[\\\\/]', manifest[field]) and not manifest[field].startswith(('\\\\', '/')) for field in relative_fields)
           assert manifest['maxAdditionalWorktrees'] == 2
@@ -64,7 +65,7 @@ jobs:
           assert all('ports' not in production['services'][service] for service in ('sidekiq', 'postgres', 'redis'))
           assert not any(service in production['services'] for service in ('vite', 'mailhog', 'nginx', 'openresty'))
           tracked = '\n'.join(__import__('subprocess').check_output(['git', 'ls-files'], text=True).splitlines())
-          assert not any(line.startswith(('private/', 'runtime/', 'worktrees/', 'artifacts/')) for line in tracked.splitlines())
+          assert not any(line.startswith(('credenciais/', 'private/', 'runtime/', 'worktrees/', 'artifacts/')) for line in tracked.splitlines())
           assert not any(line.endswith('/.env') or line == '.env' for line in tracked.splitlines())
           assert 'ref: ${{ inputs.image_tag }}' in deploy_workflow
           assert 'git merge-base --is-ancestor "$IMAGE_TAG" origin/main' in deploy_workflow
@@ -135,8 +136,12 @@ jobs:
           assert 'verify-contract' in deploy_workflow
           assert 'PROD_SMTP_PASSWORD:' in deploy_workflow
           assert 'secrets.PROD_SMTP_PASSWORD' in deploy_workflow
+          assert 'PROD_SENTRY_DSN:' in deploy_workflow
+          assert 'secrets.PROD_SENTRY_DSN' in deploy_workflow
           assert 'infra/env/acelerachat.production.public.env.example' in deploy_workflow
           assert 'printf \'\\nSMTP_PASSWORD=%s\\n\' \"$PROD_SMTP_PASSWORD\"' in deploy_workflow
+          assert 'printf \'SENTRY_DSN=%s\\n\' \"$PROD_SENTRY_DSN\"' in deploy_workflow
+          assert 'printf \'SENTRY_FRONTEND_DSN=%s\\n\' \"$PROD_SENTRY_DSN\"' in deploy_workflow
           assert 'cat \"$public_email_env\"' in deploy_workflow
           assert 'cat \"$merged_env\"' not in deploy_workflow
           assert 'sha256sum' in gateway_script
