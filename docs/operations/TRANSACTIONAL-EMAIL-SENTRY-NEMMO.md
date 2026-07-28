@@ -9,27 +9,31 @@
 
 ## E-mail transacional
 
-O remetente público deve ser de domínio próprio da AceleraChat. Uma caixa de
-outro produto ou de um cliente não pode ser reutilizada como remetente global.
+O remetente público aprovado para esta instalação é
+`suporte@aifoodmanager.pro`. O mesmo endereço também pode operar como caixa
+de entrada, mas os dois papéis permanecem separados: o SMTP global fica no
+ambiente protegido e as credenciais IMAP/SMTP da caixa ficam no canal
+criptografado no banco.
 
 Configuração mínima:
 
 ```dotenv
-MAILER_SENDER_EMAIL=AceleraChat <no-reply@meugerenciador.pro>
-SMTP_DOMAIN=meugerenciador.pro
-SMTP_ADDRESS=<servidor SMTP>
-SMTP_PORT=<porta>
-SMTP_USERNAME=no-reply@meugerenciador.pro
+MAILER_SENDER_EMAIL=AceleraChat <suporte@aifoodmanager.pro>
+SMTP_DOMAIN=aifoodmanager.pro
+SMTP_ADDRESS=smtp.hostinger.com
+SMTP_PORT=465
+SMTP_USERNAME=suporte@aifoodmanager.pro
 SMTP_PASSWORD=<segredo>
 SMTP_AUTHENTICATION=login
-SMTP_ENABLE_STARTTLS_AUTO=true
+SMTP_ENABLE_STARTTLS_AUTO=false
+SMTP_SSL=true
 SMTP_OPENSSL_VERIFY_MODE=peer
-MAILER_DKIM_SELECTOR=<seletor>
-PRIVACY_CONTACT_EMAIL=privacidade@meugerenciador.pro
-SUPPORT_CONTACT_EMAIL=suporte@meugerenciador.pro
+MAILER_DKIM_SELECTORS=hostingermail-a,hostingermail-b,hostingermail-c
+PRIVACY_CONTACT_EMAIL=bellartecomercial@gmail.com
+SUPPORT_CONTACT_EMAIL=suporte@aifoodmanager.pro
 ```
 
-O provedor pode exigir TLS implícito na porta 465. Nesse caso:
+Esta configuração usa TLS implícito na porta 465:
 
 ```dotenv
 SMTP_ENABLE_STARTTLS_AUTO=false
@@ -43,9 +47,10 @@ bundle exec rake acelerachat:email:check
 ```
 
 O gate autentica no SMTP sem enviar mensagem e sem imprimir credenciais,
-verifica um único modo de transporte seguro, coerência do domínio, MX, SPF,
-DKIM por TXT ou CNAME e DMARC. Depois do deploy, um administrador executa um
-único envio controlado:
+verifica um único modo de transporte seguro, coerência entre remetente, usuário
+SMTP e domínio, MX, SPF, os três DKIM por TXT ou CNAME e DMARC. O contato
+jurídico pode usar outro domínio válido. Depois do deploy, um administrador
+executa um único envio controlado:
 
 ```bash
 bundle exec rake "acelerachat:email:test[destinatario@example.com]"
@@ -121,3 +126,39 @@ podem ser simuladas pelo modelo.
 8. Validar uma alteração de ferramentas do Nemmo com um administrador e a
    negação da mesma alteração com um agente comum.
 9. Encerrar a janela de rollback somente após os três smokes passarem.
+
+## Caixa de entrada de suporte
+
+A caixa `Suporte AI Food Manager` (ID `16`) usa a integração nativa:
+
+```dotenv
+EMAIL=suporte@aifoodmanager.pro
+IMAP_ADDRESS=imap.hostinger.com
+IMAP_PORT=993
+IMAP_ENABLE_SSL=true
+IMAP_AUTHENTICATION=login
+SMTP_ADDRESS=smtp.hostinger.com
+SMTP_PORT=465
+SMTP_DOMAIN=aifoodmanager.pro
+SMTP_ENABLE_SSL_TLS=true
+SMTP_ENABLE_STARTTLS_AUTO=false
+SMTP_OPENSSL_VERIFY_MODE=peer
+SMTP_AUTHENTICATION=login
+```
+
+As duas senhas do canal são gravadas somente depois de confirmar que
+`ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY`,
+`ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY` e
+`ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT` estão presentes em produção.
+O endpoint administrativo informa apenas se cada credencial está configurada;
+ele nunca devolve o valor da senha ao navegador. Atualizações sem uma nova
+senha preservam a credencial existente e continuam validando a conexão com o
+valor armazenado.
+
+A credencial atual da caixa ID `16` deve ser preservada. Por decisão explícita
+do operador, esta entrega não pode rotacionar nem alterar automaticamente a
+senha no provedor, no AceleraChat ou no secret store. A senha permanece
+armazenada fora do Git e a decisão de mantê-la fica registrada como risco
+operacional aceito para este corte.
+O Sidekiq consulta o IMAP a cada minuto. O smoke envia uma mensagem externa
+para a caixa, confirma a criação da conversa e responde pela própria conversa.

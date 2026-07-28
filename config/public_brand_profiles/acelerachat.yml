@@ -36,7 +36,7 @@ global_config:
   THEME_COLOR: '#2563EB'
   BACKGROUND_COLOR: '#F8FAFC'
   PUBLIC_META_DESCRIPTION: Atendimento omnicanal com colaboração entre equipes e automação inteligente.
-  MAILER_SUPPORT_EMAIL: suporte@meugerenciador.pro
+  MAILER_SUPPORT_EMAIL: suporte@aifoodmanager.pro
 help_articles:
   agent_bots:
     pt_BR: agentes-virtuais

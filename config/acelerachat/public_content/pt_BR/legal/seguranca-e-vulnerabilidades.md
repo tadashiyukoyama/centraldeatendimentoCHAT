@@ -16,7 +16,7 @@ Este documento é mantido por `{{LEGAL_ENTITY_NAME}}`{{LEGAL_ENTITY_REGISTRATION
 
 ## Controles e reporte
 
-Usamos segregação de acesso, criptografia quando configurada, trilhas de auditoria, backups e gestão de vulnerabilidades. Relate uma suspeita a `seguranca@meugerenciador.pro`, sem exploração destrutiva ou exposição pública prematura. Inclua impacto e passos mínimos de reprodução, sem dados pessoais reais.
+Usamos segregação de acesso, criptografia quando configurada, trilhas de auditoria, backups e gestão de vulnerabilidades. Relate uma suspeita a `suporte@aifoodmanager.pro`, sem exploração destrutiva ou exposição pública prematura. Inclua impacto e passos mínimos de reprodução, sem dados pessoais reais.
 
 ## Referências oficiais
 

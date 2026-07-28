@@ -29,6 +29,7 @@ export default {
       port: '',
       login: '',
       password: '',
+      passwordConfigured: false,
       isSSLEnabled: true,
       authMechanism: 'plain',
       authMechanisms: [
@@ -38,11 +39,13 @@ export default {
       ],
     };
   },
-  validations: {
-    address: { required },
-    port: { required, minLength: minLength(2) },
-    login: { required },
-    password: { required },
+  validations() {
+    return {
+      address: { required },
+      port: { required, minLength: minLength(2) },
+      login: { required },
+      password: this.passwordConfigured ? {} : { required },
+    };
   },
   computed: {
     ...mapGetters({ uiFlags: 'inboxes/getUIFlags' }),
@@ -62,7 +65,7 @@ export default {
         imap_address,
         imap_port,
         imap_login,
-        imap_password,
+        imap_password_set,
         imap_enable_ssl,
         imap_authentication,
       } = this.inbox;
@@ -70,25 +73,30 @@ export default {
       this.address = imap_address;
       this.port = imap_port;
       this.login = imap_login;
-      this.password = imap_password;
+      this.password = '';
+      this.passwordConfigured = Boolean(imap_password_set);
       this.isSSLEnabled = imap_enable_ssl;
       this.authMechanism = imap_authentication || 'plain';
     },
     async updateInbox() {
       try {
         this.loading = true;
+        const channel = {
+          imap_enabled: this.isIMAPEnabled,
+          imap_address: this.address,
+          imap_port: this.port,
+          imap_login: this.login,
+          imap_enable_ssl: this.isSSLEnabled,
+          imap_authentication: this.authMechanism,
+        };
+        if (this.password) {
+          channel.imap_password = this.password;
+        }
+
         let payload = {
           id: this.inbox.id,
           formData: false,
-          channel: {
-            imap_enabled: this.isIMAPEnabled,
-            imap_address: this.address,
-            imap_port: this.port,
-            imap_login: this.login,
-            imap_password: this.password,
-            imap_enable_ssl: this.isSSLEnabled,
-            imap_authentication: this.authMechanism,
-          },
+          channel,
         };
 
         if (!this.isIMAPEnabled) {
@@ -96,6 +104,9 @@ export default {
         }
 
         await this.$store.dispatch('inboxes/updateInboxIMAP', payload);
+        this.passwordConfigured =
+          this.passwordConfigured || Boolean(this.password);
+        this.password = '';
         useAlert(this.$t('INBOX_MGMT.IMAP.EDIT.SUCCESS_MESSAGE'));
       } catch (error) {
         useAlert(error.message);
@@ -156,8 +167,13 @@ export default {
           :class="{ error: v$.password.$error }"
           class="w-full"
           :label="$t('INBOX_MGMT.IMAP.PASSWORD.LABEL')"
-          :placeholder="$t('INBOX_MGMT.IMAP.PASSWORD.PLACE_HOLDER')"
+          :placeholder="
+            passwordConfigured
+              ? '••••••••'
+              : $t('INBOX_MGMT.IMAP.PASSWORD.PLACE_HOLDER')
+          "
           type="password"
+          autocomplete="new-password"
           @blur="v$.password.$touch"
         />
         <label for="toggle-enable-ssl">

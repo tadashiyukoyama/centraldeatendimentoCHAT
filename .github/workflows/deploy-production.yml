@@ -222,13 +222,31 @@ jobs:
       - name: Install production environment file
         env:
           PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+          PROD_SMTP_PASSWORD: ${{ secrets.PROD_SMTP_PASSWORD }}
           PROD_HOST: ${{ vars.PROD_HOST }}
           PROD_PORT: ${{ vars.PROD_PORT }}
           PROD_USER: ${{ vars.PROD_USER }}
         run: |
           set -euo pipefail
           test -n "$PROD_ENV_FILE"
-          printf '%s' "$PROD_ENV_FILE" | ssh -i "$RUNNER_TEMP/prod-key" -p "$PROD_PORT" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/prod-known-hosts" "$PROD_USER@$PROD_HOST" install-env
+          test -n "$PROD_SMTP_PASSWORD"
+          [[ "$PROD_SMTP_PASSWORD" != *$'\n'* ]]
+          [[ "$PROD_SMTP_PASSWORD" != *$'\r'* ]]
+          public_email_env=infra/env/acelerachat.production.public.env.example
+          test -s "$public_email_env"
+          merged_env="$RUNNER_TEMP/chatwoot.production.env"
+          umask 077
+          {
+            printf '%s\n' "$PROD_ENV_FILE"
+            printf '\n'
+            cat "$public_email_env"
+            printf '\nSMTP_PASSWORD=%s\n' "$PROD_SMTP_PASSWORD"
+          } > "$merged_env"
+          ssh -i "$RUNNER_TEMP/prod-key" -p "$PROD_PORT" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/prod-known-hosts" \
+            "$PROD_USER@$PROD_HOST" install-env < "$merged_env"
 
       - name: Deploy exact image and verify ICP
         env:
@@ -252,4 +270,4 @@ jobs:
 
       - name: Remove transient SSH material
         if: always()
-        run: rm -f "$RUNNER_TEMP/prod-key" "$RUNNER_TEMP/prod-host-key.ed25519.scan" "$RUNNER_TEMP/prod-known-hosts"
+        run: rm -f "$RUNNER_TEMP/prod-key" "$RUNNER_TEMP/prod-host-key.ed25519.scan" "$RUNNER_TEMP/prod-known-hosts" "$RUNNER_TEMP/chatwoot.production.env"

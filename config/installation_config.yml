@@ -107,7 +107,7 @@
   locked: false
 - name: MAILER_SUPPORT_EMAIL
   display_title: 'Support Email'
-  value: 'suporte@meugerenciador.pro'
+  value: 'suporte@aifoodmanager.pro'
   description: 'The support email address for your installation'
   locked: false
 - name: ACCOUNT_EMAILS_LIMIT

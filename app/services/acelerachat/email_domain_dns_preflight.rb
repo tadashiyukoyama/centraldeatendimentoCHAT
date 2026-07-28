@@ -2,9 +2,9 @@ require 'resolv'
 require 'timeout'
 
 class Acelerachat::EmailDomainDnsPreflight
-  def initialize(domain:, selector:, resolver: Resolv::DNS)
+  def initialize(domain:, selectors: nil, selector: nil, resolver: Resolv::DNS)
     @domain = domain
-    @selector = selector
+    @selectors = Array(selectors.presence || selector)
     @resolver = resolver
   end
 
@@ -24,12 +24,14 @@ class Acelerachat::EmailDomainDnsPreflight
     errors << "Missing MX for #{@domain}" if dns.getresources(@domain, Resolv::DNS::Resource::IN::MX).empty?
     errors << "Missing SPF for #{@domain}" unless txt_record_starts_with?(dns, @domain, 'v=spf1')
     errors << "Missing DMARC for #{@domain}" unless txt_record_starts_with?(dns, "_dmarc.#{@domain}", 'v=dmarc1')
-    errors << "Missing DKIM for selector #{@selector}" unless dkim_record_present?(dns)
+    @selectors.each do |selector|
+      errors << "Missing DKIM for selector #{selector}" unless dkim_record_present?(dns, selector)
+    end
     errors
   end
 
-  def dkim_record_present?(dns)
-    name = "#{@selector}._domainkey.#{@domain}"
+  def dkim_record_present?(dns, selector)
+    name = "#{selector}._domainkey.#{@domain}"
     txt_record_includes?(dns, name, 'p=') ||
       dns.getresources(name, Resolv::DNS::Resource::IN::CNAME).any?
   end

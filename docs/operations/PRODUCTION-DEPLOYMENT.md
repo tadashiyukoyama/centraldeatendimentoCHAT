@@ -11,6 +11,9 @@ Secrets:
 - `PROD_SSH_KEY`: private key for the restricted `centraldeploy` account;
 - `GHCR_PULL_TOKEN`: least-privilege token that can pull the package;
 - `PROD_ENV_FILE`: complete production environment file, without committing its values.
+- `PROD_SMTP_PASSWORD`: password for the approved global SMTP account; it is
+  merged in memory with the versioned non-secret email overlay and is never
+  printed.
 
 Variables:
 
@@ -35,7 +38,12 @@ The domain must be created through the ICP panel as a dedicated subdomain. TLS m
    ed25519`. It requires exactly one unique fingerprint, places only the
    validated ED25519 line in `known_hosts`, and uses the restricted deploy key.
 7. Before any mutating SSH command, the runner validates the immutable image exists in GHCR, validates `PROD_EXPECTED_IP`, checks that `PROD_DOMAIN` resolves exclusively to it, and performs strict HTTPS checks for the Chatwoot and ICP panel domains. HTTP 200-599 is accepted because the application may not be active yet; status 000 or invalid TLS blocks the operation.
-8. The environment file is sent over the authenticated SSH channel and stored with mode 0600; its value is never printed.
+8. The protected base environment is merged with
+   `infra/env/acelerachat.production.public.env.example` and
+   `PROD_SMTP_PASSWORD` in a
+   runner-temporary file with mode 0600. The merged environment is sent over
+   the authenticated SSH channel and stored with mode 0600; its values are
+   never printed, and the runner copy is removed unconditionally.
 9. The deploy command receives exactly four arguments: image SHA, Chatwoot domain, ICP panel domain and expected IPv4. The gateway rejects missing or extra arguments.
 10. The deploy script repeats the DNS, strict TLS and ICP checks before changing application state, validates Compose, authenticates to GHCR, pulls the immutable image, and logs out before creating any bootstrap marker.
 11. When `shared/active-image` already exists, the script runs `pg_dump --format=custom --no-owner --no-acl` inside the existing PostgreSQL container. It rejects an empty dump, validates the archive with `pg_restore --list`, writes a SHA-256 checksum and metadata, and atomically updates the `latest` backup record. A failed or unverifiable backup aborts the deployment before the bootstrap marker or any stateful Compose operation.

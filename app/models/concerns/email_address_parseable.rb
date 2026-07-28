@@ -10,6 +10,6 @@ module EmailAddressParseable
   end
 
   def default_sender_email_address
-    Mail::Address.new(ENV.fetch('MAILER_SENDER_EMAIL', 'no-reply@meugerenciador.pro')).address
+    Mail::Address.new(ENV.fetch('MAILER_SENDER_EMAIL', 'suporte@aifoodmanager.pro')).address
   end
 end

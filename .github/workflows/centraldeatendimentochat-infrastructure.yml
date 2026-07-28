@@ -133,6 +133,12 @@ jobs:
           assert __import__('subprocess').run(['git', 'grep', '-n', legacy_vps_ip], capture_output=True).returncode == 1
           assert 'verify-contract)' in gateway_script
           assert 'verify-contract' in deploy_workflow
+          assert 'PROD_SMTP_PASSWORD:' in deploy_workflow
+          assert 'secrets.PROD_SMTP_PASSWORD' in deploy_workflow
+          assert 'infra/env/acelerachat.production.public.env.example' in deploy_workflow
+          assert 'printf \'\\nSMTP_PASSWORD=%s\\n\' \"$PROD_SMTP_PASSWORD\"' in deploy_workflow
+          assert 'cat \"$public_email_env\"' in deploy_workflow
+          assert 'cat \"$merged_env\"' not in deploy_workflow
           assert 'sha256sum' in gateway_script
           for fixed_path in (
               '/usr/local/sbin/central-atendimento-deploy',

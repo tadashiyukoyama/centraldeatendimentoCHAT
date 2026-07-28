@@ -21,7 +21,7 @@ namespace :acelerachat do
   end
 
   namespace :email do
-    desc 'Check required first-party mailboxes and MX/SPF/DKIM/DMARC before release'
+    desc 'Check contacts, credential encryption, SMTP authentication, and MX/SPF/DKIM/DMARC before release'
     task check: :environment do
       puts JSON.pretty_generate(Acelerachat::EmailDomainPreflight.new.call)
     end

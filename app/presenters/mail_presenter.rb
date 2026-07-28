@@ -175,7 +175,7 @@ class MailPresenter < SimpleDelegator
 
   def notification_email_from_chatwoot?
     # notification emails are send via mailer sender email address. so it should match
-    configured_sender = Mail::Address.new(ENV.fetch('MAILER_SENDER_EMAIL', 'AceleraChat <no-reply@meugerenciador.pro>')).address
+    configured_sender = Mail::Address.new(ENV.fetch('MAILER_SENDER_EMAIL', 'AceleraChat <suporte@aifoodmanager.pro>')).address
     original_sender.to_s.casecmp?(configured_sender)
   end
 

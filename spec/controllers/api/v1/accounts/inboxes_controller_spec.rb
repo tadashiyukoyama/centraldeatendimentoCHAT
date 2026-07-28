@@ -221,7 +221,14 @@ RSpec.describe 'Inboxes API', type: :request do
       end
 
       it 'returns imap details in inbox when admin' do
-        email_channel = create(:channel_email, account: account, imap_enabled: true, imap_login: 'test@test.com')
+        email_channel = create(
+          :channel_email,
+          account: account,
+          imap_enabled: true,
+          imap_login: 'test@test.com',
+          imap_password: 'imap-secret',
+          smtp_password: 'smtp-secret'
+        )
         email_inbox = create(:inbox, channel: email_channel, account: account)
 
         imap_connection = double
@@ -236,6 +243,10 @@ RSpec.describe 'Inboxes API', type: :request do
 
         expect(data[:imap_enabled]).to be_truthy
         expect(data[:imap_login]).to eq('test@test.com')
+        expect(data[:imap_password_set]).to be(true)
+        expect(data[:smtp_password_set]).to be(true)
+        expect(data).not_to have_key(:imap_password)
+        expect(data).not_to have_key(:smtp_password)
       end
 
       context 'when it is a Twilio inbox' do
@@ -654,7 +665,7 @@ RSpec.describe 'Inboxes API', type: :request do
       end
 
       it 'updates email inbox with imap when administrator' do
-        email_channel = create(:channel_email, account: account)
+        email_channel = create(:channel_email, account: account, imap_password: 'existing-imap-secret')
         email_inbox = create(:inbox, channel: email_channel, account: account)
 
         imap_connection = instance_double(Net::IMAP, disconnected?: false)
@@ -680,6 +691,8 @@ RSpec.describe 'Inboxes API', type: :request do
         expect(email_channel.reload.imap_address).to eq('imap.gmail.com')
         expect(email_channel.reload.imap_port).to eq(993)
         expect(email_channel.reload.imap_authentication).to eq('login')
+        expect(email_channel.reload.imap_password).to eq('existing-imap-secret')
+        expect(imap_connection).to have_received(:login).with('imaptest@gmail.com', 'existing-imap-secret')
       end
 
       it 'updates avatar when administrator' do
@@ -757,7 +770,8 @@ RSpec.describe 'Inboxes API', type: :request do
         expect(email_channel.reload.smtp_openssl_verify_mode).to eq('peer')
       end
 
-      it 'updates smtp configuration with ssl/tls encryption' do
+      it 'updates smtp configuration with ssl/tls encryption', :aggregate_failures do
+        email_channel.update!(smtp_password: 'existing-smtp-secret')
         smtp_connection = double
         allow(smtp_connection).to receive(:open_timeout=).and_return(10)
         allow(smtp_connection).to receive(:start).and_return(true)
@@ -786,6 +800,42 @@ RSpec.describe 'Inboxes API', type: :request do
         expect(email_channel.reload.smtp_port).to eq(587)
         expect(email_channel.reload.smtp_enable_ssl_tls).to be true
         expect(email_channel.reload.smtp_openssl_verify_mode).to eq('none')
+        expect(email_channel.reload.smtp_password).to eq('existing-smtp-secret')
+        expect(smtp_connection).to have_received(:start).with(
+          '',
+          'smtptest@gmail.com',
+          'existing-smtp-secret',
+          :login
+        )
+      end
+
+      it 'does not persist smtp settings when credential validation fails' do
+        smtp_connection = double
+        allow(smtp_connection).to receive(:open_timeout=)
+        allow(smtp_connection).to receive(:respond_to?).and_return(true)
+        allow(smtp_connection).to receive(:enable_tls)
+        allow(smtp_connection).to receive(:start).and_raise(Net::SMTPAuthenticationError.new('rejected'))
+        allow(Net::SMTP).to receive(:new).and_return(smtp_connection)
+
+        expect do
+          patch "/api/v1/accounts/#{account.id}/inboxes/#{email_inbox.id}",
+                headers: admin.create_new_auth_token,
+                params: {
+                  channel: {
+                    smtp_enabled: true,
+                    smtp_address: 'smtp.invalid.example',
+                    smtp_port: 465,
+                    smtp_login: 'support@example.com',
+                    smtp_password: 'invalid-secret',
+                    smtp_domain: 'example.com',
+                    smtp_enable_ssl_tls: true,
+                    smtp_openssl_verify_mode: 'peer'
+                  }
+                },
+                as: :json
+        end.not_to(change { email_channel.reload.attributes })
+
+        expect(response).to have_http_status(:unprocessable_entity)
       end
 
       it 'updates smtp configuration with authentication mechanism' do

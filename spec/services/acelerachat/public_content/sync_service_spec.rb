@@ -11,7 +11,7 @@ RSpec.describe Acelerachat::PublicContent::SyncService do
       LEGAL_ENTITY_ADDRESS: 'Rua Exemplo, 100, São Paulo/SP',
       LEGAL_DPO_NAME: 'Encarregado Exemplo',
       PRIVACY_CONTACT_EMAIL: 'privacidade@meugerenciador.pro',
-      SUPPORT_CONTACT_EMAIL: 'suporte@meugerenciador.pro',
+      SUPPORT_CONTACT_EMAIL: 'suporte@aifoodmanager.pro',
       ACELERACHAT_PUBLIC_CONTENT_AUTHOR_EMAIL: author.email
     }
   end

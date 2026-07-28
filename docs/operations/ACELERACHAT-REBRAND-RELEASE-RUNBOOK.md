@@ -61,12 +61,12 @@ LEGAL_ENTITY_NAME=
 LEGAL_ENTITY_CNPJ=
 LEGAL_ENTITY_ADDRESS=
 LEGAL_DPO_NAME=
-PRIVACY_CONTACT_EMAIL=privacidade@meugerenciador.pro
-SUPPORT_CONTACT_EMAIL=suporte@meugerenciador.pro
+PRIVACY_CONTACT_EMAIL=bellartecomercial@gmail.com
+SUPPORT_CONTACT_EMAIL=suporte@aifoodmanager.pro
 ACELERACHAT_PUBLIC_CONTENT_AUTHOR_EMAIL=bellartecomercial@gmail.com
-MAILER_SENDER_EMAIL=AceleraChat <no-reply@meugerenciador.pro>
-SMTP_DOMAIN=meugerenciador.pro
-MAILER_DKIM_SELECTOR=
+MAILER_SENDER_EMAIL=AceleraChat <suporte@aifoodmanager.pro>
+SMTP_DOMAIN=aifoodmanager.pro
+MAILER_DKIM_SELECTORS=hostingermail-a,hostingermail-b,hostingermail-c
 ENABLE_ACCOUNT_SIGNUP=false
 ACELERA_CONTROL_ENABLED=false
 ```
@@ -75,10 +75,8 @@ ACELERA_CONTROL_ENABLED=false
 
 Antes do corte, confirmar manualmente que estes endereços recebem mensagens:
 
-- `suporte@meugerenciador.pro`;
-- `privacidade@meugerenciador.pro`;
-- `seguranca@meugerenciador.pro`;
-- `no-reply@meugerenciador.pro` como remetente autorizado.
+- `suporte@aifoodmanager.pro` como suporte e remetente autorizado;
+- `bellartecomercial@gmail.com` como contato de privacidade provisório.
 
 O gate DNS exige MX, SPF, DKIM e DMARC. A existência individual de uma caixa postal deve ser comprovada por envio controlado; DNS sozinho não prova entrega.
 

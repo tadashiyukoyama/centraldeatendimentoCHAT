@@ -107,7 +107,7 @@ class Api::V1::Accounts::InboxesController < Api::V1::Accounts::BaseController
     channel_attributes = get_channel_attributes(@inbox.channel_type)
     return if permitted_params(channel_attributes)[:channel].blank?
 
-    validate_and_update_email_channel(channel_attributes) if @inbox.inbox_type == 'Email'
+    return if @inbox.inbox_type == 'Email' && !validate_and_update_email_channel(channel_attributes)
 
     reauthorize_and_update_channel(channel_attributes)
     update_channel_feature_flags
@@ -118,9 +118,11 @@ class Api::V1::Accounts::InboxesController < Api::V1::Accounts::BaseController
   end
 
   def validate_and_update_email_channel(channel_attributes)
-    validate_email_channel(channel_attributes)
+    validate_email_channel(@inbox.channel, channel_attributes)
+    true
   rescue StandardError => e
-    render json: { message: e }, status: :unprocessable_entity and return
+    render json: { message: e.message }, status: :unprocessable_entity
+    false
   end
 
   def reauthorize_and_update_channel(channel_attributes)

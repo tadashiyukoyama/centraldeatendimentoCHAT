@@ -85,7 +85,7 @@ if resource.email?
   ## IMAP
   if Current.account_user&.administrator?
     json.imap_login resource.channel.try(:imap_login)
-    json.imap_password resource.channel.try(:imap_password)
+    json.imap_password_set resource.channel.try(:imap_password).present?
     json.imap_address resource.channel.try(:imap_address)
     json.imap_port resource.channel.try(:imap_port)
     json.imap_enabled resource.channel.try(:imap_enabled)
@@ -100,7 +100,7 @@ if resource.email?
   ## SMTP
   if Current.account_user&.administrator?
     json.smtp_login resource.channel.try(:smtp_login)
-    json.smtp_password resource.channel.try(:smtp_password)
+    json.smtp_password_set resource.channel.try(:smtp_password).present?
     json.smtp_address resource.channel.try(:smtp_address)
     json.smtp_port resource.channel.try(:smtp_port)
     json.smtp_enabled resource.channel.try(:smtp_enabled)

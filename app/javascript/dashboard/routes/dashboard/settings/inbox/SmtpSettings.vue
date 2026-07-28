@@ -31,6 +31,7 @@ export default {
       port: '',
       login: '',
       password: '',
+      passwordConfigured: false,
       domain: '',
       ssl: false,
       starttls: true,
@@ -57,15 +58,17 @@ export default {
       ],
     };
   },
-  validations: {
-    address: { required },
-    port: {
-      required,
-      minLength: minLength(2),
-    },
-    login: { required },
-    password: { required },
-    domain: { required },
+  validations() {
+    return {
+      address: { required },
+      port: {
+        required,
+        minLength: minLength(2),
+      },
+      login: { required },
+      password: this.passwordConfigured ? {} : { required },
+      domain: { required },
+    };
   },
   computed: {
     ...mapGetters({ uiFlags: 'inboxes/getUIFlags' }),
@@ -85,7 +88,7 @@ export default {
         smtp_address,
         smtp_port,
         smtp_login,
-        smtp_password,
+        smtp_password_set,
         smtp_domain,
         smtp_enable_starttls_auto,
         smtp_enable_ssl_tls,
@@ -96,7 +99,8 @@ export default {
       this.address = smtp_address;
       this.port = smtp_port;
       this.login = smtp_login;
-      this.password = smtp_password;
+      this.password = '';
+      this.passwordConfigured = Boolean(smtp_password_set);
       this.domain = smtp_domain;
       this.starttls = smtp_enable_starttls_auto;
       this.ssl = smtp_enable_ssl_tls;
@@ -129,22 +133,29 @@ export default {
     },
     async updateInbox() {
       try {
+        const channel = {
+          smtp_enabled: this.isSMTPEnabled,
+          smtp_address: this.address,
+          smtp_port: this.port,
+          smtp_login: this.login,
+          smtp_domain: this.domain,
+          smtp_enable_ssl_tls: this.ssl,
+          smtp_enable_starttls_auto: this.starttls,
+          smtp_openssl_verify_mode: this.openSSLVerifyMode,
+          smtp_authentication: this.authMechanism,
+        };
+        if (this.password) {
+          channel.smtp_password = this.password;
+        }
+
         const payload = {
           id: this.inbox.id,
-          channel: {
-            smtp_enabled: this.isSMTPEnabled,
-            smtp_address: this.address,
-            smtp_port: this.port,
-            smtp_login: this.login,
-            smtp_password: this.password,
-            smtp_domain: this.domain,
-            smtp_enable_ssl_tls: this.ssl,
-            smtp_enable_starttls_auto: this.starttls,
-            smtp_openssl_verify_mode: this.openSSLVerifyMode,
-            smtp_authentication: this.authMechanism,
-          },
+          channel,
         };
         await this.$store.dispatch('inboxes/updateInboxSMTP', payload);
+        this.passwordConfigured =
+          this.passwordConfigured || Boolean(this.password);
+        this.password = '';
         useAlert(this.$t('INBOX_MGMT.SMTP.EDIT.SUCCESS_MESSAGE'));
       } catch (error) {
         useAlert(
@@ -204,8 +215,13 @@ export default {
           :class="{ error: v$.password.$error }"
           class="w-full"
           :label="$t('INBOX_MGMT.SMTP.PASSWORD.LABEL')"
-          :placeholder="$t('INBOX_MGMT.SMTP.PASSWORD.PLACE_HOLDER')"
+          :placeholder="
+            passwordConfigured
+              ? '••••••••'
+              : $t('INBOX_MGMT.SMTP.PASSWORD.PLACE_HOLDER')
+          "
           type="password"
+          autocomplete="new-password"
           @blur="v$.password.$touch"
         />
         <woot-input

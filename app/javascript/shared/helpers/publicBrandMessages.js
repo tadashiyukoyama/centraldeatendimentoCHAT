@@ -3,7 +3,7 @@ const replacePublicBrandText = (text, config) => {
   const termsURL = config.TERMS_URL || '/legal/terms';
   const privacyURL = config.PRIVACY_URL || '/legal/privacy';
   const supportEmail =
-    config.MAILER_SUPPORT_EMAIL || 'suporte@meugerenciador.pro';
+    config.MAILER_SUPPORT_EMAIL || 'suporte@aifoodmanager.pro';
 
   return text
     .replace(

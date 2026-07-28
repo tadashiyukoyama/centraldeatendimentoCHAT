@@ -104,7 +104,7 @@ module PublicBrand
       text.gsub(%r{https://(?:www\.)?chatwoot\.com/(?:terms(?:-of-service)?|terms-of-use)[^\s"'<>)]*}i, value('TERMS_URL', '/legal/terms'))
           .gsub(%r{https://(?:www\.)?chatwoot\.com/privacy(?:-policy)?[^\s"'<>)]*}i, value('PRIVACY_URL', '/legal/privacy'))
           .gsub(LEGACY_PRODUCT_URL, value('HELP_CENTER_URL', '/hc/acelerachat'))
-          .gsub(/[A-Z0-9._%+-]+@chatwoot\.com/i, value('MAILER_SUPPORT_EMAIL', 'suporte@meugerenciador.pro'))
+          .gsub(/[A-Z0-9._%+-]+@chatwoot\.com/i, value('MAILER_SUPPORT_EMAIL', 'suporte@aifoodmanager.pro'))
           .gsub(/Chatwoot/i, value('INSTALLATION_NAME', 'AceleraChat'))
           .gsub(/Captain|Capitão/i, value('ASSISTANT_PUBLIC_NAME', 'Nemmo'))
           .gsub(/\bEnterprise\b/i, value('PUBLIC_PLAN_NAME', 'PRO'))

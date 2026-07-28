@@ -7,7 +7,7 @@ RSpec.describe ApplicationMailer do
         'BRAND_NAME' => 'AceleraChat',
         'BRAND_URL' => 'https://atendimento.meugerenciador.pro',
         'LOGO' => '/brand-assets/acelerachat/logo.svg',
-        'MAILER_SUPPORT_EMAIL' => 'suporte@meugerenciador.pro'
+        'MAILER_SUPPORT_EMAIL' => 'suporte@aifoodmanager.pro'
       }.with_indifferent_access
     )
 

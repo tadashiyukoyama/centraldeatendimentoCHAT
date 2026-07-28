@@ -6,10 +6,10 @@ RSpec.describe 'Devise::Mailer' do
   around do |example|
     with_modified_env(
       PUBLIC_BRAND_PROFILE: 'acelerachat',
-      MAILER_SENDER_EMAIL: 'AceleraChat <no-reply@meugerenciador.pro>'
+      MAILER_SENDER_EMAIL: 'AceleraChat <suporte@aifoodmanager.pro>'
     ) do
       previous_sender = Devise.mailer_sender
-      Devise.mailer_sender = 'AceleraChat <no-reply@meugerenciador.pro>'
+      Devise.mailer_sender = 'AceleraChat <suporte@aifoodmanager.pro>'
       PublicBrand.reset!
       example.run
     ensure
@@ -32,7 +32,7 @@ RSpec.describe 'Devise::Mailer' do
     end
 
     it 'has the correct header data' do
-      expect(mail.reply_to).to contain_exactly('no-reply@meugerenciador.pro')
+      expect(mail.reply_to).to contain_exactly('suporte@aifoodmanager.pro')
       expect(mail.to).to contain_exactly(confirmable_user.email)
       expect(mail.subject).to eq('Confirmation Instructions')
     end

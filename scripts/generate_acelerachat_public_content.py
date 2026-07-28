@@ -298,7 +298,7 @@ Podem existir fornecedores de hospedagem, e-mail transacional, armazenamento, mo
             "security": """
 ## Controles e reporte
 
-Usamos segregação de acesso, criptografia quando configurada, trilhas de auditoria, backups e gestão de vulnerabilidades. Relate uma suspeita a `seguranca@meugerenciador.pro`, sem exploração destrutiva ou exposição pública prematura. Inclua impacto e passos mínimos de reprodução, sem dados pessoais reais.
+Usamos segregação de acesso, criptografia quando configurada, trilhas de auditoria, backups e gestão de vulnerabilidades. Relate uma suspeita a `suporte@aifoodmanager.pro`, sem exploração destrutiva ou exposição pública prematura. Inclua impacto e passos mínimos de reprodução, sem dados pessoais reais.
 """,
             "incidents": """
 ## Resposta e comunicação
@@ -362,7 +362,7 @@ This English version is provided for accessibility. Brazilian law and the Portug
         "retention": "Unverified privacy requests are removed after seven days; sensitive closed-request details after 90 days; minimum protocol metadata after 730 days. Personal-data incident records are kept for at least five years under ANPD rules.",
         "dpa": "The customer defines documented instructions and purposes. AceleraChat processes data to provide the service, applies security controls, assists with data subject requests, and requires compatible safeguards from subprocessors.",
         "subprocessors": "Potential categories include hosting, transactional email, storage, monitoring, payments, AI, support, and communication channels. The production list must be validated against actual contracts before publication.",
-        "security": "Report suspected vulnerabilities to `seguranca@meugerenciador.pro`. Do not perform destructive testing or disclose personal data. Controls include access segregation, configured encryption, audit trails, backups, and vulnerability management.",
+        "security": "Report suspected vulnerabilities to `suporte@aifoodmanager.pro`. Do not perform destructive testing or disclose personal data. Controls include access segregation, configured encryption, audit trails, backups, and vulnerability management.",
         "incidents": "Relevant events are triaged, contained, investigated, and recorded. Incidents likely to create relevant risk or harm must be communicated by the controller under the applicable ANPD deadline, currently three business days unless specific law provides otherwise.",
         "acceptable_use": "Spam, fraud, harassment, malware, unlawful collection, unauthorized access, and evasion of provider limits are prohibited. Customers must honor consent, opt-out, and third-party channel policies.",
         "billing_policy": "Recurring subscriptions, auto-provisioning, and first-party billing are not active in this release. Pricing, taxes, cancellation, refunds, and non-payment effects must be presented before activation.",

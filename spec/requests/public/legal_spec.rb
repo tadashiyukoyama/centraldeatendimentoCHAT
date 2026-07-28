@@ -8,7 +8,7 @@ RSpec.describe 'AceleraChat legal and privacy requests', type: :request do
       LEGAL_ENTITY_ADDRESS: 'Rua Exemplo, 100, São Paulo/SP',
       LEGAL_DPO_NAME: 'Encarregado Exemplo',
       PRIVACY_CONTACT_EMAIL: 'privacidade@meugerenciador.pro',
-      SUPPORT_CONTACT_EMAIL: 'suporte@meugerenciador.pro',
+      SUPPORT_CONTACT_EMAIL: 'suporte@aifoodmanager.pro',
       ACELERACHAT_PUBLIC_CONTENT_AUTHOR_EMAIL: 'author@example.com',
       FRONTEND_URL: 'https://atendimento.meugerenciador.pro'
     }

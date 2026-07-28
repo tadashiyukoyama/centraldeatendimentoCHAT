@@ -20,7 +20,7 @@ This English version is provided for accessibility. Brazilian law and the Portug
 
 ## Policy
 
-Report suspected vulnerabilities to `seguranca@meugerenciador.pro`. Do not perform destructive testing or disclose personal data. Controls include access segregation, configured encryption, audit trails, backups, and vulnerability management.
+Report suspected vulnerabilities to `suporte@aifoodmanager.pro`. Do not perform destructive testing or disclose personal data. Controls include access segregation, configured encryption, audit trails, backups, and vulnerability management.
 
 ## Contact
 

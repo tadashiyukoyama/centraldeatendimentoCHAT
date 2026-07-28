@@ -15,7 +15,7 @@ class PublicController < ActionController::Base
 
     render json: {
       error: "Domain: #{domain} is not registered with us. \
-      Please contact suporte@meugerenciador.pro with the custom domain name and account API key"
+      Please contact suporte@aifoodmanager.pro with the custom domain name and account API key"
     }, status: :unauthorized and return
   end
 

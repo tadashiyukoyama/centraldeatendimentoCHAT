@@ -9,6 +9,11 @@ class Acelerachat::EmailDomainPreflight
     PRIVACY_CONTACT_EMAIL
     SUPPORT_CONTACT_EMAIL
   ].freeze
+  ENCRYPTION_KEYS = %w[
+    ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
+    ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY
+    ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
+  ].freeze
 
   def initialize(env: ENV, smtp_factory: Net::SMTP)
     @env = env
@@ -28,33 +33,47 @@ class Acelerachat::EmailDomainPreflight
 
   def preflight_settings
     {
-      addresses: required_addresses,
+      contacts: required_contacts,
+      sender: required_sender,
       domain: @env.fetch('SMTP_DOMAIN', '').strip.downcase.delete_suffix('.'),
-      selector: @env.fetch('MAILER_DKIM_SELECTOR', '').strip.downcase,
+      selectors: dkim_selectors,
       smtp: smtp_settings
     }
   end
 
   def validate_configuration!(settings)
-    errors = configuration_errors(settings[:domain], settings[:selector], settings[:smtp])
-    errors.concat(mailbox_domain_errors(settings[:addresses], settings[:domain]))
+    errors = configuration_errors(settings[:domain], settings[:selectors], settings[:smtp])
+    errors.concat(sender_domain_errors(settings[:sender], settings[:domain]))
     raise ArgumentError, errors.join('; ') if errors.any?
   end
 
   def validate_dns!(settings)
     Acelerachat::EmailDomainDnsPreflight.new(
       domain: settings[:domain],
-      selector: settings[:selector]
+      selectors: settings[:selectors]
     ).call
   end
 
-  def configuration_errors(domain, selector, smtp)
+  def configuration_errors(domain, selectors, smtp)
     errors = []
     errors << 'SMTP_DOMAIN is required' if domain.blank?
-    errors << 'MAILER_DKIM_SELECTOR is required' if selector.blank?
-    errors << 'MAILER_DKIM_SELECTOR has an invalid format' unless selector.blank? || selector.match?(/\A[a-z0-9_-]+\z/)
+    errors << 'MAILER_DKIM_SELECTORS is required' if selectors.empty?
+    errors << 'MAILER_DKIM_SELECTORS has an invalid format' unless selectors.all? { |selector| selector.match?(/\A[a-z0-9_-]+\z/) }
+    errors.concat(encryption_configuration_errors)
     errors.concat(smtp_configuration_errors(smtp, domain))
     errors
+  end
+
+  def encryption_configuration_errors
+    missing = ENCRYPTION_KEYS.reject { |key| @env.fetch(key, '').present? }
+    return [] if missing.empty?
+
+    ["Email inbox credential encryption requires: #{missing.join(', ')}"]
+  end
+
+  def dkim_selectors
+    configured = @env.fetch('MAILER_DKIM_SELECTORS', '').presence || @env.fetch('MAILER_DKIM_SELECTOR', '')
+    configured.to_s.split(',').map { |selector| selector.strip.downcase }.reject(&:blank?).uniq
   end
 
   def smtp_settings
@@ -130,9 +149,10 @@ class Acelerachat::EmailDomainPreflight
     ['SMTP_USERNAME must be a valid email address']
   end
 
-  def mailbox_domain_errors(addresses, domain)
-    matching = domain.present? && addresses.all? { |address| normalized_domain(address) == domain }
-    matching ? [] : ['All public mailboxes and MAILER_SENDER_EMAIL must use SMTP_DOMAIN']
+  def sender_domain_errors(sender, domain)
+    return [] if domain.present? && normalized_domain(sender) == domain
+
+    ['MAILER_SENDER_EMAIL must use SMTP_DOMAIN']
   end
 
   def normalized_domain(address)
@@ -150,7 +170,8 @@ class Acelerachat::EmailDomainPreflight
   def success_result(settings)
     {
       domain: settings[:domain],
-      mailboxes: settings[:addresses].map(&:address),
+      mailboxes: (settings[:contacts] + [settings[:sender]]).map(&:address).uniq,
+      dkim_selectors: settings[:selectors],
       smtp: {
         address: settings.dig(:smtp, :address),
         port: settings.dig(:smtp, :port),
@@ -162,7 +183,8 @@ class Acelerachat::EmailDomainPreflight
       spf: true,
       dkim: true,
       dmarc: true,
-      mx: true
+      mx: true,
+      credential_encryption: true
     }
   end
 
@@ -173,18 +195,20 @@ class Acelerachat::EmailDomainPreflight
     'starttls'
   end
 
-  def required_addresses
-    values = REQUIRED_CONTACTS.map { |key| @env.fetch(key, '') }
-    values << @env.fetch('MAILER_SENDER_EMAIL', '')
-    values << 'seguranca@meugerenciador.pro'
-    values.map do |value|
-      address = Mail::Address.new(value)
-      raise ArgumentError, "Invalid required mailbox: #{value.inspect}" if address.address.blank?
-      raise ArgumentError, "Invalid required mailbox: #{value.inspect}" unless address.domain
+  def required_contacts
+    REQUIRED_CONTACTS.map { |key| parse_required_address(@env.fetch(key, ''), key) }
+  end
 
-      address
-    end
+  def required_sender
+    parse_required_address(@env.fetch('MAILER_SENDER_EMAIL', ''), 'MAILER_SENDER_EMAIL')
+  end
+
+  def parse_required_address(value, key)
+    address = Mail::Address.new(value)
+    raise ArgumentError, "#{key} must be a valid email address" if address.address.blank? || address.domain.blank?
+
+    address
   rescue Mail::Field::ParseError, Mail::Field::IncompleteParseError
-    raise ArgumentError, 'A required AceleraChat mailbox is invalid'
+    raise ArgumentError, "#{key} must be a valid email address"
   end
 end
