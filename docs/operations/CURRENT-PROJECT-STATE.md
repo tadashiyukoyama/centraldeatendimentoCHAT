@@ -13,7 +13,23 @@ qualquer valor copiado neste documento.
   com privacidade e autosserviço das ferramentas operacionais do Nemmo.
 - O deploy passa a bloquear antes de qualquer operação persistente quando o
   domínio de e-mail ou o Sentry não passam no preflight.
-- Ainda não houve push, Action ou deploy desta frente.
+- Release publicado em `main`:
+  `946847ebb07bdc822c8058801d1deddf769b4ea3`, imagem
+  `sha256:5ed8c325a2593ad12da662bd48545bef9329bc3159d12d094e5437873ec8a71e`.
+- Actions aprovadas para esse SHA:
+  - build `30398344393`;
+  - contrato de infraestrutura `30398344376`;
+  - fundação do workspace `30398344506`.
+- O deploy `30398703006` foi interrompido sem trocar a imagem:
+  - tentativa 1: contrato remoto anterior detectado antes da instalação do
+    ambiente;
+  - tentativa 2: o preflight SMTP encontrou um contexto Ruby sem a cadeia de
+    autoridades certificadoras, antes de backup, migrations e troca da imagem.
+- A imagem ativa permanece
+  `4204f4147f1a9b43c9740d2d739ef843d5ead817`.
+- A correção local passa a inicializar o contexto SMTP com parâmetros seguros,
+  mantendo `VERIFY_PEER` e carregando o repositório padrão de CAs. Ela foi
+  validada com autenticação real sem envio e aguarda um novo SHA autorizado.
 - Gates locais aprovados: Vite produção, Vitest direcionado, ESLint, Prettier,
   RuboCop, sintaxe Ruby/Bash, contratos YAML/deploy/workspace e scanner de
   segredos. A suíte Rails completa permanece obrigatória no workflow porque o

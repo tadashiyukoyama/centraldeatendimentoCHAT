@@ -39,7 +39,7 @@ class Acelerachat::SmtpConnectionPreflight
 
   def enable_transport!(smtp)
     context = OpenSSL::SSL::SSLContext.new
-    context.verify_mode = OpenSSL::SSL::VERIFY_PEER
+    context.set_params(verify_mode: OpenSSL::SSL::VERIFY_PEER)
 
     if smtp_settings[:ssl] || smtp_settings[:tls]
       smtp.enable_tls(context)

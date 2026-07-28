@@ -24,12 +24,13 @@ RSpec.describe Acelerachat::EmailDomainPreflight do
   let(:dns) { instance_double(Resolv::DNS) }
   let(:smtp) { instance_double(Net::SMTP) }
   let(:smtp_factory) { class_double(Net::SMTP, new: smtp) }
+  let(:tls_contexts) { [] }
 
   before do
     allow(smtp).to receive(:open_timeout=)
     allow(smtp).to receive(:read_timeout=)
-    allow(smtp).to receive(:enable_tls)
-    allow(smtp).to receive(:enable_starttls_auto)
+    allow(smtp).to receive(:enable_tls) { |context| tls_contexts << context }
+    allow(smtp).to receive(:enable_starttls_auto) { |context| tls_contexts << context }
     allow(smtp).to receive(:start).and_yield
     allow(Resolv::DNS).to receive(:open).and_yield(dns)
     allow(dns).to receive(:getresources).and_return([])
@@ -70,6 +71,12 @@ RSpec.describe Acelerachat::EmailDomainPreflight do
       verify_mode: 'peer'
     )
     expect(smtp).to have_received(:enable_tls)
+    expect(tls_contexts).to contain_exactly(
+      have_attributes(
+        verify_mode: OpenSSL::SSL::VERIFY_PEER,
+        cert_store: an_instance_of(OpenSSL::X509::Store)
+      )
+    )
     expect(smtp).to have_received(:start).with(
       'aifoodmanager.pro',
       'suporte@aifoodmanager.pro',
