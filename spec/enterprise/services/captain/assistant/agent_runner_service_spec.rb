@@ -170,6 +170,81 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       expect(result).to eq({ 'response' => 'Test response', 'agent_name' => nil, 'handoff_tool_called' => false })
     end
 
+    it 'appends the natural profile question selected by the Agent SDK for an incomplete lead' do
+      runner_context = {
+        state: {
+          assistant_config: { 'feature_contact_attributes' => true },
+          contact_profile: { complete: false, missing_fields: %w[name phone_number] }
+        }
+      }
+      structured_result = instance_double(
+        Agents::RunResult,
+        output: {
+          'response' => 'Posso mostrar como a solução reduz retrabalho.',
+          'classification' => 'lead_morno',
+          'profile_question_field' => 'phone_number',
+          'profile_question' => 'Qual é o melhor WhatsApp para continuarmos este atendimento'
+        },
+        context: runner_context
+      )
+      allow(mock_runner).to receive(:run).and_return(structured_result)
+
+      result = service.generate_response(message_history: message_history)
+
+      expect(result['response']).to eq(
+        "Posso mostrar como a solução reduz retrabalho.\n\n" \
+        'Qual é o melhor WhatsApp para continuarmos este atendimento?'
+      )
+    end
+
+    it 'does not append a profile question for a field that is no longer missing' do
+      runner_context = {
+        state: {
+          assistant_config: { 'feature_contact_attributes' => true },
+          contact_profile: { complete: false, missing_fields: ['name'] }
+        }
+      }
+      structured_result = instance_double(
+        Agents::RunResult,
+        output: {
+          'response' => 'Seu WhatsApp já foi salvo.',
+          'classification' => 'lead_morno',
+          'profile_question_field' => 'phone_number',
+          'profile_question' => 'Qual é o seu WhatsApp?'
+        },
+        context: runner_context
+      )
+      allow(mock_runner).to receive(:run).and_return(structured_result)
+
+      result = service.generate_response(message_history: message_history)
+
+      expect(result['response']).to eq('Seu WhatsApp já foi salvo.')
+    end
+
+    it 'does not append an oversized profile question' do
+      runner_context = {
+        state: {
+          assistant_config: { 'feature_contact_attributes' => true },
+          contact_profile: { complete: false, missing_fields: ['name'] }
+        }
+      }
+      structured_result = instance_double(
+        Agents::RunResult,
+        output: {
+          'response' => 'Vamos continuar.',
+          'classification' => 'lead_morno',
+          'profile_question_field' => 'name',
+          'profile_question' => 'N' * 241
+        },
+        context: runner_context
+      )
+      allow(mock_runner).to receive(:run).and_return(structured_result)
+
+      result = service.generate_response(message_history: message_history)
+
+      expect(result['response']).to eq('Vamos continuar.')
+    end
+
     it 'exposes the raw run result via last_run_result' do
       service.generate_response(message_history: message_history)
 

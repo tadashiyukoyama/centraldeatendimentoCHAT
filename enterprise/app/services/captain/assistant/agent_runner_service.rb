@@ -88,6 +88,7 @@ class Captain::Assistant::AgentRunnerService
     Rails.logger.info "[Captain V2] Agent result: #{result.inspect}"
     output = result.output
     response = output.is_a?(Hash) ? output.with_indifferent_access : { 'response' => output.to_s, 'reasoning' => 'Processed by agent' }
+    Captain::Assistant::ProfileQuestionAppender.new(response: response, context: result.context).perform
     response['agent_name'] = result.context&.dig(:current_agent)
     response['handoff_tool_called'] = result.context&.dig(:captain_v2_handoff_tool_called) || false
     response
