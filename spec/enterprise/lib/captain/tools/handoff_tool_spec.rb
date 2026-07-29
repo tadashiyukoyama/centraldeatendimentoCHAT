@@ -63,6 +63,12 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
           expect(created_message.conversation).to eq(conversation)
         end
 
+        it 'changes handoff state without publishing customer-facing wording' do
+          expect do
+            tool.perform(tool_context, reason: 'Customer needs specialized support')
+          end.not_to(change { conversation.messages.where(private: false).count })
+        end
+
         it 'triggers bot handoff on conversation' do
           # The tool finds the conversation by ID, so we need to mock the found conversation
           found_conversation = Conversation.find(conversation.id)
@@ -321,7 +327,7 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
     end
   end
 
-  describe 'out of office message after handoff' do
+  describe 'out of office context after handoff' do
     before do
       create(:message, conversation: conversation, inbox: inbox, account: account, message_type: :incoming,
                        sender: contact, content: 'Preciso de suporte humano')
@@ -339,13 +345,13 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
         )
       end
 
-      it 'sends out of office message after handoff' do
+      it 'returns availability evidence to the agent without creating a competing public message' do
+        result = nil
         expect do
-          tool.perform(tool_context, reason: 'Customer needs help')
-        end.to change { conversation.messages.template.count }.by(1)
+          result = tool.perform(tool_context, reason: 'Customer needs help')
+        end.not_to(change { conversation.messages.template.count })
 
-        ooo_message = conversation.messages.template.last
-        expect(ooo_message.content).to eq('We are currently closed. Please leave your email.')
+        expect(result).to include('outside configured business hours')
       end
     end
 
@@ -361,10 +367,13 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
         )
       end
 
-      it 'does not send out of office message after handoff' do
+      it 'does not add out of office evidence within business hours' do
+        result = nil
         expect do
-          tool.perform(tool_context, reason: 'Customer needs help')
+          result = tool.perform(tool_context, reason: 'Customer needs help')
         end.not_to(change { conversation.messages.template.count })
+
+        expect(result).not_to include('outside configured business hours')
       end
     end
 
@@ -380,10 +389,13 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
         )
       end
 
-      it 'does not send out of office message' do
+      it 'does not add empty out of office evidence' do
+        result = nil
         expect do
-          tool.perform(tool_context, reason: 'Customer needs help')
+          result = tool.perform(tool_context, reason: 'Customer needs help')
         end.not_to(change { conversation.messages.template.count })
+
+        expect(result).not_to include('outside configured business hours')
       end
     end
   end

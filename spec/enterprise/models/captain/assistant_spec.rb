@@ -15,11 +15,18 @@ RSpec.describe Captain::Assistant do
       instructions = assistant.agent_instructions
 
       expect(instructions).to include('The Agent SDK is the only conversation orchestrator')
-      expect(instructions).to include('without a mandatory order')
-      expect(instructions).to include('Return that field in `profile_question_field`')
-      expect(instructions).to include('return `none` in `profile_question_field`')
+      expect(instructions).to include('not merely because the field is missing')
+      expect(instructions).to include('Never ask profile questions in consecutive replies')
+      expect(instructions).to include('request those remaining details together')
       expect(instructions).to include('Send every explicit value from that message in one tool call')
-      expect(instructions).not_to include('ask one concise question at a time in this order')
+    end
+
+    it 'assigns public wording to one Agent SDK authority' do
+      instructions = assistant.agent_instructions
+
+      expect(instructions).to include('only authority for customer-facing wording')
+      expect(instructions).to include('complete final reply')
+      expect(instructions).to include('Tools are action capabilities, not customer-facing speakers')
     end
   end
 

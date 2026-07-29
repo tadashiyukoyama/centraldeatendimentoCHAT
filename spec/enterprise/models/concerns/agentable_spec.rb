@@ -93,6 +93,7 @@ RSpec.describe Concerns::Agentable do
                                        context: {
                                          state: {
                                            assistant_config: { 'feature_contact_attributes' => true },
+                                           timezone: 'America/Sao_Paulo',
                                            conversation: { id: 123 },
                                            contact: { name: 'John' },
                                            contact_profile: {
@@ -104,6 +105,7 @@ RSpec.describe Concerns::Agentable do
 
       expected_context = {
         base_key: 'base_value',
+        conversation_timezone: 'America/Sao_Paulo',
         conversation: { id: 123 },
         contact: { name: 'John' },
         contact_profile: {
@@ -119,6 +121,13 @@ RSpec.describe Concerns::Agentable do
       )
 
       dummy_instance.agent_instructions(context_double)
+    end
+
+    it 'provides an unambiguous ISO 8601 current time in the configured timezone' do
+      travel_to Time.utc(2026, 7, 29, 15, 30) do
+        expect(dummy_instance.send(:format_current_time, 'America/Sao_Paulo'))
+          .to eq('2026-07-29T12:30:00-03:00')
+      end
     end
 
     it 'merges campaign data from context state' do

@@ -71,6 +71,17 @@ RSpec.describe Captain::Tools::ScheduleDemoTool, type: :model do
     expect(conversation.label_list).to include('demo_agendada', 'lead_quente')
   end
 
+  it 'uses the inbox timezone when the agent omits an explicit timezone' do
+    result = tool.perform(
+      tool_context,
+      starts_at: starts_at,
+      duration_minutes: 30
+    )
+
+    expect(result).to start_with('Conversation handed off to owner')
+    expect(Captain::Appointment.last.timezone).to eq('America/Sao_Paulo')
+  end
+
   it 'rejects an unconfirmed slot even when the lead accepted a generic demo offer' do
     Message.where(conversation_id: conversation.id).delete_all
     create(

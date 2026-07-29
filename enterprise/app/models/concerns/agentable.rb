@@ -24,6 +24,7 @@ module Concerns::Agentable
       config = state[:assistant_config] || {}
       enhanced_context = enhanced_context.merge(
         current_time: format_current_time(state[:timezone]),
+        conversation_timezone: state[:timezone].presence || 'UTC',
         conversation: state[:conversation] || {},
         campaign: state[:campaign] || {},
         lead_origin: state[:lead_origin],
@@ -87,7 +88,7 @@ module Concerns::Agentable
   def format_current_time(timezone)
     tz = ActiveSupport::TimeZone[timezone] if timezone.present?
     time = tz ? Time.current.in_time_zone(tz) : Time.current
-    time.strftime('%A, %B %d, %Y %I:%M %p %Z')
+    time.iso8601
   end
 
   def prompt_context

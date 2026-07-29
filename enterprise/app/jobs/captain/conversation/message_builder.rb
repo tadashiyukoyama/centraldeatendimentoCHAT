@@ -26,9 +26,13 @@ module Captain::Conversation::MessageBuilder
     Captain::OpenAiMessageBuilderService.new(message: message).generate_content
   end
 
-  def create_messages
+  def create_messages(preserve_waiting_since: false)
     validate_message_content!(@response['response'])
-    create_outgoing_message(@response['response'], agent_name: @response['agent_name'])
+    create_outgoing_message(
+      @response['response'],
+      agent_name: @response['agent_name'],
+      preserve_waiting_since: preserve_waiting_since
+    )
   end
 
   def validate_message_content!(content)

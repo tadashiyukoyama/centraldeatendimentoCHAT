@@ -16,7 +16,10 @@ class Captain::Tools::ScheduleDemoTool < Captain::Tools::BasePublicTool
         type: 'integer',
         desc: 'Confirmed duration between 10 and 120 minutes',
         required: false
-  param :timezone, type: 'string', desc: 'IANA timezone, for example America/Sao_Paulo', required: false
+  param :timezone,
+        type: 'string',
+        desc: 'IANA timezone; omit to use the conversation inbox timezone',
+        required: false
 
   def perform(tool_context, starts_at:, duration_minutes: 30, timezone: nil)
     conversation = find_conversation(tool_context.state)

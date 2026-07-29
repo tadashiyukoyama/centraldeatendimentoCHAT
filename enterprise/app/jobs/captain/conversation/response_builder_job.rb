@@ -72,17 +72,14 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   end
 
   def process_handoff_response
-    # Check V2 before V1: error_response can set both signals at once when HandoffTool
-    # fired before the runner errored. V2 must win — running V1 on top would duplicate
-    # OOO and re-dispatch the bot_handoff event.
     if conversation_pending?
-      # HandoffTool flipped the flag without committing — its perform returned a
-      # failure string (e.g. "Conversation not found") before bot_handoff! ran. Fall
-      # back to a full V1 handoff so the customer still ends up with a human.
-      process_v1_handoff
+      # A successful V2 handoff always opens the conversation before the SDK returns.
+      # If that invariant is broken, fail closed: route to a human and record a private
+      # diagnostic, but never fabricate or rewrite a customer-facing response.
+      process_inconsistent_v2_handoff
     else
-      # HandoffTool already opened the conversation inside the agent loop. All that's
-      # left is the customer-facing follow-up message.
+      # HandoffTool already changed operational state. The SDK then returned to the
+      # model for the final customer-facing response, which is delivered verbatim.
       process_v2_handoff
     end
     capture_assistant_session(result_message: @handoff_message, credits_consumed: 0.0)
@@ -103,7 +100,7 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   end
 
   def generation_error_response?
-    @response&.dig('error') == true || @response&.dig('action_source') == 'error'
+    @response&.dig('error') == true || @response&.dig('action_source') == 'error' || @response&.dig('response').blank?
   end
 
   def classifier_v1_handoff_requested?
@@ -132,11 +129,19 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   end
 
   def process_v2_handoff
-    # HandoffTool already ran bot_handoff! + OOO inside the agent loop. Preserve
-    # waiting_since so this message doesn't clear the timestamp it left in place.
-    I18n.with_locale(@assistant.account.locale) do
-      create_handoff_message(preserve_waiting_since: true)
-    end
+    # Preserve waiting_since so the exact agent reply does not clear the timestamp
+    # left by HandoffTool for human reply-time tracking.
+    @handoff_message = create_messages(preserve_waiting_since: true)
+  end
+
+  def process_inconsistent_v2_handoff
+    create_outgoing_message(
+      'Nemmo reported a completed handoff, but the conversation remained pending. Human follow-up is required.',
+      private_note: true
+    )
+    @conversation.bot_handoff!
+    send_out_of_office_message_if_applicable
+    @handoff_message = nil
   end
 
   def send_out_of_office_message_if_applicable
@@ -147,13 +152,12 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
     ::MessageTemplates::Template::OutOfOffice.perform_if_applicable(@conversation)
   end
 
-  def create_handoff_message(preserve_waiting_since: false)
+  def create_handoff_message
     @handoff_message = create_outgoing_message(
       Captain::Conversation::HandoffMessageResolver.new(
         conversation: @conversation,
         assistant: @assistant
-      ).perform,
-      preserve_waiting_since: preserve_waiting_since
+      ).perform
     )
   end
 
@@ -179,15 +183,11 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   end
 
   def process_generation_error
-    return unless conversation_pending?
-
-    I18n.with_locale(@assistant.account.locale) do
-      create_outgoing_message(
-        'Nemmo could not generate a response automatically. Human follow-up is required.',
-        private_note: true
-      )
-      @conversation.bot_handoff!
-    end
+    create_outgoing_message(
+      'Nemmo could not generate a response automatically. Human follow-up is required.',
+      private_note: true
+    )
+    @conversation.bot_handoff! if conversation_pending?
   rescue StandardError => e
     # Do not hide the original provider failure or create a second public message.
     Rails.logger.error(

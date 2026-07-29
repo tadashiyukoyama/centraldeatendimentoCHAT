@@ -474,17 +474,23 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         allow(account).to receive(:feature_enabled?).with('captain_integration_v2').and_return(true)
       end
 
-      it 'creates a public handoff message visible to the customer' do
+      it 'delivers the Agent SDK final response verbatim after a successful handoff' do
         allow(mock_agent_runner_service).to receive(:generate_response) do
           conversation.update!(status: :open)
-          { 'response' => 'Let me connect you', 'handoff_tool_called' => true }
+          {
+            'response' => 'Sua demonstração ficou agendada para 30/07/2026 às 12:00.',
+            'agent_name' => 'nemmo',
+            'handoff_tool_called' => true
+          }
         end
+        expect(Captain::Conversation::HandoffMessageResolver).not_to receive(:new)
 
         described_class.perform_now(conversation, assistant)
 
         public_messages = conversation.messages.outgoing.where(private: false)
         expect(public_messages.count).to eq(1)
-        expect(public_messages.last.content).to eq(I18n.t('conversations.captain.handoff'))
+        expect(public_messages.last.content).to eq('Sua demonstração ficou agendada para 30/07/2026 às 12:00.')
+        expect(public_messages.last.additional_attributes['agent_name']).to eq('nemmo')
       end
 
       it 'does not call bot_handoff! again when conversation is already open' do
@@ -496,6 +502,19 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         expect(conversation).not_to receive(:bot_handoff!)
 
         described_class.perform_now(conversation, assistant)
+      end
+
+      it 'does not substitute runtime wording when the final agent response is blank' do
+        allow(mock_agent_runner_service).to receive(:generate_response) do
+          conversation.update!(status: :open)
+          { 'response' => '', 'handoff_tool_called' => true }
+        end
+
+        described_class.perform_now(conversation, assistant)
+
+        expect(conversation.messages.outgoing.where(private: false)).to be_empty
+        expect(conversation.messages.outgoing.where(private: true).last.content)
+          .to include('could not generate a response')
       end
 
       it 'does not create a duplicate out of office message' do
@@ -536,7 +555,7 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         expect(conversation.reload.status).to eq('pending')
       end
 
-      it 'falls back to a full V1 handoff when HandoffTool fired but failed to commit' do
+      it 'fails closed without fabricating a public response when handoff state is inconsistent' do
         allow(mock_agent_runner_service).to receive(:generate_response).and_return({
                                                                                      'response' => 'I tried to hand off',
                                                                                      'handoff_tool_called' => true
@@ -547,8 +566,9 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         conversation.reload
         expect(conversation.status).to eq('open')
         public_messages = conversation.messages.outgoing.where(private: false)
-        expect(public_messages.count).to eq(1)
-        expect(public_messages.last.content).to eq(I18n.t('conversations.captain.handoff'))
+        expect(public_messages).to be_empty
+        expect(conversation.messages.outgoing.where(private: true).last.content)
+          .to include('reported a completed handoff')
       end
     end
 
@@ -616,7 +636,7 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         expect(account.reload.usage_limits[:captain][:responses][:consumed]).to eq(0)
       end
 
-      it 'creates a zero-credit session when the handoff tool fired but failed to commit' do
+      it 'captures the inconsistent handoff without attaching a fabricated public message' do
         allow(mock_agent_runner_service).to receive(:generate_response).and_return({
                                                                                      'response' => 'I tried to hand off',
                                                                                      'handoff_tool_called' => true
@@ -626,7 +646,8 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
 
         session = Captain::AgentSession.last
         expect(session.credits_consumed).to eq(0.0)
-        expect(session.result_id).to eq(conversation.messages.outgoing.where(private: false).last.id)
+        expect(session.result).to be_nil
+        expect(conversation.messages.outgoing.where(private: false)).to be_empty
       end
 
       it 'still delivers the reply when session capture fails' do

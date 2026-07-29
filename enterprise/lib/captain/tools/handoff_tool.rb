@@ -29,7 +29,7 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
     log_handoff(conversation, reason, destination_key)
     trigger_handoff(conversation, reason, destination_key)
 
-    handoff_response(destination_key, reason)
+    handoff_response(conversation, destination_key, reason)
   rescue StandardError => e
     ChatwootExceptionTracker.new(e).capture_exception
     'Failed to handoff conversation'
@@ -46,7 +46,7 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
 
     log_handoff(conversation, reason, destination_key)
     trigger_handoff(conversation, reason, destination_key, assignee: assignee, team: team)
-    handoff_response(destination_key, reason)
+    handoff_response(conversation, destination_key, reason)
   rescue StandardError => e
     ChatwootExceptionTracker.new(e).capture_exception
     'Failed to handoff conversation'
@@ -79,10 +79,11 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
                    })
   end
 
-  def handoff_response(destination_key, reason)
+  def handoff_response(conversation, destination_key, reason)
     destination_name = DESTINATIONS[destination_key] || 'human support team'
     response = "Conversation handed off to #{destination_name}"
-    reason ? "#{response} (Reason: #{reason})" : response
+    response = "#{response} (Reason: #{reason})" if reason
+    [response, out_of_office_context(conversation)].compact.join('. ')
   end
 
   def trigger_handoff(conversation, reason, destination, assignee: nil, team: nil)
@@ -100,9 +101,6 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
 
     # Trigger the bot handoff (sets status to open + dispatches events)
     conversation.bot_handoff!
-
-    # Send out of office message if applicable (since template messages were suppressed while Captain was handling)
-    send_out_of_office_message_if_applicable(conversation)
   end
 
   def handoff_note(reason, destination)
@@ -127,11 +125,12 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
     conversation.update!(team_id: selected_team.id, assignee_id: nil)
   end
 
-  def send_out_of_office_message_if_applicable(conversation)
-    # Campaign conversations should never receive OOO templates — the campaign itself
-    # serves as the initial outreach, and OOO would be confusing in that context.
+  def out_of_office_context(conversation)
     return if conversation.campaign.present?
 
-    ::MessageTemplates::Template::OutOfOffice.perform_if_applicable(conversation)
+    inbox = conversation.inbox
+    return unless inbox.out_of_office? && inbox.out_of_office_message.present?
+
+    'Inbox is currently outside configured business hours.'
   end
 end

@@ -65,10 +65,10 @@ jobs:
       - name: Run targeted Agent SDK lint
         run: >-
           bundle exec rubocop
+          enterprise/app/jobs/captain/conversation/message_builder.rb
           enterprise/app/jobs/captain/conversation/response_builder_job.rb
           enterprise/app/models/concerns/agentable.rb
           enterprise/app/services/captain/assistant/agent_runner_service.rb
-          enterprise/app/services/captain/assistant/profile_question_appender.rb
           enterprise/app/services/captain/assistant/runner_state_helper.rb
           enterprise/app/services/captain/conversation/contact_profile_status.rb
           enterprise/app/services/captain/conversation/lead_classification_service.rb
@@ -76,9 +76,14 @@ jobs:
           enterprise/lib/captain/response_schema.rb
           enterprise/lib/captain/tools/classify_lead_tool.rb
           enterprise/lib/captain/tools/capture_contact_profile_tool.rb
+          enterprise/lib/captain/tools/handoff_tool.rb
+          enterprise/lib/captain/tools/schedule_demo_tool.rb
           spec/enterprise/jobs/captain/conversation/response_builder_job_spec.rb
           spec/enterprise/lib/captain/tools/classify_lead_tool_spec.rb
           spec/enterprise/lib/captain/tools/capture_contact_profile_tool_spec.rb
+          spec/enterprise/lib/captain/tools/handoff_tool_spec.rb
+          spec/enterprise/lib/captain/tools/schedule_demo_tool_spec.rb
+          spec/enterprise/models/captain/assistant_commercial_contract_spec.rb
           spec/enterprise/models/captain/assistant_spec.rb
           spec/enterprise/models/concerns/agentable_spec.rb
           spec/enterprise/services/captain/assistant/agent_runner_service_spec.rb
@@ -91,6 +96,9 @@ jobs:
           spec/enterprise/jobs/captain/conversation/response_builder_job_spec.rb
           spec/enterprise/lib/captain/tools/classify_lead_tool_spec.rb
           spec/enterprise/lib/captain/tools/capture_contact_profile_tool_spec.rb
+          spec/enterprise/lib/captain/tools/handoff_tool_spec.rb
+          spec/enterprise/lib/captain/tools/schedule_demo_tool_spec.rb
+          spec/enterprise/models/captain/assistant_commercial_contract_spec.rb
           spec/enterprise/models/captain/assistant_spec.rb
           spec/enterprise/models/concerns/agentable_spec.rb
           spec/enterprise/services/captain/assistant/agent_runner_service_spec.rb
