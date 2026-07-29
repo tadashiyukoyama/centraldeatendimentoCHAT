@@ -41,9 +41,24 @@ RSpec.describe Captain::Tools::ScheduleDemoTool, type: :model do
       account: account,
       inbox: inbox,
       conversation: conversation,
+      sender: contact,
+      message_type: :incoming,
+      content: 'Quero uma demonstração nesse horário'
+    )
+    tool.perform(
+      tool_context,
+      starts_at: starts_at,
+      duration_minutes: 30,
+      timezone: 'America/Sao_Paulo'
+    )
+    create(
+      :message,
+      account: account,
+      inbox: inbox,
+      conversation: conversation,
       sender: assistant,
       message_type: :outgoing,
-      content: "Confirmo sua demonstração para #{starts_at_time.strftime('%d/%m/%Y')} às 14:00?"
+      content: "Posso agendar este horário: #{starts_at_time.strftime('%d/%m/%Y')} às 14:00?"
     )
     create(
       :message,
@@ -69,6 +84,7 @@ RSpec.describe Captain::Tools::ScheduleDemoTool, type: :model do
     expect(appointment).to have_attributes(specialist_id: specialist.id, contact_id: contact.id, status: 'scheduled')
     expect(conversation.reload).to have_attributes(status: 'open', assignee_id: specialist.id)
     expect(conversation.label_list).to include('demo_agendada', 'lead_quente')
+    expect(conversation.additional_attributes).not_to have_key(Captain::Conversation::DemoConsent::PENDING_KEY)
   end
 
   it 'uses the inbox timezone when the agent omits an explicit timezone' do
@@ -82,8 +98,23 @@ RSpec.describe Captain::Tools::ScheduleDemoTool, type: :model do
     expect(Captain::Appointment.last.timezone).to eq('America/Sao_Paulo')
   end
 
-  it 'rejects an unconfirmed slot even when the lead accepted a generic demo offer' do
+  it 'stores the exact pending slot before accepting a confirmation' do
+    pending = conversation.reload.additional_attributes.fetch(Captain::Conversation::DemoConsent::PENDING_KEY)
+
+    expect(pending).to include(
+      'starts_at' => starts_at_time.utc.iso8601,
+      'duration_minutes' => 30,
+      'timezone' => 'America/Sao_Paulo'
+    )
+    expect(pending.fetch('requested_from_message_id')).to be_present
+    expect(Captain::Appointment.count).to eq(0)
+  end
+
+  it 'requests confirmation for an unconfirmed slot even when the lead accepted a generic demo offer' do
     Message.where(conversation_id: conversation.id).delete_all
+    conversation.update!(
+      additional_attributes: conversation.additional_attributes.except(Captain::Conversation::DemoConsent::PENDING_KEY)
+    )
     create(
       :message,
       account: account,
@@ -105,9 +136,23 @@ RSpec.describe Captain::Tools::ScheduleDemoTool, type: :model do
 
     result = tool.perform(tool_context, starts_at: starts_at, timezone: 'America/Sao_Paulo')
 
-    expect(result).to include('exact demonstration slot')
+    expect(JSON.parse(result)).to include(
+      'status' => 'confirmation_required',
+      'timezone' => 'America/Sao_Paulo'
+    )
     expect(Captain::Appointment.count).to eq(0)
-    expect(Captain::ToolExecution.last).to have_attributes(status: 'rejected', error_code: 'demo_slot_not_confirmed')
+    expect(Captain::ToolExecution.last).to have_attributes(status: 'succeeded', error_code: nil)
+  end
+
+  it 'does not transfer confirmation to a different slot' do
+    changed_slot = (starts_at_time + 1.hour).iso8601
+
+    result = tool.perform(tool_context, starts_at: changed_slot, timezone: 'America/Sao_Paulo')
+
+    expect(JSON.parse(result)).to include('status' => 'confirmation_required')
+    expect(Captain::Appointment.count).to eq(0)
+    pending = conversation.reload.additional_attributes.fetch(Captain::Conversation::DemoConsent::PENDING_KEY)
+    expect(Time.iso8601(pending.fetch('starts_at'))).to eq(Time.iso8601(changed_slot).utc)
   end
 
   it 'rejects scheduling until the required contact fields are saved' do

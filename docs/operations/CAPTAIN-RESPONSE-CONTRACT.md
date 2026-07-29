@@ -20,6 +20,19 @@ conversa. Isso impede que um pedido de atendimento humano de um episódio antigo
 seja reutilizado quando o cliente inicia um novo episódio apenas com uma
 saudação.
 
+## Autoridade da resposta
+
+O assistente ativo é a única autoridade para o texto público de cada turno. As
+ferramentas executam ações de domínio e devolvem evidências estruturadas ao
+assistente; elas não publicam templates, não acrescentam perguntas e não
+substituem a resposta final. O runtime entrega literalmente o campo `response`
+validado.
+
+Se a resposta final estiver ausente ou inconsistente com o resultado de uma
+ferramenta, o runtime registra diagnóstico privado e falha de forma fechada para
+atendimento humano, sem inventar uma mensagem pública. A autoridade só muda para
+uma pessoa depois de um handoff concluído, em um turno posterior.
+
 ## Origem do lead
 
 A origem é calculada por `Captain::Conversation::OriginResolver` e persistida em
@@ -104,8 +117,18 @@ As ferramentas operacionais são documentadas em
 
 Dados de perfil só podem ser gravados quando aparecem explicitamente no episódio
 atual. A agenda exige aceite, perfil completo, data com fuso e ausência de
-conflito. Um aviso de pagamento nunca equivale a confirmação bancária: começa
-como pendente e deve ser validado pelo financeiro ou por uma fonte integrada.
+conflito.
+
+O primeiro uso de `schedule_demo` para um slot completo grava
+`captain_pending_demo_confirmation` como estado estruturado e devolve
+`confirmation_required`. O assistente formula a pergunta pública com data, hora
+e fuso. Depois do aceite do contato, a ferramenta só agenda quando recebe
+exatamente o mesmo slot e encontra uma oferta pública correspondente entre o
+pedido e a confirmação. A validação não depende de palavras específicas como
+“demo” ou “agendar”, e o estado pendente é removido após o sucesso.
+
+Um aviso de pagamento nunca equivale a confirmação bancária: começa como
+pendente e deve ser validado pelo financeiro ou por uma fonte integrada.
 
 ## Handoff
 

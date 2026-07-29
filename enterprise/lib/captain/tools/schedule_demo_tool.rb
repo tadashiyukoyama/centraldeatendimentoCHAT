@@ -7,10 +7,10 @@ class Captain::Tools::ScheduleDemoTool < Captain::Tools::BasePublicTool
   MAX_DURATION = 120
   MAX_ADVANCE = 180.days
 
-  description 'Schedule a confirmed product demonstration and transfer it to the responsible specialist'
+  description 'Prepare an exact demonstration slot for confirmation, then schedule it after the customer confirms'
   param :starts_at,
         type: 'string',
-        desc: 'Confirmed start in ISO 8601 format with timezone offset',
+        desc: 'Proposed or confirmed start in ISO 8601 format with timezone offset',
         required: true
   param :duration_minutes,
         type: 'integer',
@@ -41,11 +41,16 @@ class Captain::Tools::ScheduleDemoTool < Captain::Tools::BasePublicTool
 
   def schedule_demo!(conversation, contact, starts_at, duration_minutes, timezone)
     schedule = schedule_details(conversation, contact, starts_at, duration_minutes, timezone)
-    validate_demo!(conversation, contact, schedule)
+    validate_demo_details!(contact, schedule)
+    consent = Captain::Conversation::DemoConsent.new(conversation)
+    return request_confirmation(consent, schedule) unless
+      consent.confirmed_slot?(schedule[:start_time], schedule[:duration], schedule[:timezone])
+
     specialist = resolve_specialist!
     appointment = create_appointment!(conversation, contact, specialist, schedule)
     register_appointment!(conversation, appointment)
     handoff_result = handoff_appointment!(conversation, appointment, specialist)
+    consent.clear!
     "#{handoff_result}. Demo appointment ##{appointment.id} scheduled."
   end
 
@@ -73,9 +78,8 @@ class Captain::Tools::ScheduleDemoTool < Captain::Tools::BasePublicTool
     }
   end
 
-  def validate_demo!(conversation, contact, schedule)
+  def validate_demo_details!(contact, schedule)
     validate_timezone!(schedule)
-    validate_consent!(conversation, schedule)
     validate_timing!(schedule)
     validate_contact!(contact)
   end
@@ -91,14 +95,18 @@ class Captain::Tools::ScheduleDemoTool < Captain::Tools::BasePublicTool
     )
   end
 
-  def validate_consent!(conversation, schedule)
-    consent = Captain::Conversation::DemoConsent.new(conversation)
-    return if consent.confirmed_slot?(schedule[:start_time], schedule[:timezone])
-
-    reject_execution!(
-      'The customer has not confirmed this exact demonstration slot.',
-      code: 'demo_slot_not_confirmed'
+  def request_confirmation(consent, schedule)
+    consent.request_confirmation!(
+      schedule[:start_time],
+      schedule[:duration],
+      schedule[:timezone]
     )
+    {
+      status: 'confirmation_required',
+      starts_at: schedule[:start_time].in_time_zone(schedule[:timezone]).iso8601,
+      duration_minutes: schedule[:duration],
+      timezone: schedule[:timezone]
+    }.to_json
   end
 
   def validate_timing!(schedule)

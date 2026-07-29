@@ -71,6 +71,7 @@ jobs:
           enterprise/app/services/captain/assistant/agent_runner_service.rb
           enterprise/app/services/captain/assistant/runner_state_helper.rb
           enterprise/app/services/captain/conversation/contact_profile_status.rb
+          enterprise/app/services/captain/conversation/demo_consent.rb
           enterprise/app/services/captain/conversation/lead_classification_service.rb
           enterprise/app/services/captain/llm/assistant_chat_service.rb
           enterprise/lib/captain/response_schema.rb

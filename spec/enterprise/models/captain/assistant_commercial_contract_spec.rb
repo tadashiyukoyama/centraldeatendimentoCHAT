@@ -16,7 +16,7 @@ RSpec.describe Captain::Assistant do
     end
 
     it 'versions the consultative flow and assigns public wording to one authority' do
-      expect(source.fetch('version')).to eq(7)
+      expect(source.fetch('version')).to eq(8)
       expect(assistant_prompt).to include('only authority for customer-facing wording')
       expect(assistant_prompt).to include('Runtime code will validate and deliver it exactly')
     end
@@ -34,6 +34,13 @@ RSpec.describe Captain::Assistant do
       expect(guidelines).to include('Use o fuso configurado da caixa como padrão')
       expect(assistant_prompt).to include('Treat it as the default for dates and times')
       expect(assistant_prompt).to include('Do not ask the customer for a timezone')
+    end
+
+    it 'uses a structured pending slot before scheduling a confirmed demonstration' do
+      expect(guidelines).to include('registrar o horário pendente')
+      expect(guidelines).to include('confirmation_required')
+      expect(assistant_prompt).to include('register the exact pending slot')
+      expect(assistant_prompt).to include('exactly the same start, duration, and timezone')
     end
 
     it 'keeps quality safeguards in the global Agent SDK prompt' do
