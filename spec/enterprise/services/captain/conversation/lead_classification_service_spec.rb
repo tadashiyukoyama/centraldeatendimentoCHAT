@@ -56,6 +56,28 @@ RSpec.describe Captain::Conversation::LeadClassificationService, type: :service 
     expect(conversation.reload.label_list).to include('lead_morno')
   end
 
+  it 'does not treat a product discovery question about reducing errors as an existing customer' do
+    add_customer_message(
+      'Quero entender como o AI Food Manager ajuda a reduzir erros nos pedidos. ' \
+      'Meu e-mail e lead@example.com e minha empresa e Restaurante Exemplo.'
+    )
+
+    expect(service.perform(classification: 'cliente')).to eq('lead_morno')
+    expect(conversation.reload.label_list).to include('lead_morno')
+  end
+
+  it 'does not treat a prospect asking about customer support as an existing customer' do
+    add_customer_message('Gostaria de saber como funciona o suporte para os clientes')
+
+    expect(service.perform(classification: 'cliente')).to eq('lead_morno')
+  end
+
+  it 'recognizes an existing customer who explicitly says they use the platform' do
+    add_customer_message('Ja uso a plataforma e estou com dificuldade no acesso')
+
+    expect(service.perform).to eq('cliente')
+  end
+
   it 'falls back when the model returns an unsupported classification' do
     add_customer_message('Quero saber o valor do plano')
 

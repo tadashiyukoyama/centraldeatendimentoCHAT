@@ -69,6 +69,7 @@ jobs:
           enterprise/app/models/concerns/agentable.rb
           enterprise/app/services/captain/assistant/runner_state_helper.rb
           enterprise/app/services/captain/conversation/contact_profile_status.rb
+          enterprise/app/services/captain/conversation/lead_classification_service.rb
           enterprise/app/services/captain/llm/assistant_chat_service.rb
           enterprise/lib/captain/tools/capture_contact_profile_tool.rb
           spec/enterprise/jobs/captain/conversation/response_builder_job_spec.rb
@@ -77,6 +78,7 @@ jobs:
           spec/enterprise/models/concerns/agentable_spec.rb
           spec/enterprise/services/captain/assistant/agent_runner_service_spec.rb
           spec/enterprise/services/captain/conversation/contact_profile_status_spec.rb
+          spec/enterprise/services/captain/conversation/lead_classification_service_spec.rb
 
       - name: Run targeted Agent SDK specs
         run: >-
@@ -87,6 +89,7 @@ jobs:
           spec/enterprise/models/concerns/agentable_spec.rb
           spec/enterprise/services/captain/assistant/agent_runner_service_spec.rb
           spec/enterprise/services/captain/conversation/contact_profile_status_spec.rb
+          spec/enterprise/services/captain/conversation/lead_classification_service_spec.rb
           spec/enterprise/services/captain/llm/assistant_chat_service_spec.rb
           --format progress
 

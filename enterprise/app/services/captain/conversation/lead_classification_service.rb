@@ -7,10 +7,16 @@ class Captain::Conversation::LeadClassificationService
     'quanto custa', 'quero comprar', 'quero contratar'
   ].freeze
 
-  CUSTOMER_SIGNALS = [
-    'cliente', 'suporte', 'problema', 'erro', 'falha', 'login', 'acesso', 'senha',
-    'boleto', 'fatura', 'pagamento', 'cancelar', 'cancelamento', 'minha conta',
-    'ja sou', 'nao consigo', 'estou com dificuldade'
+  CUSTOMER_PATTERNS = [
+    /\b(?:ja\s+)?sou\s+cliente\b/,
+    /\bja\s+(?:uso|utilizo)\s+(?:o|a)?\s*(?:sistema|plataforma|solucao|ai food manager)\b/,
+    /\b(?:uso|utilizo)\s+(?:o|a)\s+(?:sistema|plataforma|solucao|ai food manager)\b/,
+    /\bminh[ao]s?\s+(?:conta|assinatura|fatura|boleto|plano|acesso|senha|pagamento)\b/,
+    /\bnao\s+consigo\s+(?:entrar|acessar|fazer\s+login|usar\s+(?:minha\s+)?conta)\b/,
+    /\bestou\s+com\s+dificuldade\s+(?:no|na|para)\s+(?:login|acesso|sistema|plataforma|conta|painel)\b/,
+    /\b(?:esqueci|redefinir|trocar)\s+(?:a\s+)?(?:minha\s+)?senha\b/,
+    /\bcancelar\s+(?:a\s+)?(?:minha\s+)?(?:conta|assinatura|plano)\b/,
+    /\b(?:preciso|gostaria)\s+de\s+(?:ajuda|suporte)\s+(?:com|no|na)\s+(?:minha\s+)?(?:conta|assinatura|fatura|boleto|acesso)\b/
   ].freeze
 
   LABEL_COLORS = {
@@ -66,7 +72,7 @@ class Captain::Conversation::LeadClassificationService
     normalized_content = ActiveSupport::Inflector.transliterate(content).downcase
 
     return 'lead_quente' if HOT_LEAD_SIGNALS.any? { |signal| normalized_content.include?(signal) }
-    return 'cliente' if CUSTOMER_SIGNALS.any? { |signal| normalized_content.include?(signal) }
+    return 'cliente' if CUSTOMER_PATTERNS.any? { |pattern| normalized_content.match?(pattern) }
 
     'lead_morno'
   end
