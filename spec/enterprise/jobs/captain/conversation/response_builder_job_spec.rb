@@ -29,6 +29,36 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
       allow(mock_false_promise_service).to receive(:detect).and_return({ 'decision' => 'safe', 'reason' => 'safe_response' })
     end
 
+    context 'when a classified lead has an incomplete profile' do
+      before do
+        account.update!(locale: 'pt_BR')
+        assistant.update!(
+          config: assistant.config.merge('feature_contact_attributes' => true)
+        )
+        conversation.contact.update!(
+          name: 'patient-fire-116',
+          additional_attributes: { 'captain_name_source' => 'generated' }
+        )
+        conversation.update_labels(['lead_morno'])
+      end
+
+      it 'asks the next deterministic profile question without consuming an LLM response' do
+        expect(Captain::Llm::AssistantChatService).not_to receive(:new)
+        expect(Captain::Assistant::AgentRunnerService).not_to receive(:new)
+
+        expect do
+          described_class.perform_now(conversation, assistant)
+        end.not_to(change { account.reload.usage_limits[:captain][:responses][:consumed] })
+
+        expect(conversation.messages.outgoing.last.content).to eq('Para começarmos, qual é o seu nome?')
+        expect(conversation.reload.additional_attributes.dig('captain_lead_intake', 'field')).to eq('name')
+
+        expect do
+          described_class.perform_now(conversation, assistant)
+        end.not_to(change { conversation.messages.count })
+      end
+    end
+
     context 'when captain_v2 is disabled' do
       before do
         allow(account).to receive(:feature_enabled?).and_return(false)

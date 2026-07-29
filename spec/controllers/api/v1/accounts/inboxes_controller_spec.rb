@@ -45,6 +45,21 @@ RSpec.describe 'Inboxes API', type: :request do
         expect(JSON.parse(response.body, symbolize_names: true)[:payload].size).to eq(1)
       end
 
+      it 'identifies inboxes connected to a Nemmo assistant' do
+        assistant = create(:captain_assistant, account: account)
+        create(:captain_inbox, captain_assistant: assistant, inbox: inbox)
+
+        get "/api/v1/accounts/#{account.id}/inboxes",
+            headers: admin.create_new_auth_token,
+            as: :json
+
+        payload = response.parsed_body.fetch('payload')
+        captain_payload = payload.find { |item| item['id'] == inbox.id }
+
+        expect(captain_payload['captain_enabled']).to be(true)
+        expect(payload.reject { |item| item['id'] == inbox.id }).to all(include('captain_enabled' => false))
+      end
+
       context 'when provider_config' do
         let(:inbox) { create(:channel_whatsapp, account: account, sync_templates: false, validate_provider_config: false).inbox }
 

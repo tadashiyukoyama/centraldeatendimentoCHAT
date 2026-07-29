@@ -9,10 +9,14 @@ import wootConstants from 'dashboard/constants/globals';
 import SelectMenu from 'dashboard/components-next/selectmenu/SelectMenu.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 
-defineProps({
+const props = defineProps({
   isOnExpandedLayout: {
     type: Boolean,
     required: true,
+  },
+  includeActiveStatus: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -38,28 +42,39 @@ const currentSortBy = computed(() => {
   );
 });
 
-const chatStatusOptions = computed(() => [
-  {
-    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.open.TEXT'),
-    value: 'open',
-  },
-  {
-    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.resolved.TEXT'),
-    value: 'resolved',
-  },
-  {
-    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.pending.TEXT'),
-    value: 'pending',
-  },
-  {
-    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.snoozed.TEXT'),
-    value: 'snoozed',
-  },
-  {
-    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.all.TEXT'),
-    value: 'all',
-  },
-]);
+const chatStatusOptions = computed(() => {
+  const options = [
+    {
+      label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.open.TEXT'),
+      value: 'open',
+    },
+    {
+      label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.resolved.TEXT'),
+      value: 'resolved',
+    },
+    {
+      label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.pending.TEXT'),
+      value: 'pending',
+    },
+    {
+      label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.snoozed.TEXT'),
+      value: 'snoozed',
+    },
+    {
+      label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.all.TEXT'),
+      value: 'all',
+    },
+  ];
+  if (props.includeActiveStatus) {
+    options.unshift({
+      label: `${t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.open.TEXT')} + ${t(
+        'CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.pending.TEXT'
+      )}`,
+      value: wootConstants.STATUS_TYPE.ACTIVE,
+    });
+  }
+  return options;
+});
 
 const chatSortOptions = computed(() => [
   {

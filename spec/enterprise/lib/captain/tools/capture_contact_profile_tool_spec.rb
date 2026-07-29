@@ -7,6 +7,17 @@ RSpec.describe Captain::Tools::CaptureContactProfileTool, type: :model do
   let(:contact) { create(:contact, account: account, name: '') }
   let(:conversation) { create(:conversation, account: account, inbox: inbox, contact: contact) }
   let(:tool) { described_class.new(assistant) }
+  let!(:profile_message) do
+    create(
+      :message,
+      account: account,
+      inbox: inbox,
+      conversation: conversation,
+      sender: contact,
+      message_type: :incoming,
+      content: 'Meu nome é Cesar, meu restaurante é Mar Azul, meu telefone é (11) 99999-9999 e meu email é cesar@example.com.'
+    )
+  end
   let(:tool_context) do
     Struct.new(:state).new({
                              conversation: { id: conversation.id },
@@ -15,15 +26,6 @@ RSpec.describe Captain::Tools::CaptureContactProfileTool, type: :model do
   end
 
   before do
-    create(
-      :message,
-      account: account,
-      inbox: inbox,
-      conversation: conversation,
-      sender: contact,
-      message_type: :incoming,
-      content: 'Meu nome é Cesar, meu restaurante é Mar Azul e meu telefone é (11) 99999-9999.'
-    )
     conversation.update_labels(['lead_morno'])
   end
 
@@ -33,12 +35,28 @@ RSpec.describe Captain::Tools::CaptureContactProfileTool, type: :model do
       name: 'Cesar',
       company_name: 'Mar Azul',
       phone_number: '(11) 99999-9999',
+      email: 'cesar@example.com',
       country_code: 'BR'
     )
 
     expect(result).to include('Contact profile saved')
-    expect(contact.reload).to have_attributes(name: 'Cesar', phone_number: '+5511999999999', contact_type: 'lead')
+    expect(contact.reload).to have_attributes(
+      name: 'Cesar',
+      phone_number: '+5511999999999',
+      email: 'cesar@example.com',
+      contact_type: 'lead'
+    )
     expect(contact.additional_attributes['company_name']).to eq('Mar Azul')
+    expect(contact.additional_attributes['whatsapp_contact_permission']).to be(true)
+    permission_details = contact.additional_attributes['whatsapp_contact_permission_details']
+    expect(permission_details).to include(
+      'scope' => 'service_follow_up',
+      'basis' => 'number_voluntarily_provided_for_service_follow_up',
+      'conversation_id' => conversation.id,
+      'inbox_id' => inbox.id,
+      'message_id' => profile_message.id
+    )
+    expect(permission_details).not_to have_key('marketing_consent')
     expect(Captain::ToolExecution.last).to have_attributes(status: 'succeeded')
   end
 

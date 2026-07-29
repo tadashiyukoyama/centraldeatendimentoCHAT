@@ -2,6 +2,7 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   include Captain::Conversation::V1ActionClassifier
   include Captain::Conversation::V1FalsePromiseHandler
   include Captain::Conversation::MessageBuilder
+  include Captain::Conversation::LeadIntakeHandler
 
   MAX_MESSAGE_LENGTH = 10_000
   retry_on ActiveStorage::FileNotFoundError, attempts: 3, wait: 2.seconds
@@ -16,6 +17,8 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
 
     Captain::Conversation::OriginResolver.new(conversation).perform
     Current.executed_by = @assistant
+
+    return if process_lead_intake
 
     if captain_v2_enabled?
       generate_response_with_v2

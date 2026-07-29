@@ -54,9 +54,15 @@ class ContactInboxWithContactBuilder
       phone_number: contact_attributes[:phone_number],
       email: contact_attributes[:email],
       identifier: contact_attributes[:identifier],
-      additional_attributes: contact_attributes[:additional_attributes],
+      additional_attributes: contact_additional_attributes,
       custom_attributes: contact_attributes[:custom_attributes]
     )
+  end
+
+  def contact_additional_attributes
+    attributes = contact_attributes[:additional_attributes].to_h.deep_dup
+    attributes['captain_name_source'] = contact_attributes[:name].present? ? 'channel' : 'generated'
+    attributes
   end
 
   def contact_name

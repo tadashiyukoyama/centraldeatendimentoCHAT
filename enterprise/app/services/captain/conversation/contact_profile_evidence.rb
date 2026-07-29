@@ -4,11 +4,15 @@ class Captain::Conversation::ContactProfileEvidence
   end
 
   def explicit?(field, value)
-    normalized_value = normalize(field, value)
-    return false if normalized_value.blank?
+    message_for(field, value).present?
+  end
 
-    incoming_contents.any? do |content|
-      normalized_content = normalize(field, content)
+  def message_for(field, value)
+    normalized_value = normalize(field, value)
+    return if normalized_value.blank?
+
+    incoming_messages.find do |message|
+      normalized_content = normalize(field, message.content_for_llm)
       if field.to_sym == :phone_number
         phone_matches?(normalized_content, normalized_value)
       else
@@ -19,13 +23,12 @@ class Captain::Conversation::ContactProfileEvidence
 
   private
 
-  def incoming_contents
+  def incoming_messages
     Captain::Conversation::MessageContextWindow.new(@conversation)
                                                .perform
                                                .select(&:incoming?)
                                                .select { |message| message.sender_type == 'Contact' }
                                                .last(20)
-                                               .map(&:content_for_llm)
   end
 
   def normalize(field, value)

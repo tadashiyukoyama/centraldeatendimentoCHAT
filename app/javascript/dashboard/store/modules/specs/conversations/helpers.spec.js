@@ -121,6 +121,14 @@ describe('#applyPageFilters', () => {
       };
       expect(applyPageFilters(conversationList[1], filters)).toEqual(true);
     });
+    it('returns open and pending conversations for the active filter', () => {
+      const filters = {
+        status: 'active',
+      };
+      expect(applyPageFilters(conversationList[0], filters)).toEqual(true);
+      expect(applyPageFilters(conversationList[3], filters)).toEqual(true);
+      expect(applyPageFilters(conversationList[2], filters)).toEqual(false);
+    });
   });
 });
 

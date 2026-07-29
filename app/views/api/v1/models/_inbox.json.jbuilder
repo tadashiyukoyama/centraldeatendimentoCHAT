@@ -19,6 +19,7 @@ json.allow_messages_after_resolved resource.allow_messages_after_resolved
 json.lock_to_single_conversation resource.lock_to_single_conversation
 json.sender_name_type resource.sender_name_type
 json.business_name resource.business_name
+json.captain_enabled resource.respond_to?(:captain_inbox) && resource.captain_inbox.present?
 
 if resource.portal.present?
   json.help_center do

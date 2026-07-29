@@ -207,6 +207,7 @@ const inbox = useFunctionGetter('inboxes/getInbox', activeInbox);
 const isEmailInbox = computed(
   () => inbox.value.channel_type === INBOX_TYPES.EMAIL
 );
+const isCaptainInbox = computed(() => Boolean(inbox.value.captain_enabled));
 const currentPage = useFunctionGetter(
   'conversationPage/getCurrentPageFilter',
   activeAssigneeTab
@@ -387,7 +388,9 @@ const uniqueInboxes = computed(() => {
 function setFiltersFromUISettings() {
   const { conversations_filter_by: filterBy = {} } = uiSettings.value;
   const { status, order_by: orderBy } = filterBy;
-  activeStatus.value = status || wootConstants.STATUS_TYPE.OPEN;
+  activeStatus.value = isCaptainInbox.value
+    ? wootConstants.STATUS_TYPE.ACTIVE
+    : status || wootConstants.STATUS_TYPE.OPEN;
   activeSortBy.value = Object.values(wootConstants.SORT_BY_TYPE).includes(
     orderBy
   )
@@ -496,11 +499,14 @@ function setParamsForEditFolderModal() {
 }
 
 function initializeExistingFilterToModal() {
-  const statusFilter = initializeStatusAndAssigneeFilterToModal(
-    activeStatus.value,
-    currentUserDetails.value,
-    activeAssigneeTab.value
-  );
+  const statusFilter =
+    activeStatus.value === wootConstants.STATUS_TYPE.ACTIVE
+      ? null
+      : initializeStatusAndAssigneeFilterToModal(
+          activeStatus.value,
+          currentUserDetails.value,
+          activeAssigneeTab.value
+        );
   // TODO: Remove the usage of useCamelCase after migrating useFilter to camelcase
   if (statusFilter) {
     appliedFilter.value = [...appliedFilter.value, useCamelCase(statusFilter)];
@@ -822,6 +828,17 @@ onMounted(() => {
   }
 });
 
+watch(isCaptainInbox, captainEnabled => {
+  const nextStatus = captainEnabled
+    ? wootConstants.STATUS_TYPE.ACTIVE
+    : wootConstants.STATUS_TYPE.OPEN;
+  if (activeStatus.value === nextStatus) return;
+
+  activeStatus.value = nextStatus;
+  store.dispatch('setChatStatusFilter', activeStatus.value);
+  resetAndFetchData();
+});
+
 const deleteConversationDialogRef = ref(null);
 const selectedConversationId = ref(null);
 
@@ -905,6 +922,7 @@ watch(conversationFilters, (newVal, oldVal) => {
       :is-on-expanded-layout="isOnExpandedLayout"
       :conversation-stats="conversationStats"
       :is-list-loading="chatListLoading && !conversationList.length"
+      :captain-enabled="isCaptainInbox"
       @add-folders="onClickOpenAddFoldersModal"
       @delete-folders="onClickOpenDeleteFoldersModal"
       @filters-modal="onToggleAdvanceFiltersModal"

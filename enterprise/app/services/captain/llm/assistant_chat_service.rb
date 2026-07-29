@@ -65,9 +65,12 @@ class Captain::Llm::AssistantChatService < Llm::BaseAiService
     return nil unless @conversation&.contact
     return nil unless @assistant&.feature_contact_attributes
 
-    @conversation.contact.attributes.symbolize_keys.slice(
-      :id, :name, :email, :phone_number, :identifier, :custom_attributes
-    )
+    Captain::Conversation::ContactProfileStatus.new(@conversation.contact)
+                                               .public_contact_attributes
+                                               .slice(
+                                                 :id, :name, :email, :phone_number,
+                                                 :identifier, :custom_attributes
+                                               )
   end
 
   def inbox_timezone

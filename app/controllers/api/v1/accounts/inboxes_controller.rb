@@ -8,8 +8,10 @@ class Api::V1::Accounts::InboxesController < Api::V1::Accounts::BaseController
   include Api::V1::Accounts::Concerns::WhatsappHealthManagement
 
   def index
+    associations = [:channel, :portal, :working_hours, { avatar_attachment: :blob }]
+    associations << :captain_inbox if Inbox.reflect_on_association(:captain_inbox)
     @inboxes = policy_scope(Current.account.inboxes)
-               .includes(:channel, :portal, :working_hours, { avatar_attachment: :blob })
+               .includes(*associations)
                .order_by_name
   end
 

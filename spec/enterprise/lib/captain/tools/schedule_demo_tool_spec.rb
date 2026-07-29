@@ -18,6 +18,7 @@ RSpec.describe Captain::Tools::ScheduleDemoTool, type: :model do
       account: account,
       name: 'Cesar',
       phone_number: '+5511999999999',
+      email: 'cesar@example.com',
       additional_attributes: { 'company_name' => 'Mar Azul' }
     )
   end
@@ -99,11 +100,12 @@ RSpec.describe Captain::Tools::ScheduleDemoTool, type: :model do
   end
 
   it 'rejects scheduling until the required contact fields are saved' do
-    contact.update!(phone_number: nil)
+    contact.update!(email: nil)
 
     result = tool.perform(tool_context, starts_at: starts_at, timezone: 'America/Sao_Paulo')
 
     expect(result).to include('Collect and save')
+    expect(result).to include('email')
     expect(Captain::Appointment.count).to eq(0)
   end
 

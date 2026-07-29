@@ -96,6 +96,20 @@ describe ConversationFinder do
       end
     end
 
+    context 'with active status' do
+      let(:params) { { status: 'active', assignee_type: 'all' } }
+
+      it 'returns open and pending conversations without resolved conversations' do
+        pending_conversation = create(:conversation, account: account, inbox: inbox, status: 'pending')
+
+        result = conversation_finder.perform
+        statuses = result[:conversations].map(&:status).uniq
+
+        expect(result[:conversations].map(&:id)).to include(pending_conversation.id)
+        expect(statuses).to contain_exactly('open', 'pending')
+      end
+    end
+
     context 'with unread sort' do
       let(:params) { { status: 'open', sort_by: 'unread' } }
 

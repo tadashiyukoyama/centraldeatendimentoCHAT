@@ -11,6 +11,7 @@ export default {
     ALL: 'all',
   },
   STATUS_TYPE: {
+    ACTIVE: 'active',
     OPEN: 'open',
     RESOLVED: 'resolved',
     PENDING: 'pending',

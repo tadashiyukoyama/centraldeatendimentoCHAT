@@ -35,12 +35,18 @@ module Captain::Assistant::RunnerStateHelper
   def build_conversation_state(state)
     state[:conversation] = slice_attrs(@conversation, CONVERSATION_STATE_ATTRIBUTES)
     state[:channel_type] = @conversation.inbox&.channel_type
-    state[:contact] = slice_attrs(@conversation.contact, CONTACT_STATE_ATTRIBUTES) if @conversation.contact
+    state[:contact] = contact_state(@conversation.contact) if @conversation.contact
     state[:campaign] = slice_attrs(@conversation.campaign, CAMPAIGN_STATE_ATTRIBUTES) if @conversation.campaign
     state[:contact_inbox] = slice_attrs(@conversation.contact_inbox, CONTACT_INBOX_STATE_ATTRIBUTES) if @conversation.contact_inbox
   end
 
   def slice_attrs(record, keys)
     record.attributes.symbolize_keys.slice(*keys)
+  end
+
+  def contact_state(contact)
+    Captain::Conversation::ContactProfileStatus.new(contact)
+                                               .public_contact_attributes
+                                               .slice(*CONTACT_STATE_ATTRIBUTES)
   end
 end

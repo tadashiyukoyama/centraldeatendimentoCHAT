@@ -8,7 +8,10 @@ export const findPendingMessageIndex = (chat, message) => {
 };
 
 export const filterByStatus = (chatStatus, filterStatus) =>
-  filterStatus === 'all' ? true : chatStatus === filterStatus;
+  filterStatus === 'all' ||
+  (filterStatus === 'active' && ['open', 'pending'].includes(chatStatus))
+    ? true
+    : chatStatus === filterStatus;
 
 export const filterByInbox = (shouldFilter, inboxId, chatInboxId) => {
   const isOnInbox = Number(inboxId) === chatInboxId;

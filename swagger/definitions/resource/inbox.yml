@@ -122,6 +122,9 @@ properties:
       - string
       - 'null'
     description: Business name associated with the inbox
+  captain_enabled:
+    type: boolean
+    description: Whether the inbox is connected to a Nemmo assistant
   hmac_mandatory:
     type: boolean
     description: Whether HMAC verification is mandatory

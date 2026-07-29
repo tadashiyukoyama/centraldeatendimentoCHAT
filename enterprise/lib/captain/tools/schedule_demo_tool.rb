@@ -111,10 +111,7 @@ class Captain::Tools::ScheduleDemoTool < Captain::Tools::BasePublicTool
   end
 
   def validate_contact!(contact)
-    missing = []
-    missing << 'name' if contact.name.blank?
-    missing << 'phone_number' if contact.phone_number.blank?
-    missing << 'company_name' if contact.additional_attributes.to_h['company_name'].blank?
+    missing = Captain::Conversation::ContactProfileStatus.new(contact).missing_fields
     return if missing.empty?
 
     reject_execution!(
