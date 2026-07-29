@@ -27,7 +27,7 @@ class Captain::Conversation::ContactProfileUpdater
 
     evidence_messages = validate_explicit_evidence!(values)
     changed_fields = update_contact!(values, evidence_messages, source)
-    create_profile_note(changed_fields, source)
+    create_profile_note(changed_fields, source) if changed_fields.any?
     changed_fields
   end
 
@@ -102,11 +102,11 @@ class Captain::Conversation::ContactProfileUpdater
         register_evidence!(additional_attributes, field, evidence_messages[field], source)
         changed_fields << field
       end
-      apply_contact_type
+      apply_contact_type if changed_fields.any?
       @contact.additional_attributes = additional_attributes
       @contact.save! if @contact.changed?
     end
-    changed_fields.presence || ['no_changes']
+    changed_fields
   rescue ActiveRecord::RecordNotUnique, ActiveRecord::RecordInvalid
     raise_validation!(
       'Contact data is invalid or conflicts with another contact. A human must review and merge it.',

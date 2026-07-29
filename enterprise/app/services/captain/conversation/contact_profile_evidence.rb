@@ -24,11 +24,11 @@ class Captain::Conversation::ContactProfileEvidence
   private
 
   def incoming_messages
-    Captain::Conversation::MessageContextWindow.new(@conversation)
-                                               .perform
-                                               .select(&:incoming?)
-                                               .select { |message| message.sender_type == 'Contact' }
-                                               .last(20)
+    messages = Captain::Conversation::MessageContextWindow.new(@conversation).perform
+    latest_message = messages.reverse.find { |message| message.incoming? && message.sender_type == 'Contact' }
+    return [] unless latest_message
+
+    [latest_message]
   end
 
   def normalize(field, value)

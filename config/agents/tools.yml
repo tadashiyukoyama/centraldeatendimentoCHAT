@@ -32,7 +32,7 @@
 
 - id: capture_contact_profile
   title: 'Capture Contact Profile'
-  description: 'Save name, phone, email, and company explicitly provided by the contact'
+  description: 'Save new name, phone, email, and company values explicitly present in the latest contact message'
   icon: 'contact'
 
 - id: schedule_demo

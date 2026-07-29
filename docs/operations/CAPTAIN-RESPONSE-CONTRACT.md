@@ -115,9 +115,10 @@ mesmo quando a última mensagem do contato é apenas a aceitação de uma oferta
 As ferramentas operacionais são documentadas em
 `docs/operations/CAPTAIN-OPERATIONAL-TOOLS.md`.
 
-Dados de perfil só podem ser gravados quando aparecem explicitamente no episódio
-atual. A agenda exige aceite, perfil completo, data com fuso e ausência de
-conflito.
+Dados novos de perfil só podem ser gravados quando aparecem explicitamente na
+última mensagem pública recebida do contato. Reenvio de valores já persistidos é
+um no-op sem nota privada e sem renovação artificial da evidência. A agenda exige
+aceite, perfil completo, data com fuso e ausência de conflito.
 
 O primeiro uso de `schedule_demo` para um slot completo grava
 `captain_pending_demo_confirmation` como estado estruturado e devolve

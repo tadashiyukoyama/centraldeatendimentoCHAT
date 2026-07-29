@@ -88,6 +88,66 @@ RSpec.describe Captain::Tools::CaptureContactProfileTool, type: :model do
     expect(Captain::ToolExecution.last).to have_attributes(status: 'rejected', error_code: 'missing_customer_evidence')
   end
 
+  it 'rejects changed data found only in an older customer message' do
+    create(
+      :message,
+      account: account,
+      inbox: inbox,
+      conversation: conversation,
+      sender: contact,
+      message_type: :incoming,
+      content: 'Quero escolher um horário para a demonstração.'
+    )
+
+    result = tool.perform(tool_context, company_name: 'Mar Azul')
+
+    expect(result).to include('Do not save inferred data')
+    expect(contact.reload.additional_attributes['company_name']).to be_blank
+    expect(Captain::ToolExecution.last).to have_attributes(status: 'rejected', error_code: 'missing_customer_evidence')
+  end
+
+  it 'treats already saved values as a side-effect-free no-op' do
+    tool.perform(
+      tool_context,
+      name: 'Cesar',
+      company_name: 'Mar Azul',
+      phone_number: '(11) 99999-9999',
+      email: 'cesar@example.com',
+      country_code: 'BR'
+    )
+    contact.reload
+    original_evidence = contact.additional_attributes['captain_profile_evidence'].deep_dup
+    original_note_count = conversation.messages.where(private: true).count
+
+    create(
+      :message,
+      account: account,
+      inbox: inbox,
+      conversation: conversation,
+      sender: contact,
+      message_type: :incoming,
+      content: 'Confirmo esse horário.'
+    )
+    payload = JSON.parse(
+      tool.perform(
+        tool_context,
+        name: 'Cesar',
+        company_name: 'Mar Azul',
+        phone_number: '+5511999999999',
+        email: 'cesar@example.com'
+      )
+    )
+
+    expect(payload).to include(
+      'status' => 'saved',
+      'saved_fields' => [],
+      'profile_complete' => true
+    )
+    expect(conversation.messages.where(private: true).count).to eq(original_note_count)
+    expect(contact.reload.additional_attributes['captain_profile_evidence']).to eq(original_evidence)
+    expect(Captain::ToolExecution.last).to have_attributes(status: 'succeeded')
+  end
+
   it 'does not accept a local phone without a supported country code' do
     result = tool.perform(tool_context, phone_number: '11999999999', country_code: 'US')
 

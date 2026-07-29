@@ -16,7 +16,7 @@ RSpec.describe Captain::Assistant do
     end
 
     it 'versions the consultative flow and assigns public wording to one authority' do
-      expect(source.fetch('version')).to eq(8)
+      expect(source.fetch('version')).to eq(9)
       expect(assistant_prompt).to include('only authority for customer-facing wording')
       expect(assistant_prompt).to include('Runtime code will validate and deliver it exactly')
     end

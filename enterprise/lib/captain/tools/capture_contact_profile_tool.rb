@@ -2,11 +2,11 @@ class Captain::Tools::CaptureContactProfileTool < Captain::Tools::BasePublicTool
   PROFILE_FIELDS = %i[name phone_number company_name email].freeze
   INPUT_FIELDS = (PROFILE_FIELDS + [:country_code]).freeze
 
-  description 'Save contact details explicitly provided by the customer'
-  param :name, type: 'string', desc: 'Customer full name', required: false
-  param :phone_number, type: 'string', desc: 'Customer phone number', required: false
-  param :company_name, type: 'string', desc: 'Customer company or establishment', required: false
-  param :email, type: 'string', desc: 'Customer email address', required: false
+  description 'Save new contact details explicitly present in the latest customer message; do not resend known values'
+  param :name, type: 'string', desc: 'New customer full name from the latest message', required: false
+  param :phone_number, type: 'string', desc: 'New customer phone number from the latest message', required: false
+  param :company_name, type: 'string', desc: 'New customer company or establishment from the latest message', required: false
+  param :email, type: 'string', desc: 'New customer email address from the latest message', required: false
   param :country_code, type: 'string', desc: 'ISO country code used to normalize a local phone', required: false
 
   def perform(tool_context, **attributes)
@@ -54,7 +54,7 @@ class Captain::Tools::CaptureContactProfileTool < Captain::Tools::BasePublicTool
   def profile_result(changed_fields, profile_status)
     {
       status: 'saved',
-      saved_fields: changed_fields == ['no_changes'] ? [] : changed_fields.map(&:to_s),
+      saved_fields: changed_fields.map(&:to_s),
       missing_fields: profile_status.missing_fields.map(&:to_s),
       profile_complete: profile_status.complete?
     }
