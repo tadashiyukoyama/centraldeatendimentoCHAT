@@ -16,6 +16,7 @@ RSpec.describe Captain::Assistant do
 
       expect(instructions).to include('The Agent SDK is the only conversation orchestrator')
       expect(instructions).to include('there is no mandatory order')
+      expect(instructions).to include('end the response with exactly one short, natural question')
       expect(instructions).to include('Send every explicit value from that message in one tool call')
       expect(instructions).not_to include('ask one concise question at a time in this order')
     end
