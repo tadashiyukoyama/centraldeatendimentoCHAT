@@ -74,8 +74,10 @@ jobs:
           enterprise/app/services/captain/conversation/lead_classification_service.rb
           enterprise/app/services/captain/llm/assistant_chat_service.rb
           enterprise/lib/captain/response_schema.rb
+          enterprise/lib/captain/tools/classify_lead_tool.rb
           enterprise/lib/captain/tools/capture_contact_profile_tool.rb
           spec/enterprise/jobs/captain/conversation/response_builder_job_spec.rb
+          spec/enterprise/lib/captain/tools/classify_lead_tool_spec.rb
           spec/enterprise/lib/captain/tools/capture_contact_profile_tool_spec.rb
           spec/enterprise/models/captain/assistant_spec.rb
           spec/enterprise/models/concerns/agentable_spec.rb
@@ -87,6 +89,7 @@ jobs:
         run: >-
           bundle exec rspec
           spec/enterprise/jobs/captain/conversation/response_builder_job_spec.rb
+          spec/enterprise/lib/captain/tools/classify_lead_tool_spec.rb
           spec/enterprise/lib/captain/tools/capture_contact_profile_tool_spec.rb
           spec/enterprise/models/captain/assistant_spec.rb
           spec/enterprise/models/concerns/agentable_spec.rb
