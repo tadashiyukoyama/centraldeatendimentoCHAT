@@ -18,7 +18,7 @@ RSpec.describe Captain::Conversation::ContactProfileStatus do
     expect(status.public_contact_attributes[:name]).to be_nil
   end
 
-  it 'requires name, company, WhatsApp, and email in that order' do
+  it 'tracks the required fields without exposing internal evidence metadata' do
     contact = create(
       :contact,
       account: account,
@@ -27,10 +27,15 @@ RSpec.describe Captain::Conversation::ContactProfileStatus do
       email: 'cesar@example.com',
       additional_attributes: {
         'captain_name_source' => 'customer',
-        'company_name' => 'Mar Azul'
+        'company_name' => 'Mar Azul',
+        'captain_profile_evidence' => { 'email' => { 'message_id' => 123 } }
       }
     )
 
-    expect(described_class.new(contact)).to be_complete
+    status = described_class.new(contact)
+
+    expect(status).to be_complete
+    expect(status.public_contact_attributes[:company_name]).to eq('Mar Azul')
+    expect(status.public_contact_attributes).not_to have_key(:additional_attributes)
   end
 end

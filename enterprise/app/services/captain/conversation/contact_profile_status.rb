@@ -27,9 +27,10 @@ class Captain::Conversation::ContactProfileStatus
   def public_contact_attributes
     attributes = @contact.attributes.symbolize_keys.slice(
       :id, :name, :email, :phone_number, :identifier, :contact_type,
-      :custom_attributes, :additional_attributes
+      :custom_attributes
     )
     attributes[:name] = nil unless real_name?
+    attributes[:company_name] = @contact.additional_attributes.to_h['company_name']
     attributes
   end
 

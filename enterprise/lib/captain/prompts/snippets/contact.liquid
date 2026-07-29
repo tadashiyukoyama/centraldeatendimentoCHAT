@@ -3,6 +3,7 @@
 - Name: {{ contact.name || "Unknown" }}
 - Email: {{ contact.email || "None" }}
 - Phone: {{ contact.phone_number || "None" }}
+- Company: {{ contact.company_name || "None" }}
 - Identifier: {{ contact.identifier || "None" }}
 - Type: {{ contact.contact_type || "visitor" }}
 {% if contact.custom_attributes -%}

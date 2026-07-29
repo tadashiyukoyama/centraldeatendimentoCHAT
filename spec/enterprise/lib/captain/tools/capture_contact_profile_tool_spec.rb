@@ -39,7 +39,13 @@ RSpec.describe Captain::Tools::CaptureContactProfileTool, type: :model do
       country_code: 'BR'
     )
 
-    expect(result).to include('Contact profile saved')
+    payload = JSON.parse(result)
+    expect(payload).to eq(
+      'status' => 'saved',
+      'profile_complete' => true,
+      'missing_fields' => [],
+      'saved_fields' => %w[name phone_number company_name email]
+    )
     expect(contact.reload).to have_attributes(
       name: 'Cesar',
       phone_number: '+5511999999999',
@@ -58,6 +64,20 @@ RSpec.describe Captain::Tools::CaptureContactProfileTool, type: :model do
     )
     expect(permission_details).not_to have_key('marketing_consent')
     expect(Captain::ToolExecution.last).to have_attributes(status: 'succeeded')
+  end
+
+  it 'captures an explicit field in any order and reports what is still missing' do
+    payload = JSON.parse(tool.perform(tool_context, email: 'cesar@example.com'))
+
+    expect(payload).to include(
+      'status' => 'saved',
+      'saved_fields' => ['email'],
+      'profile_complete' => false
+    )
+    expect(payload['missing_fields']).to match_array(%w[name company_name phone_number])
+    expect(contact.reload.email).to eq('cesar@example.com')
+    expect(tool_context.state[:contact]).to include(email: 'cesar@example.com')
+    expect(tool_context.state.dig(:contact_profile, :missing_fields)).to match_array(%w[name company_name phone_number])
   end
 
   it 'rejects a value that was inferred instead of provided' do

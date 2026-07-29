@@ -24,13 +24,13 @@ class Captain::Tools::CaptureContactProfileTool < Captain::Tools::BasePublicTool
       tool_context,
       request_summary: { fields: supplied_fields.map(&:to_s).sort }
     ) do
-      save_profile(conversation, contact, attributes)
+      save_profile(tool_context, conversation, attributes)
     end
   end
 
   private
 
-  def save_profile(conversation, _contact, attributes)
+  def save_profile(tool_context, conversation, attributes)
     changed_fields = Captain::Conversation::ContactProfileUpdater.new(
       conversation: conversation,
       assistant: @assistant,
@@ -39,11 +39,36 @@ class Captain::Tools::CaptureContactProfileTool < Captain::Tools::BasePublicTool
       attributes: attributes.slice(*PROFILE_FIELDS),
       source: 'captain_tool'
     )
-    "Contact profile saved: #{changed_fields.join(', ')}"
+    contact = conversation.contact.reload
+    profile_status = Captain::Conversation::ContactProfileStatus.new(contact)
+    sync_tool_state!(tool_context, profile_status)
+
+    profile_result(changed_fields, profile_status).to_json
   rescue Captain::Conversation::ContactProfileUpdater::ValidationError => e
     reject_execution!(
       e.message,
       code: e.code
     )
+  end
+
+  def profile_result(changed_fields, profile_status)
+    {
+      status: 'saved',
+      saved_fields: changed_fields == ['no_changes'] ? [] : changed_fields.map(&:to_s),
+      missing_fields: profile_status.missing_fields.map(&:to_s),
+      profile_complete: profile_status.complete?
+    }
+  end
+
+  def sync_tool_state!(tool_context, profile_status)
+    return unless tool_context&.state
+
+    tool_context.state[:contact] = profile_status.public_contact_attributes.slice(
+      *Captain::Assistant::RunnerStateHelper::CONTACT_STATE_ATTRIBUTES
+    )
+    tool_context.state[:contact_profile] = {
+      complete: profile_status.complete?,
+      missing_fields: profile_status.missing_fields.map(&:to_s)
+    }
   end
 end

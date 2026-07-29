@@ -50,6 +50,7 @@ RSpec.describe Concerns::Agentable do
         tools: [],
         model: Llm::Models.default_model_for('assistant'),
         temperature: 0.8,
+        params: { reasoning_effort: 'none' },
         response_schema: Captain::ResponseSchema
       )
 
@@ -93,7 +94,11 @@ RSpec.describe Concerns::Agentable do
                                          state: {
                                            assistant_config: { 'feature_contact_attributes' => true },
                                            conversation: { id: 123 },
-                                           contact: { name: 'John' }
+                                           contact: { name: 'John' },
+                                           contact_profile: {
+                                             complete: false,
+                                             missing_fields: %w[company_name phone_number email]
+                                           }
                                          }
                                        })
 
@@ -101,6 +106,10 @@ RSpec.describe Concerns::Agentable do
         base_key: 'base_value',
         conversation: { id: 123 },
         contact: { name: 'John' },
+        contact_profile: {
+          complete: false,
+          missing_fields: %w[company_name phone_number email]
+        },
         campaign: {}
       }
 
@@ -132,6 +141,26 @@ RSpec.describe Concerns::Agentable do
       dummy_instance.agent_instructions(context_double)
     end
 
+    it 'does not expose contact context when the feature flag is the string false' do
+      context_double = instance_double(
+        Agents::RunContext,
+        context: {
+          state: {
+            assistant_config: { 'feature_contact_attributes' => 'false' },
+            contact: { name: 'John' },
+            contact_profile: { complete: false, missing_fields: ['email'] }
+          }
+        }
+      )
+
+      expect(Captain::PromptRenderer).to receive(:render).with(
+        'dummy_class',
+        hash_including(contact: nil, contact_profile: nil)
+      )
+
+      dummy_instance.agent_instructions(context_double)
+    end
+
     it 'handles context without state' do
       context_double = instance_double(Agents::RunContext, context: {})
 
@@ -141,6 +170,7 @@ RSpec.describe Concerns::Agentable do
           base_key: 'base_value',
           conversation: {},
           contact: nil,
+          contact_profile: nil,
           campaign: {}
         )
       )

@@ -69,7 +69,7 @@ class Captain::Llm::AssistantChatService < Llm::BaseAiService
                                                .public_contact_attributes
                                                .slice(
                                                  :id, :name, :email, :phone_number,
-                                                 :identifier, :custom_attributes
+                                                 :identifier, :company_name, :custom_attributes
                                                )
   end
 

@@ -1,6 +1,26 @@
 require 'rails_helper'
 
 RSpec.describe Captain::Assistant do
+  describe '#agent_instructions' do
+    let(:account) { create(:account) }
+    let(:assistant) do
+      create(
+        :captain_assistant,
+        account: account,
+        config: { 'feature_contact_attributes' => true, 'product_name' => 'Test Product' }
+      )
+    end
+
+    it 'keeps profile collection inside the Agent SDK without a fixed questionnaire' do
+      instructions = assistant.agent_instructions
+
+      expect(instructions).to include('The Agent SDK is the only conversation orchestrator')
+      expect(instructions).to include('there is no mandatory order')
+      expect(instructions).to include('Send every explicit value from that message in one tool call')
+      expect(instructions).not_to include('ask one concise question at a time in this order')
+    end
+  end
+
   describe '#agent_tools' do
     let(:account) { create(:account) }
     let(:assistant) { create(:captain_assistant, account: account) }

@@ -31,6 +31,8 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
 
     context 'when a classified lead has an incomplete profile' do
       before do
+        allow(account).to receive(:feature_enabled?).and_return(false)
+        allow(account).to receive(:feature_enabled?).with('captain_integration_v2').and_return(true)
         account.update!(locale: 'pt_BR')
         assistant.update!(
           config: assistant.config.merge('feature_contact_attributes' => true)
@@ -42,20 +44,19 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         conversation.update_labels(['lead_morno'])
       end
 
-      it 'asks the next deterministic profile question without consuming an LLM response' do
+      it 'keeps the Agent SDK as the only conversation orchestrator' do
         expect(Captain::Llm::AssistantChatService).not_to receive(:new)
-        expect(Captain::Assistant::AgentRunnerService).not_to receive(:new)
+        expect(Captain::Assistant::AgentRunnerService).to receive(:new).with(
+          assistant: assistant,
+          conversation: conversation
+        ).and_return(mock_agent_runner_service)
 
         expect do
           described_class.perform_now(conversation, assistant)
-        end.not_to(change { account.reload.usage_limits[:captain][:responses][:consumed] })
+        end.to change { account.reload.usage_limits[:captain][:responses][:consumed] }.by(1)
 
-        expect(conversation.messages.outgoing.last.content).to eq('Para começarmos, qual é o seu nome?')
-        expect(conversation.reload.additional_attributes.dig('captain_lead_intake', 'field')).to eq('name')
-
-        expect do
-          described_class.perform_now(conversation, assistant)
-        end.not_to(change { conversation.messages.count })
+        expect(conversation.messages.outgoing.last.content).to eq('Hey, welcome to Captain V2')
+        expect(conversation.reload.additional_attributes).not_to have_key('captain_lead_intake')
       end
     end
 

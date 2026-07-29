@@ -510,6 +510,10 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
         name: contact.name,
         email: contact.email
       )
+      expect(state[:contact_profile]).to include(
+        complete: false,
+        missing_fields: array_including('company_name', 'phone_number', 'email')
+      )
     end
 
     it 'does not include campaign when conversation has no campaign' do
@@ -661,8 +665,9 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
 
     it 'defines contact state attributes' do
       expect(described_class::CONTACT_STATE_ATTRIBUTES).to include(
-        :id, :name, :email, :phone_number, :identifier, :contact_type
+        :id, :name, :email, :phone_number, :identifier, :contact_type, :company_name
       )
+      expect(described_class::CONTACT_STATE_ATTRIBUTES).not_to include(:additional_attributes)
     end
 
     it 'defines campaign state attributes' do

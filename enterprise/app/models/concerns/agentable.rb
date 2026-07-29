@@ -2,6 +2,7 @@ module Concerns::Agentable
   extend ActiveSupport::Concern
 
   DEFAULT_TEMPERATURE = 0.5
+  BOOLEAN_TYPE = ActiveModel::Type::Boolean.new.freeze
 
   def agent
     Agents::Agent.new(
@@ -24,10 +25,10 @@ module Concerns::Agentable
       enhanced_context = enhanced_context.merge(
         current_time: format_current_time(state[:timezone]),
         conversation: state[:conversation] || {},
-        contact: config['feature_contact_attributes'].present? ? state[:contact] : nil,
         campaign: state[:campaign] || {},
         lead_origin: state[:lead_origin],
-        greeting_only: state[:greeting_only]
+        greeting_only: state[:greeting_only],
+        **agent_contact_context(config, state)
       )
     end
 
@@ -68,6 +69,15 @@ module Concerns::Agentable
 
   def installation_model
     InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value
+  end
+
+  def agent_contact_context(config, state)
+    return { contact: nil, contact_profile: nil } unless BOOLEAN_TYPE.cast(config['feature_contact_attributes'])
+
+    {
+      contact: state[:contact],
+      contact_profile: state[:contact_profile]
+    }
   end
 
   def agent_response_schema

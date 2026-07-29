@@ -6,7 +6,7 @@ module Captain::Assistant::RunnerStateHelper
 
   CONTACT_STATE_ATTRIBUTES = %i[
     id name email phone_number identifier contact_type
-    custom_attributes additional_attributes
+    company_name custom_attributes
   ].freeze
 
   CONTACT_INBOX_STATE_ATTRIBUTES = %i[id hmac_verified].freeze
@@ -35,7 +35,10 @@ module Captain::Assistant::RunnerStateHelper
   def build_conversation_state(state)
     state[:conversation] = slice_attrs(@conversation, CONVERSATION_STATE_ATTRIBUTES)
     state[:channel_type] = @conversation.inbox&.channel_type
-    state[:contact] = contact_state(@conversation.contact) if @conversation.contact
+    if @conversation.contact
+      state[:contact] = contact_state(@conversation.contact)
+      state[:contact_profile] = contact_profile_state(@conversation.contact)
+    end
     state[:campaign] = slice_attrs(@conversation.campaign, CAMPAIGN_STATE_ATTRIBUTES) if @conversation.campaign
     state[:contact_inbox] = slice_attrs(@conversation.contact_inbox, CONTACT_INBOX_STATE_ATTRIBUTES) if @conversation.contact_inbox
   end
@@ -48,5 +51,13 @@ module Captain::Assistant::RunnerStateHelper
     Captain::Conversation::ContactProfileStatus.new(contact)
                                                .public_contact_attributes
                                                .slice(*CONTACT_STATE_ATTRIBUTES)
+  end
+
+  def contact_profile_state(contact)
+    status = Captain::Conversation::ContactProfileStatus.new(contact)
+    {
+      complete: status.complete?,
+      missing_fields: status.missing_fields.map(&:to_s)
+    }
   end
 end
