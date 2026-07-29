@@ -84,13 +84,14 @@ class Captain::Conversation::LeadClassificationService
       return heuristic
     end
 
-    if classification.to_s.strip.casecmp('cliente').zero?
+    normalized = normalize(classification)
+    if %w[cliente lead_quente].include?(normalized)
       @classification_source = 'heuristic'
       return heuristic
     end
 
-    @classification_source = normalize(classification).present? ? 'model' : 'heuristic'
-    normalize(classification)
+    @classification_source = normalized.present? ? 'model' : 'heuristic'
+    normalized
   end
 
   def latest_customer_message
