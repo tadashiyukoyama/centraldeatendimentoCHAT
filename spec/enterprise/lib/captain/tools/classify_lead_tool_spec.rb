@@ -34,6 +34,13 @@ RSpec.describe Captain::Tools::ClassifyLeadTool, type: :model do
 
     expect(result).to include("classified as 'lead_quente'")
     expect(conversation.reload.label_list).to contain_exactly('lead_quente', 'restaurante')
+    expect(Captain::ToolExecution.last).to have_attributes(
+      assistant_id: assistant.id,
+      conversation_id: conversation.id,
+      tool_name: 'Captain::Tools::ClassifyLeadTool',
+      status: 'succeeded',
+      request_summary: { 'classification' => 'lead_quente' }
+    )
   end
 
   it 'does not let the model elevate a profile-only reply to a hot lead' do

@@ -67,6 +67,9 @@ class Captain::Scenario < ApplicationRecord
       instructions: resolved_instructions,
       tools: resolved_tools,
       assistant_name: assistant.name.downcase.gsub(/\s+/, '_'),
+      feature_commercial_response_contract: ActiveModel::Type::Boolean.new.cast(
+        assistant.config['feature_commercial_response_contract']
+      ),
       response_guidelines: response_guidelines || [],
       guardrails: guardrails || []
     }

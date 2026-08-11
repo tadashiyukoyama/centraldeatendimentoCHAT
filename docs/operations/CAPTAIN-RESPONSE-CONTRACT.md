@@ -33,6 +33,35 @@ ferramenta, o runtime registra diagnóstico privado e falha de forma fechada par
 atendimento humano, sem inventar uma mensagem pública. A autoridade só muda para
 uma pessoa depois de um handoff concluído, em um turno posterior.
 
+## Ciclo comercial adaptativo do Agent SDK
+
+Assistentes com `feature_commercial_response_contract` usam
+`Captain::CommercialResponseSchema`. O agente retorna, além da resposta, intenção,
+etapa, objetivo imediato, campos de perfil capturados/solicitados/recusados e o
+estado de fundamentação no conhecimento aprovado. Esses dados descrevem a decisão
+do agente; não formam uma máquina de estados que escreve mensagens.
+
+Antes da entrega, o runtime verifica as invariantes do turno:
+
+- campos explícitos foram persistidos por ferramenta real;
+- mudanças de classificação passaram por `classify_lead`;
+- afirmações factuais possuem consulta a FAQ aprovada no mesmo run;
+- a cobertura inicial do perfil avançou sem repetir uma pergunta ignorada;
+- uma resposta curta a uma pergunta de perfil foi persistida por ferramenta real,
+  enquanto recusas exigem evidência explícita na mensagem;
+- intenção e classificação permanecem coerentes, impedindo que o modelo use
+  `unknown` para evitar obrigações de um lead já identificado;
+- a resposta está legível, não repete uma frase recente e respeita o limite de
+  uma pergunta.
+
+Uma tentativa rejeitada nunca é publicada. O mesmo agente do Agent SDK recebe os
+erros de validação no contexto privado e continua sendo o único autor do texto. Se
+nenhum efeito persistente ocorreu, ele pode executar o turno novamente. Se uma
+ferramenta potencialmente mutável já foi chamada, a correção usa uma instância do mesmo Nemmo sem
+ferramentas e reaproveita somente os resultados auditados, impedindo duplicidade
+de agenda, notas, classificação, financeiro ou handoff. Depois de duas falhas, o
+processamento fecha para atendimento humano.
+
 ## Origem do lead
 
 A origem é calculada por `Captain::Conversation::OriginResolver` e persistida em
@@ -109,6 +138,9 @@ contato no servidor. A classificação é monotônica dentro do episódio: um
 `lead_quente` não volta para `lead_morno` por uma resposta posterior do modelo.
 Um agendamento concluído pela ferramenta é um sinal confiável de `lead_quente`,
 mesmo quando a última mensagem do contato é apenas a aceitação de uma oferta.
+A ferramenta `classify_lead` registra cada mudança solicitada em
+`captain_tool_executions`; o campo estruturado continua sendo validado e aplicado
+como defesa adicional antes da entrega.
 
 ## Perfil, agenda e financeiro
 

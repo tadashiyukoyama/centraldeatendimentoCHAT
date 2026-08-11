@@ -18,9 +18,10 @@ class Captain::Assistant::AgentRunnerService
   end
 
   def generate_response(message_history: [])
+    return generate_commercial_response(message_history) if commercial_response_contract_enabled?
+
     message_to_process, context = run_payload(message_history)
     @last_run_result = runner.run(message_to_process, context: context, max_turns: 10)
-
     process_agent_result(@last_run_result)
   rescue StandardError => e
     # In rake/local runs, conversation may not be present, so account is optional here.
@@ -115,7 +116,7 @@ class Captain::Assistant::AgentRunnerService
   end
 
   def install_instrumentation(runner)
-    return unless ChatwootApp.otel_enabled?
+    return runner unless ChatwootApp.otel_enabled?
 
     Agents::Instrumentation.install(
       runner,
@@ -127,6 +128,7 @@ class Captain::Assistant::AgentRunnerService
       attribute_provider: Captain::Assistant::InstrumentationAttributeProvider.new(self)
     )
     register_trace_input_callback(runner)
+    runner
   end
 
   def dynamic_trace_attributes(context_wrapper)
@@ -155,6 +157,7 @@ class Captain::Assistant::AgentRunnerService
     # Tool tracking always runs — process_response in the job consumes the resulting
     # handoff_tool_called flag regardless of whether OTEL is enabled.
     runner.on_tool_complete do |tool_name, tool_result, context_wrapper|
+      track_tool_result(tool_name, tool_result, context_wrapper)
       track_handoff_usage(tool_name, handoff_tool_names, tool_result, context_wrapper)
     end
 
@@ -177,6 +180,13 @@ class Captain::Assistant::AgentRunnerService
     @handoff_tool_called = true
   end
 
+  def track_tool_result(tool_name, tool_result, context_wrapper)
+    return unless context_wrapper&.context
+
+    context_wrapper.context[:captain_v2_tool_results] ||= []
+    context_wrapper.context[:captain_v2_tool_results] << { name: tool_name.to_s, result: tool_result.to_s }
+  end
+
   def write_credits_used_metadata(context_wrapper)
     root_span = context_wrapper&.context&.dig(:__otel_tracing, :root_span)
     return unless root_span
@@ -194,10 +204,18 @@ class Captain::Assistant::AgentRunnerService
     end
   end
 
-  def run_payload(message_history)
-    message_to_process = extract_last_user_message(message_history)
-    context = build_context(message_history_without_last_user_message(message_history))
-    enrich_context_with_trace_payload!(context, message_history, message_to_process)
-    [message_to_process, context]
+  def generate_commercial_response(message_history)
+    result = Captain::Assistant::TurnContractRunnerService.new(
+      assistant: @assistant,
+      conversation: @conversation,
+      runner: runner,
+      repair_runner_provider: method(:repair_runner),
+      runtime: {
+        payload_builder: method(:run_payload),
+        result_processor: method(:process_agent_result)
+      }
+    ).perform(message_history: message_history)
+    @last_run_result = result.run_result
+    result.response
   end
 end

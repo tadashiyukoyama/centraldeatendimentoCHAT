@@ -50,6 +50,7 @@ class Captain::Assistant < ApplicationRecord
                  :feature_faq,
                  :feature_memory,
                  :feature_contact_attributes,
+                 :feature_commercial_response_contract,
                  :feature_demo_scheduling,
                  :feature_payment_notices,
                  :product_name,
@@ -152,6 +153,7 @@ class Captain::Assistant < ApplicationRecord
       description: description,
       product_name: config['product_name'] || 'this product',
       feature_contact_profile: feature_enabled?(:feature_contact_attributes),
+      feature_commercial_response_contract: feature_enabled?(:feature_commercial_response_contract),
       feature_demo_scheduling: feature_enabled?(:feature_demo_scheduling),
       feature_payment_notices: feature_enabled?(:feature_payment_notices),
       scenarios: scenarios.enabled.map do |scenario|

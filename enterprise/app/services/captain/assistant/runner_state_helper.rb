@@ -28,6 +28,7 @@ module Captain::Assistant::RunnerStateHelper
       state[:lead_origin] = Captain::Conversation::OriginResolver.new(@conversation).perform
       state[:greeting_only] = Captain::Conversation::GreetingPolicy.new(@conversation).greeting_only?
       build_conversation_state(state)
+      build_commercial_turn_state(state) if commercial_response_contract_enabled?
     end
     state
   end
@@ -59,5 +60,27 @@ module Captain::Assistant::RunnerStateHelper
       complete: status.complete?,
       missing_fields: status.missing_fields.map(&:to_s)
     }
+  end
+
+  def build_commercial_turn_state(state)
+    state[:commercial_turn] = Captain::Conversation::CommercialTurnPolicy.new(conversation: @conversation).perform
+  end
+
+  def commercial_response_contract_enabled?
+    ActiveModel::Type::Boolean.new.cast(@assistant.config['feature_commercial_response_contract'])
+  end
+
+  def repair_runner
+    @repair_runner ||= begin
+      configured_runner = Agents::Runner.with_agents(@assistant.agent(tools: []))
+      install_instrumentation(configured_runner)
+    end
+  end
+
+  def run_payload(message_history)
+    message_to_process = extract_last_user_message(message_history)
+    context = build_context(message_history_without_last_user_message(message_history))
+    enrich_context_with_trace_payload!(context, message_history, message_to_process)
+    [message_to_process, context]
   end
 end

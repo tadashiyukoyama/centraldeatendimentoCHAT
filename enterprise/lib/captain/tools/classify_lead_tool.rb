@@ -13,16 +13,21 @@ class Captain::Tools::ClassifyLeadTool < Captain::Tools::BasePublicTool
     classification = classification.to_s.strip.downcase
     return "Invalid classification. Use one of: #{CLASSIFICATIONS.join(', ')}" unless CLASSIFICATIONS.include?(classification)
 
-    effective_classification = Captain::Conversation::LeadClassificationService.new(conversation: conversation).perform(
-      classification: classification
-    )
-    log_tool_usage(
-      'classified_lead',
-      conversation_id: conversation.id,
-      requested_classification: classification,
-      effective_classification: effective_classification
-    )
+    with_tool_audit(
+      tool_context,
+      request_summary: { classification: classification }
+    ) do
+      effective_classification = Captain::Conversation::LeadClassificationService.new(conversation: conversation).perform(
+        classification: classification
+      )
+      log_tool_usage(
+        'classified_lead',
+        conversation_id: conversation.id,
+        requested_classification: classification,
+        effective_classification: effective_classification
+      )
 
-    "Conversation ##{conversation.display_id} classified as '#{effective_classification}'"
+      "Conversation ##{conversation.display_id} classified as '#{effective_classification}'"
+    end
   end
 end

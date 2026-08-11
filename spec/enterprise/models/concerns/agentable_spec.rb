@@ -57,6 +57,12 @@ RSpec.describe Concerns::Agentable do
       dummy_instance.agent
     end
 
+    it 'supports a tool-free instance for a side-effect-safe correction pass' do
+      expect(Agents::Agent).to receive(:new).with(hash_including(tools: []))
+
+      dummy_instance.agent(tools: [])
+    end
+
     it 'uses default temperature when temperature is nil' do
       dummy_instance.temperature = nil
 
@@ -236,6 +242,16 @@ RSpec.describe Concerns::Agentable do
   describe '#agent_response_schema' do
     it 'returns Captain::ResponseSchema' do
       expect(dummy_instance.send(:agent_response_schema)).to eq(Captain::ResponseSchema)
+    end
+
+    it 'uses the commercial schema only for assistants that enable the Agent SDK contract' do
+      assistant = create(
+        :captain_assistant,
+        account: account,
+        config: { 'feature_commercial_response_contract' => true }
+      )
+
+      expect(assistant.send(:agent_response_schema)).to eq(Captain::CommercialResponseSchema)
     end
   end
 

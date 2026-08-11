@@ -4,11 +4,11 @@ module Concerns::Agentable
   DEFAULT_TEMPERATURE = 0.5
   BOOLEAN_TYPE = ActiveModel::Type::Boolean.new.freeze
 
-  def agent
+  def agent(tools: agent_tools)
     Agents::Agent.new(
       name: agent_name,
       instructions: ->(context) { agent_instructions(context) },
-      tools: agent_tools,
+      tools: tools,
       model: agent_model,
       temperature: temperature.presence&.to_f || DEFAULT_TEMPERATURE,
       params: agent_provider_params,
@@ -18,20 +18,7 @@ module Concerns::Agentable
 
   def agent_instructions(context = nil)
     enhanced_context = prompt_context
-
-    if context
-      state = context.context[:state] || {}
-      config = state[:assistant_config] || {}
-      enhanced_context = enhanced_context.merge(
-        current_time: format_current_time(state[:timezone]),
-        conversation_timezone: state[:timezone].presence || 'UTC',
-        conversation: state[:conversation] || {},
-        campaign: state[:campaign] || {},
-        lead_origin: state[:lead_origin],
-        greeting_only: state[:greeting_only],
-        **agent_contact_context(config, state)
-      )
-    end
+    enhanced_context = enhanced_context.merge(agent_runtime_context(context)) if context
 
     Captain::PromptRenderer.render(template_name, enhanced_context.with_indifferent_access)
   end
@@ -81,8 +68,38 @@ module Concerns::Agentable
     }
   end
 
+  def agent_runtime_context(context)
+    state = context.context.fetch(:state, {})
+    config = state.fetch(:assistant_config, {})
+    {
+      current_time: format_current_time(state[:timezone]),
+      conversation_timezone: state[:timezone].presence || 'UTC',
+      conversation: state.fetch(:conversation, {}),
+      campaign: state.fetch(:campaign, {}),
+      lead_origin: state[:lead_origin],
+      greeting_only: state[:greeting_only],
+      commercial_turn: state.fetch(:commercial_turn, {}),
+      commercial_validation_feedback: state.fetch(:commercial_validation_feedback, []),
+      commercial_retry: state.fetch(:commercial_retry, {}),
+      **agent_contact_context(config, state)
+    }
+  end
+
   def agent_response_schema
+    return Captain::CommercialResponseSchema if commercial_response_contract_enabled?
+
     Captain::ResponseSchema
+  end
+
+  def commercial_response_contract_enabled?
+    owner_config = if respond_to?(:config)
+                     config
+                   elsif respond_to?(:assistant)
+                     assistant.config
+                   else
+                     {}
+                   end
+    BOOLEAN_TYPE.cast(owner_config.to_h['feature_commercial_response_contract'])
   end
 
   def format_current_time(timezone)

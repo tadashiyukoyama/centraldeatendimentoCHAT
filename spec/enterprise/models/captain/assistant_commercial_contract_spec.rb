@@ -16,18 +16,24 @@ RSpec.describe Captain::Assistant do
     end
 
     it 'versions the consultative flow and assigns public wording to one authority' do
-      expect(source.fetch('version')).to eq(9)
+      expect(source.fetch('version')).to eq(10)
+      expect(source.dig('config', 'feature_commercial_response_contract')).to be true
       expect(assistant_prompt).to include('only authority for customer-facing wording')
       expect(assistant_prompt).to include('Runtime code will validate and deliver it exactly')
     end
 
-    it 'requires need discovery, non-repetition, and clarification before profile collection' do
+    it 'requires consultative discovery without repetition' do
       expect(guidelines).to include('consultor comercial, não como formulário')
       expect(guidelines).to include('não repita lista de benefícios')
-      expect(guidelines).to include('pergunta de diagnóstico')
+      expect(guidelines).to include('volte ao diagnóstico')
       expect(guidelines).to include('peça esclarecimento')
-      expect(guidelines).to include('A ausência de um campo nunca obriga uma pergunta')
-      expect(guidelines).to include('sem entrevista campo a campo')
+    end
+
+    it 'covers lead data early without a fixed questionnaire' do
+      expect(guidelines).to include('estado comercial adaptativo do Agent SDK')
+      expect(guidelines).to include('nome e o estabelecimento')
+      expect(guidelines).to include('WhatsApp e e-mail juntos')
+      expect(guidelines).to include('não faça entrevista campo a campo')
     end
 
     it 'uses the inbox timezone by default instead of interrogating the lead about it' do
@@ -48,6 +54,9 @@ RSpec.describe Captain::Assistant do
       expect(assistant_prompt).to include('Never repeat the same benefit list')
       expect(assistant_prompt).to include('ask what the customer meant')
       expect(assistant_prompt).to include('Ask at most one conversational question per reply')
+      expect(assistant_prompt).to include('adaptive agent contract')
+      expect(assistant_prompt).to include('selective **bold** emphasis')
+      expect(assistant_prompt).to include('runtime validates tool evidence')
     end
   end
 end

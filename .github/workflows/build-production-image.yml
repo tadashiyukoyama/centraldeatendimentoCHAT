@@ -67,20 +67,28 @@ jobs:
           bundle exec rubocop
           enterprise/app/jobs/captain/conversation/message_builder.rb
           enterprise/app/jobs/captain/conversation/response_builder_job.rb
+          enterprise/app/models/captain/assistant.rb
+          enterprise/app/models/captain/scenario.rb
           enterprise/app/models/concerns/agentable.rb
           enterprise/app/services/captain/assistant/agent_runner_service.rb
           enterprise/app/services/captain/assistant/runner_state_helper.rb
+          enterprise/app/services/captain/assistant/turn_contract_validator.rb
+          enterprise/app/services/captain/assistant/turn_contract_runner_service.rb
+          enterprise/app/services/captain/assistant/turn_response_quality_validator.rb
+          enterprise/app/services/captain/conversation/commercial_turn_policy.rb
           enterprise/app/services/captain/conversation/contact_profile_status.rb
           enterprise/app/services/captain/conversation/demo_consent.rb
           enterprise/app/services/captain/conversation/lead_classification_service.rb
           enterprise/app/services/captain/llm/assistant_chat_service.rb
           enterprise/lib/captain/response_schema.rb
+          enterprise/lib/captain/commercial_response_schema.rb
           enterprise/lib/captain/tools/classify_lead_tool.rb
           enterprise/lib/captain/tools/capture_contact_profile_tool.rb
           enterprise/lib/captain/tools/handoff_tool.rb
           enterprise/lib/captain/tools/schedule_demo_tool.rb
           spec/enterprise/jobs/captain/conversation/response_builder_job_spec.rb
           spec/enterprise/lib/captain/tools/classify_lead_tool_spec.rb
+          spec/enterprise/lib/captain/commercial_response_schema_spec.rb
           spec/enterprise/lib/captain/tools/capture_contact_profile_tool_spec.rb
           spec/enterprise/lib/captain/tools/handoff_tool_spec.rb
           spec/enterprise/lib/captain/tools/schedule_demo_tool_spec.rb
@@ -88,6 +96,8 @@ jobs:
           spec/enterprise/models/captain/assistant_spec.rb
           spec/enterprise/models/concerns/agentable_spec.rb
           spec/enterprise/services/captain/assistant/agent_runner_service_spec.rb
+          spec/enterprise/services/captain/assistant/turn_contract_validator_spec.rb
+          spec/enterprise/services/captain/conversation/commercial_turn_policy_spec.rb
           spec/enterprise/services/captain/conversation/contact_profile_status_spec.rb
           spec/enterprise/services/captain/conversation/lead_classification_service_spec.rb
 
@@ -96,6 +106,7 @@ jobs:
           bundle exec rspec
           spec/enterprise/jobs/captain/conversation/response_builder_job_spec.rb
           spec/enterprise/lib/captain/tools/classify_lead_tool_spec.rb
+          spec/enterprise/lib/captain/commercial_response_schema_spec.rb
           spec/enterprise/lib/captain/tools/capture_contact_profile_tool_spec.rb
           spec/enterprise/lib/captain/tools/handoff_tool_spec.rb
           spec/enterprise/lib/captain/tools/schedule_demo_tool_spec.rb
@@ -103,6 +114,8 @@ jobs:
           spec/enterprise/models/captain/assistant_spec.rb
           spec/enterprise/models/concerns/agentable_spec.rb
           spec/enterprise/services/captain/assistant/agent_runner_service_spec.rb
+          spec/enterprise/services/captain/assistant/turn_contract_validator_spec.rb
+          spec/enterprise/services/captain/conversation/commercial_turn_policy_spec.rb
           spec/enterprise/services/captain/conversation/contact_profile_status_spec.rb
           spec/enterprise/services/captain/conversation/lead_classification_service_spec.rb
           spec/enterprise/services/captain/llm/assistant_chat_service_spec.rb
