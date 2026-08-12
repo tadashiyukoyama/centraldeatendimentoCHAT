@@ -243,28 +243,33 @@
             "VARIABLE_PLACEHOLDER": "Digite um valor para {variable}"
           },
           "PERSONALIZATION": {
-            "INFO": "Caixas por QR/Evolution enviam mensagens comuns, sem modelo Meta. Use {{contact.name}} em todas as versões. Os contatos precisam ter nome, telefone e uma etiqueta de público."
+            "INFO": "Caixas por QR/Evolution enviam mensagens comuns, sem modelo Meta. Use {'{{'}contact.name{'}}'} em todas as versões. Os contatos precisam ter nome, telefone e uma etiqueta de público."
           },
           "IMPORT_LEADS": {
-            "LINK": "Importar contatos e etiquetas"
+            "LINK": "Importar lista CSV",
+            "SAMPLE": "Baixar modelo CSV",
+            "INFO": "Use uma etiqueta já cadastrada na coluna labels e aguarde a conclusão da importação antes do horário da campanha.",
+            "SUCCESS": "Lista enviada para importação. Aguarde a confirmação de conclusão antes de iniciar a campanha.",
+            "ERROR": "Não foi possível importar a lista de contatos."
           },
           "MESSAGE": {
             "LABEL": "Mensagem principal",
-            "PLACEHOLDER": "Olá, {{contact.name}}! Gostaria de conversar sobre...",
-            "ERROR": "A mensagem principal é obrigatória e deve incluir {{contact.name}}"
+            "PLACEHOLDER": "Olá, {'{{'}contact.name{'}}'}! Gostaria de conversar sobre...",
+            "ERROR": "A mensagem principal é obrigatória e deve incluir {'{{'}contact.name{'}}'}"
           },
           "VARIANT_TWO": {
             "LABEL": "Variação A/B 2 (opcional)",
-            "PLACEHOLDER": "Boa tarde, {{contact.name}}! Como vai?"
+            "PLACEHOLDER": "Boa tarde, {'{{'}contact.name{'}}'}! Como vai?"
           },
           "VARIANT_THREE": {
             "LABEL": "Variação A/B 3 (opcional)",
-            "PLACEHOLDER": "Oi, {{contact.name}}! Posso falar com você?"
+            "PLACEHOLDER": "Oi, {'{{'}contact.name{'}}'}! Posso falar com você?"
           },
           "DELIVERY_INTERVAL": {
-            "LABEL": "Intervalo fixo entre entregas (minutos)",
-            "INFO": "Escolha de 4 a 45 minutos. A cadência é previsível e auditável.",
-            "ERROR": "Informe um intervalo entre 4 e 45 minutos"
+            "MIN_LABEL": "Intervalo mínimo (minutos)",
+            "MAX_LABEL": "Intervalo máximo (minutos)",
+            "INFO": "Cada destinatário recebe um horário diferente dentro da faixa. Os horários são calculados antes do envio e ficam registrados para auditoria.",
+            "ERROR": "Informe uma faixa de 4 a 45 minutos, com o máximo maior que o mínimo"
           },
           "LAWFUL_BASIS": {
             "LABEL": "Confirmo que este público pode receber a campanha e que existe consentimento ou outra base legal aplicável. Contatos bloqueados ou descadastrados serão ignorados.",

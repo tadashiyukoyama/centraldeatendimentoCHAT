@@ -17,7 +17,8 @@ RSpec.describe Whatsapp::CampaignDeliveryService do
       message: 'Olá, {{contact.name}}! Conheça nossa solução.',
       audience: [{ type: 'Label', id: label.id }],
       trigger_rules: {
-        delivery_interval_minutes: 4,
+        delivery_interval_min_minutes: 4,
+        delivery_interval_max_minutes: 45,
         lawful_basis_confirmed: true,
         message_variants: ['Boa tarde, {{contact.name}}! Posso falar com você?']
       }

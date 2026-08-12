@@ -1,3 +1,5 @@
+require 'digest'
+
 class Whatsapp::OneoffCampaignService
   pattr_initialize [:campaign!]
 
@@ -129,11 +131,21 @@ class Whatsapp::OneoffCampaignService
   end
 
   def enqueue_evolution_deliveries
-    first_delivery_at = Time.current
-    campaign.campaign_deliveries.pending.order(:id).find_each.with_index do |delivery, index|
-      scheduled_for = first_delivery_at + (index * evolution_delivery_interval_minutes).minutes
-      delivery.update!(scheduled_for: scheduled_for)
-      Whatsapp::CampaignDeliveryJob.set(wait_until: scheduled_for).perform_later(delivery.id)
+    schedule_evolution_deliveries!
+
+    campaign.campaign_deliveries.pending.order(:id).find_each do |delivery|
+      Whatsapp::CampaignDeliveryJob.set(wait_until: delivery.scheduled_for).perform_later(delivery.id)
+    end
+  end
+
+  def schedule_evolution_deliveries!
+    campaign.with_lock do
+      next_delivery_at = Time.current
+
+      campaign.campaign_deliveries.order(:id).each_with_index do |delivery, index|
+        delivery.update!(scheduled_for: next_delivery_at) if delivery.scheduled_for.blank?
+        next_delivery_at = delivery.scheduled_for + evolution_delivery_interval_minutes(index).minutes
+      end
     end
   end
 
@@ -143,7 +155,37 @@ class Whatsapp::OneoffCampaignService
     campaign.account.contacts.tagged_with(extract_audience_labels, any: true)
   end
 
-  def evolution_delivery_interval_minutes
-    campaign.trigger_rules.fetch('delivery_interval_minutes').to_i
+  def evolution_delivery_interval_minutes(position)
+    minimum, maximum = evolution_delivery_interval_range
+    return minimum if minimum == maximum
+
+    span = maximum - minimum + 1
+    minimum + ((evolution_cadence_offset + (position * evolution_cadence_step(span))) % span)
+  end
+
+  def evolution_delivery_interval_range
+    rules = campaign.trigger_rules.to_h
+    minimum = Integer(rules['delivery_interval_min_minutes'], exception: false)
+    maximum = Integer(rules['delivery_interval_max_minutes'], exception: false)
+    return [minimum, maximum] if minimum && maximum
+
+    legacy_interval = rules.fetch('delivery_interval_minutes').to_i
+    [legacy_interval, legacy_interval]
+  end
+
+  def evolution_cadence_digest
+    @evolution_cadence_digest ||= Digest::SHA256.hexdigest("evolution-campaign-cadence:#{campaign.id}")
+  end
+
+  def evolution_cadence_offset
+    evolution_cadence_digest.first(8).to_i(16)
+  end
+
+  def evolution_cadence_step(span)
+    @evolution_cadence_step ||= begin
+      candidate = 1 + (evolution_cadence_digest.last(8).to_i(16) % (span - 1))
+      candidate = (candidate % (span - 1)) + 1 until candidate.gcd(span) == 1
+      candidate
+    end
   end
 end

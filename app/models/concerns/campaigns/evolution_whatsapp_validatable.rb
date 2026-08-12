@@ -46,10 +46,29 @@ module Campaigns::EvolutionWhatsappValidatable
   end
 
   def validate_evolution_delivery_interval
-    interval = Integer(trigger_rules.to_h['delivery_interval_minutes'], exception: false)
-    return if interval && EVOLUTION_DELIVERY_INTERVAL_RANGE.cover?(interval)
+    rules = trigger_rules.to_h
+    minimum = Integer(rules['delivery_interval_min_minutes'], exception: false)
+    maximum = Integer(rules['delivery_interval_max_minutes'], exception: false)
 
-    errors.add(:trigger_rules, 'delivery interval must be between 4 and 45 minutes')
+    return validate_configured_evolution_delivery_range(minimum, maximum) if minimum || maximum
+
+    legacy_interval = Integer(rules['delivery_interval_minutes'], exception: false)
+    return if persisted? && legacy_interval && EVOLUTION_DELIVERY_INTERVAL_RANGE.cover?(legacy_interval)
+
+    errors.add(:trigger_rules, 'delivery interval range must be between 4 and 45 minutes')
+  end
+
+  def validate_configured_evolution_delivery_range(minimum, maximum)
+    unless valid_evolution_delivery_interval?(minimum) && valid_evolution_delivery_interval?(maximum)
+      errors.add(:trigger_rules, 'delivery interval range must be between 4 and 45 minutes')
+      return
+    end
+
+    errors.add(:trigger_rules, 'maximum delivery interval must be greater than minimum') unless maximum > minimum
+  end
+
+  def valid_evolution_delivery_interval?(interval)
+    interval && EVOLUTION_DELIVERY_INTERVAL_RANGE.cover?(interval)
   end
 
   def validate_evolution_recipient_permission

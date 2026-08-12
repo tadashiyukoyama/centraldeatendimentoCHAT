@@ -243,28 +243,33 @@
             "VARIABLE_PLACEHOLDER": "Enter value for {variable}"
           },
           "PERSONALIZATION": {
-            "INFO": "QR/Evolution inboxes send regular messages without a Meta template. Use {{contact.name}} in every version. Contacts need a name, phone number, and an audience label."
+            "INFO": "QR/Evolution inboxes send regular messages without a Meta template. Use {'{{'}contact.name{'}}'} in every version. Contacts need a name, phone number, and an audience label."
           },
           "IMPORT_LEADS": {
-            "LINK": "Import contacts and labels"
+            "LINK": "Import CSV list",
+            "SAMPLE": "Download CSV template",
+            "INFO": "Use an existing label in the labels column and wait for the import to finish before the campaign schedule.",
+            "SUCCESS": "The list was submitted for import. Wait for the completion confirmation before starting the campaign.",
+            "ERROR": "The contact list could not be imported."
           },
           "MESSAGE": {
             "LABEL": "Primary message",
-            "PLACEHOLDER": "Hello, {{contact.name}}! I would like to talk about...",
-            "ERROR": "The primary message is required and must include {{contact.name}}"
+            "PLACEHOLDER": "Hello, {'{{'}contact.name{'}}'}! I would like to talk about...",
+            "ERROR": "The primary message is required and must include {'{{'}contact.name{'}}'}"
           },
           "VARIANT_TWO": {
             "LABEL": "A/B variation 2 (optional)",
-            "PLACEHOLDER": "Good afternoon, {{contact.name}}! How are you?"
+            "PLACEHOLDER": "Good afternoon, {'{{'}contact.name{'}}'}! How are you?"
           },
           "VARIANT_THREE": {
             "LABEL": "A/B variation 3 (optional)",
-            "PLACEHOLDER": "Hi, {{contact.name}}! May I speak with you?"
+            "PLACEHOLDER": "Hi, {'{{'}contact.name{'}}'}! May I speak with you?"
           },
           "DELIVERY_INTERVAL": {
-            "LABEL": "Fixed interval between deliveries (minutes)",
-            "INFO": "Choose from 4 to 45 minutes. The cadence is predictable and auditable.",
-            "ERROR": "Enter an interval between 4 and 45 minutes"
+            "MIN_LABEL": "Minimum interval (minutes)",
+            "MAX_LABEL": "Maximum interval (minutes)",
+            "INFO": "Each recipient gets a different delivery time within the range. Times are calculated before sending and recorded for audit.",
+            "ERROR": "Enter a range from 4 to 45 minutes, with the maximum greater than the minimum"
           },
           "LAWFUL_BASIS": {
             "LABEL": "I confirm that this audience may receive the campaign and that consent or another applicable lawful basis exists. Blocked or unsubscribed contacts will be skipped.",

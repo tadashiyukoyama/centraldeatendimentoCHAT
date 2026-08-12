@@ -10,7 +10,6 @@ import {
   sameAs,
 } from '@vuelidate/validators';
 import { useMapGetter } from 'dashboard/composables/store';
-import { useRoute } from 'vue-router';
 
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
@@ -20,10 +19,9 @@ import TagMultiSelectComboBox from 'dashboard/components-next/combobox/TagMultiS
 import WhatsAppTemplateParser from 'dashboard/components-next/whatsapp/WhatsAppTemplateParser.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 
-const emit = defineEmits(['submit', 'cancel']);
+const emit = defineEmits(['submit', 'cancel', 'import']);
 
 const { t } = useI18n();
-const route = useRoute();
 
 const formState = {
   uiFlags: useMapGetter('campaigns/getUIFlags'),
@@ -43,7 +41,8 @@ const initialState = {
   message: '',
   messageVariantTwo: '',
   messageVariantThree: '',
-  deliveryIntervalMinutes: 4,
+  deliveryIntervalMinMinutes: 4,
+  deliveryIntervalMaxMinutes: 45,
   lawfulBasisConfirmed: false,
 };
 
@@ -58,6 +57,11 @@ const isEvolutionInbox = computed(
   () => selectedInbox.value?.provider === 'evolution'
 );
 
+const isLessThanMaximumInterval = value =>
+  Number(value) < Number(state.deliveryIntervalMaxMinutes);
+const isGreaterThanMinimumInterval = value =>
+  Number(value) > Number(state.deliveryIntervalMinMinutes);
+
 const rules = computed(() => ({
   title: { required, minLength: minLength(1) },
   inboxId: { required },
@@ -65,8 +69,21 @@ const rules = computed(() => ({
   scheduledAt: { required },
   selectedAudience: { required },
   message: isEvolutionInbox.value ? { required, minLength: minLength(1) } : {},
-  deliveryIntervalMinutes: isEvolutionInbox.value
-    ? { required, minValue: minValue(4), maxValue: maxValue(45) }
+  deliveryIntervalMinMinutes: isEvolutionInbox.value
+    ? {
+        required,
+        minValue: minValue(4),
+        maxValue: maxValue(45),
+        isLessThanMaximumInterval,
+      }
+    : {},
+  deliveryIntervalMaxMinutes: isEvolutionInbox.value
+    ? {
+        required,
+        minValue: minValue(4),
+        maxValue: maxValue(45),
+        isGreaterThanMinimumInterval,
+      }
     : {},
   lawfulBasisConfirmed: isEvolutionInbox.value ? { sameAs: sameAs(true) } : {},
 }));
@@ -126,7 +143,10 @@ const errorMessages = computed(() => ({
   scheduledAt: t('CAMPAIGN.WHATSAPP.CREATE.FORM.SCHEDULED_AT.ERROR'),
   selectedAudience: t('CAMPAIGN.WHATSAPP.CREATE.FORM.AUDIENCE.ERROR'),
   message: t('CAMPAIGN.WHATSAPP.CREATE.FORM.MESSAGE.ERROR'),
-  deliveryIntervalMinutes: t(
+  deliveryIntervalMinMinutes: t(
+    'CAMPAIGN.WHATSAPP.CREATE.FORM.DELIVERY_INTERVAL.ERROR'
+  ),
+  deliveryIntervalMaxMinutes: t(
     'CAMPAIGN.WHATSAPP.CREATE.FORM.DELIVERY_INTERVAL.ERROR'
   ),
   lawfulBasisConfirmed: t('CAMPAIGN.WHATSAPP.CREATE.FORM.LAWFUL_BASIS.ERROR'),
@@ -142,7 +162,8 @@ const formErrors = computed(() => ({
   scheduledAt: getErrorMessage('scheduledAt'),
   audience: getErrorMessage('selectedAudience'),
   message: getErrorMessage('message'),
-  deliveryInterval: getErrorMessage('deliveryIntervalMinutes'),
+  deliveryIntervalMin: getErrorMessage('deliveryIntervalMinMinutes'),
+  deliveryIntervalMax: getErrorMessage('deliveryIntervalMaxMinutes'),
   lawfulBasis: getErrorMessage('lawfulBasisConfirmed'),
 }));
 
@@ -177,7 +198,8 @@ const prepareCampaignDetails = () => {
         type: 'Label',
       })),
       trigger_rules: {
-        delivery_interval_minutes: Number(state.deliveryIntervalMinutes),
+        delivery_interval_min_minutes: Number(state.deliveryIntervalMinMinutes),
+        delivery_interval_max_minutes: Number(state.deliveryIntervalMaxMinutes),
         lawful_basis_confirmed: state.lawfulBasisConfirmed,
         message_variants: messageVariants,
       },
@@ -284,18 +306,32 @@ watch(
 
     <template v-if="isEvolutionInbox">
       <div
-        class="rounded-lg border border-n-weak bg-n-alpha-2 p-3 text-xs text-n-slate-11"
+        class="flex flex-col gap-3 rounded-lg border border-n-weak bg-n-alpha-2 p-3"
       >
-        {{ t('CAMPAIGN.WHATSAPP.CREATE.FORM.PERSONALIZATION.INFO') }}
-        <router-link
-          :to="{
-            name: 'contacts_dashboard_index',
-            params: { accountId: route.params.accountId },
-          }"
-          class="ml-1 font-medium text-n-blue-11"
-        >
-          {{ t('CAMPAIGN.WHATSAPP.CREATE.FORM.IMPORT_LEADS.LINK') }}
-        </router-link>
+        <p class="mb-0 text-xs leading-5 text-n-slate-11">
+          {{ t('CAMPAIGN.WHATSAPP.CREATE.FORM.PERSONALIZATION.INFO') }}
+        </p>
+        <p class="mb-0 text-xs leading-5 text-n-slate-11">
+          {{ t('CAMPAIGN.WHATSAPP.CREATE.FORM.IMPORT_LEADS.INFO') }}
+        </p>
+        <div class="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            color="slate"
+            size="sm"
+            icon="i-lucide-upload"
+            :label="t('CAMPAIGN.WHATSAPP.CREATE.FORM.IMPORT_LEADS.LINK')"
+            @click="emit('import')"
+          />
+          <a
+            href="/downloads/import-contacts-sample.csv"
+            download="import-contacts-sample.csv"
+            class="inline-flex min-h-8 items-center text-xs font-medium text-n-blue-11 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-n-brand"
+          >
+            {{ t('CAMPAIGN.WHATSAPP.CREATE.FORM.IMPORT_LEADS.SAMPLE') }}
+          </a>
+        </div>
       </div>
 
       <TextArea
@@ -319,18 +355,33 @@ watch(
           t('CAMPAIGN.WHATSAPP.CREATE.FORM.VARIANT_THREE.PLACEHOLDER')
         "
       />
-      <Input
-        v-model="state.deliveryIntervalMinutes"
-        :label="t('CAMPAIGN.WHATSAPP.CREATE.FORM.DELIVERY_INTERVAL.LABEL')"
-        type="number"
-        min="4"
-        max="45"
-        :message="
-          formErrors.deliveryInterval ||
-          t('CAMPAIGN.WHATSAPP.CREATE.FORM.DELIVERY_INTERVAL.INFO')
-        "
-        :message-type="formErrors.deliveryInterval ? 'error' : 'info'"
-      />
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Input
+          v-model="state.deliveryIntervalMinMinutes"
+          :label="
+            t('CAMPAIGN.WHATSAPP.CREATE.FORM.DELIVERY_INTERVAL.MIN_LABEL')
+          "
+          type="number"
+          min="4"
+          max="45"
+          :message="formErrors.deliveryIntervalMin"
+          :message-type="formErrors.deliveryIntervalMin ? 'error' : 'info'"
+        />
+        <Input
+          v-model="state.deliveryIntervalMaxMinutes"
+          :label="
+            t('CAMPAIGN.WHATSAPP.CREATE.FORM.DELIVERY_INTERVAL.MAX_LABEL')
+          "
+          type="number"
+          min="4"
+          max="45"
+          :message="formErrors.deliveryIntervalMax"
+          :message-type="formErrors.deliveryIntervalMax ? 'error' : 'info'"
+        />
+      </div>
+      <p class="-mt-2 mb-0 text-xs leading-5 text-n-slate-11">
+        {{ t('CAMPAIGN.WHATSAPP.CREATE.FORM.DELIVERY_INTERVAL.INFO') }}
+      </p>
     </template>
 
     <div class="flex flex-col gap-1">

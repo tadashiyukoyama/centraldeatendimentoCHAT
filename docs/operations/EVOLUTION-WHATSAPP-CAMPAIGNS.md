@@ -8,16 +8,20 @@ de 24 horas. As caixas `whatsapp_cloud` continuam seguindo integralmente as
 regras da API oficial e o fluxo de templates existente.
 
 O sistema não tenta disfarçar automação nem contornar mecanismos de proteção do
-provedor. O administrador escolhe um intervalo fixo entre 4 e 45 minutos. Essa
-cadência existe para controle operacional, capacidade e auditoria; não é uma
-garantia contra bloqueios do WhatsApp.
+provedor. O administrador escolhe uma faixa de intervalo entre 4 e 45 minutos,
+com o máximo obrigatoriamente maior que o mínimo. O sistema calcula uma
+sequência variável e determinística dentro da faixa: intervalos consecutivos
+não são iguais, a faixa é percorrida antes de um intervalo se repetir e o
+horário individual fica persistido antes do envio. Essa cadência existe para
+controle operacional, capacidade e auditoria; não é uma garantia contra
+bloqueios do WhatsApp.
 
 ## Público e importação
 
-Os leads são contatos nativos da conta. A importação fica em **Contatos >
-Importar** e aceita o CSV padrão do produto. A coluna `labels` deve usar uma
-etiqueta previamente criada na conta; essa etiqueta seleciona o público da
-campanha.
+Os leads são contatos nativos da conta. A importação pode ser aberta dentro do
+formulário da campanha ou em **Contatos > Importar** e aceita o CSV padrão do
+produto. A coluna `labels` deve usar uma etiqueta previamente criada na conta;
+essa etiqueta seleciona o público da campanha.
 
 Cada destinatário precisa ter:
 
@@ -50,6 +54,11 @@ Cada entrega possui contato, campanha, horário programado, status, erro,
 horário de processamento e conversa. A chave única
 `(campaign_id, contact_id)` impede duplicação.
 
+A faixa configurada permanece em `trigger_rules`; cada `scheduled_for` contém
+o resultado exato da cadência. Uma repetição do agendador preserva esses
+horários. Campanhas antigas já persistidas com intervalo único continuam
+legíveis, mas novas campanhas precisam informar mínimo e máximo diferentes.
+
 Um job independente é agendado por entrega na fila `low`; nenhum worker fica
 bloqueado com `sleep`. O serviço cria uma conversa e uma mensagem individual,
 que seguem pelo pipeline nativo da Evolution. O estado `queued` significa que
@@ -69,8 +78,8 @@ comprovar:
 
 1. caixa Evolution disponível no formulário;
 2. ausência de seletor de template para essa caixa;
-3. rejeição de intervalo fora de 4–45 minutos e de mensagem sem
-   `{{contact.name}}`;
+3. rejeição de faixa fora de 4–45 minutos, de mínimo igual ao máximo e de
+   mensagem sem `{{contact.name}}`;
 4. criação de uma única entrega, conversa e mensagem personalizada;
 5. envio fora da janela Meta de 24 horas;
 6. resposta `SAIR` registrando o descadastro;

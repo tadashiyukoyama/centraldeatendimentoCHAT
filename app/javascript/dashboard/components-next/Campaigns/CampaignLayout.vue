@@ -31,8 +31,9 @@ const handleButtonClick = () => {
           <div
             v-on-click-outside="[
               () => emit('close'),
-              // This will prevent closing the modal when the editor Create link popup is open
-              { ignore: ['dialog.ProseMirror-prompt-backdrop'] },
+              // Keep the campaign form mounted while a nested native dialog
+              // is open on top of it.
+              { ignore: ['dialog[open]'] },
             ]"
             class="relative group/campaign-button"
           >

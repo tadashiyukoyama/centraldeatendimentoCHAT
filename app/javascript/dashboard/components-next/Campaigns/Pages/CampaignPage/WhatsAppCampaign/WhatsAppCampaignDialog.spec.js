@@ -2,6 +2,7 @@ import { flushPromises, shallowMount } from '@vue/test-utils';
 
 import WhatsAppCampaignDialog from './WhatsAppCampaignDialog.vue';
 import WhatsAppCampaignForm from './WhatsAppCampaignForm.vue';
+import ContactImportDialog from 'dashboard/components-next/Contacts/ContactsForm/ContactImportDialog.vue';
 
 const { dispatch, useAlert, useTrack } = vi.hoisted(() => ({
   dispatch: vi.fn(),
@@ -59,5 +60,35 @@ describe('WhatsAppCampaignDialog', () => {
     expect(useAlert).toHaveBeenCalledWith(
       'CAMPAIGN.WHATSAPP.CREATE.FORM.API.ERROR_MESSAGE'
     );
+  });
+
+  it('imports a contact CSV from the campaign flow', async () => {
+    dispatch.mockResolvedValue({});
+    const wrapper = shallowMount(WhatsAppCampaignDialog);
+    const file = new File(['name,phone_number,labels'], 'leads.csv', {
+      type: 'text/csv',
+    });
+
+    wrapper.findComponent(ContactImportDialog).vm.$emit('import', file);
+    await flushPromises();
+
+    expect(dispatch).toHaveBeenCalledWith('contacts/import', file);
+    expect(useAlert).toHaveBeenCalledWith(
+      'CAMPAIGN.WHATSAPP.CREATE.FORM.IMPORT_LEADS.SUCCESS'
+    );
+    expect(wrapper.emitted('close')).toBeUndefined();
+  });
+
+  it('keeps the campaign form open when contact import fails', async () => {
+    dispatch.mockRejectedValue(new Error('Falha na lista'));
+    const wrapper = shallowMount(WhatsAppCampaignDialog);
+
+    wrapper
+      .findComponent(ContactImportDialog)
+      .vm.$emit('import', new File(['invalid'], 'leads.csv'));
+    await flushPromises();
+
+    expect(useAlert).toHaveBeenCalledWith('Falha na lista');
+    expect(wrapper.emitted('close')).toBeUndefined();
   });
 });

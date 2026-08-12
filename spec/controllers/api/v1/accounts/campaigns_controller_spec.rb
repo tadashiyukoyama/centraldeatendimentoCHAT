@@ -190,7 +190,8 @@ RSpec.describe 'Campaigns API', type: :request do
                scheduled_at: 1.hour.from_now,
                audience: [{ type: 'Label', id: label.id }],
                trigger_rules: {
-                 delivery_interval_minutes: 10,
+                 delivery_interval_min_minutes: 10,
+                 delivery_interval_max_minutes: 30,
                  lawful_basis_confirmed: true,
                  message_variants: ['Boa tarde, {{contact.name}}!']
                }
@@ -202,7 +203,8 @@ RSpec.describe 'Campaigns API', type: :request do
         campaign = account.campaigns.order(:id).last
         expect(campaign.sender).to eq(administrator)
         expect(campaign.template_params).to be_blank
-        expect(campaign.trigger_rules['delivery_interval_minutes']).to eq(10)
+        expect(campaign.trigger_rules['delivery_interval_min_minutes']).to eq(10)
+        expect(campaign.trigger_rules['delivery_interval_max_minutes']).to eq(30)
       end
     end
   end

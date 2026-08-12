@@ -310,7 +310,8 @@ RSpec.describe Campaign do
         message: 'Olá, {{contact.name}}!',
         audience: [{ type: 'Label', id: label.id }],
         trigger_rules: {
-          delivery_interval_minutes: 4,
+          delivery_interval_min_minutes: 4,
+          delivery_interval_max_minutes: 45,
           lawful_basis_confirmed: true,
           message_variants: ['Boa tarde, {{ contact.name }}!']
         }
@@ -331,14 +332,41 @@ RSpec.describe Campaign do
         sender: sender,
         message: 'Mensagem sem personalização',
         audience: [],
-        trigger_rules: { delivery_interval_minutes: 46, lawful_basis_confirmed: false }
+        trigger_rules: {
+          delivery_interval_min_minutes: 3,
+          delivery_interval_max_minutes: 46,
+          lawful_basis_confirmed: false
+        }
       )
 
       expect(campaign).not_to be_valid
       expect(campaign.errors[:audience]).to include('must include at least one valid account label')
-      expect(campaign.errors[:trigger_rules]).to include('delivery interval must be between 4 and 45 minutes')
+      expect(campaign.errors[:trigger_rules]).to include('delivery interval range must be between 4 and 45 minutes')
       expect(campaign.errors[:trigger_rules]).to include('recipient permission or lawful basis must be confirmed')
       expect(campaign.errors[:message]).to include('must include {{contact.name}} for Evolution campaigns')
+    end
+
+    it 'rejects a fixed Evolution cadence expressed as an equal range' do
+      channel = create(:channel_whatsapp, account: account, provider: 'evolution',
+                                          validate_provider_config: false, sync_templates: false)
+      label = create(:label, account: account)
+      sender = create(:user, account: account)
+      campaign = build(
+        :campaign,
+        account: account,
+        inbox: channel.inbox,
+        sender: sender,
+        message: 'Olá, {{contact.name}}!',
+        audience: [{ type: 'Label', id: label.id }],
+        trigger_rules: {
+          delivery_interval_min_minutes: 10,
+          delivery_interval_max_minutes: 10,
+          lawful_basis_confirmed: true
+        }
+      )
+
+      expect(campaign).not_to be_valid
+      expect(campaign.errors[:trigger_rules]).to include('maximum delivery interval must be greater than minimum')
     end
   end
 end

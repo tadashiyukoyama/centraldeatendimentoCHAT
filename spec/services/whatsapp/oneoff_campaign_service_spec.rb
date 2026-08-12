@@ -269,7 +269,8 @@ describe Whatsapp::OneoffCampaignService do
           message: 'Olá, {{contact.name}}!',
           audience: [{ type: 'Label', id: label1.id }],
           trigger_rules: {
-            delivery_interval_minutes: 4,
+            delivery_interval_min_minutes: 4,
+            delivery_interval_max_minutes: 45,
             lawful_basis_confirmed: true,
             message_variants: ['Boa tarde, {{contact.name}}!']
           }
@@ -280,10 +281,9 @@ describe Whatsapp::OneoffCampaignService do
         allow_any_instance_of(described_class).to receive(:channel).and_return(evolution_channel) # rubocop:disable RSpec/AnyInstance
       end
 
-      it 'creates an idempotent delivery snapshot and schedules each recipient at a fixed interval' do
-        first_contact, second_contact = create_list(:contact, 2, :with_phone_number, account: account, name: 'Lead')
-        first_contact.update_labels([label1.title])
-        second_contact.update_labels([label1.title])
+      it 'creates an idempotent snapshot and schedules different audited intervals inside the configured range' do
+        contacts = create_list(:contact, 4, :with_phone_number, account: account, name: 'Lead')
+        contacts.each { |contact| contact.update_labels([label1.title]) }
         evolution_campaign.processing!
         scheduled_job = instance_double(ActiveJob::ConfiguredJob, perform_later: true)
         allow(Whatsapp::CampaignDeliveryJob).to receive(:set).and_return(scheduled_job)
@@ -293,11 +293,29 @@ describe Whatsapp::OneoffCampaignService do
         end
 
         deliveries = evolution_campaign.campaign_deliveries.order(:id)
-        expect(deliveries.pluck(:contact_id)).to contain_exactly(first_contact.id, second_contact.id)
-        expect(deliveries.second.scheduled_for - deliveries.first.scheduled_for).to eq(4.minutes)
-        expect(Whatsapp::CampaignDeliveryJob).to have_received(:set).twice
-        expect(scheduled_job).to have_received(:perform_later).twice
+        intervals = deliveries.each_cons(2).map do |previous_delivery, delivery|
+          (delivery.scheduled_for - previous_delivery.scheduled_for) / 60
+        end
+        expect(deliveries.pluck(:contact_id)).to match_array(contacts.map(&:id))
+        expect(intervals).to all(be_between(4, 45))
+        expect(intervals.uniq.size).to eq(intervals.size)
+        expect(Whatsapp::CampaignDeliveryJob).to have_received(:set).exactly(4).times
+        expect(scheduled_job).to have_received(:perform_later).exactly(4).times
         expect(evolution_campaign.reload).to be_processing
+      end
+
+      it 'keeps already recorded delivery times when scheduling is retried' do
+        contacts = create_list(:contact, 2, :with_phone_number, account: account, name: 'Lead')
+        contacts.each { |contact| contact.update_labels([label1.title]) }
+        evolution_campaign.processing!
+        scheduled_job = instance_double(ActiveJob::ConfiguredJob, perform_later: true)
+        allow(Whatsapp::CampaignDeliveryJob).to receive(:set).and_return(scheduled_job)
+
+        described_class.new(campaign: evolution_campaign).perform
+        original_schedule = evolution_campaign.campaign_deliveries.order(:id).pluck(:scheduled_for)
+        described_class.new(campaign: evolution_campaign).perform
+
+        expect(evolution_campaign.campaign_deliveries.order(:id).pluck(:scheduled_for)).to eq(original_schedule)
       end
     end
   end
