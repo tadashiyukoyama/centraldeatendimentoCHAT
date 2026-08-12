@@ -23,6 +23,47 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
     ]
   end
 
+  def prepare_identity_reply_context
+    contact.update!(
+      name: 'quiet-river-123',
+      additional_attributes: contact.additional_attributes.merge('captain_name_source' => 'generated')
+    )
+    create(:message, account: account, inbox: inbox, conversation: conversation, sender: contact, message_type: :incoming,
+                     content: 'Quero conhecer a solução')
+    create_identity_request_session
+    create(:message, account: account, inbox: inbox, conversation: conversation, sender: contact, message_type: :incoming,
+                     content: 'Meu nome é Marina Teste Smoke e o restaurante é Sabor QA')
+  end
+
+  def create_identity_request_session
+    create(
+      :captain_agent_session,
+      account: account,
+      assistant: assistant,
+      subject: conversation,
+      run_context: [
+        {
+          role: 'assistant',
+          content: {
+            commercial_stage: 'qualification',
+            requested_profile_fields: %w[name company_name],
+            declined_profile_fields: []
+          }
+        }
+      ]
+    )
+  end
+
+  def persist_smoke_identity
+    contact.update!(
+      name: 'Marina Teste Smoke',
+      additional_attributes: contact.additional_attributes.merge(
+        'captain_name_source' => 'customer',
+        'company_name' => 'Sabor QA'
+      )
+    )
+  end
+
   before do
     allow(assistant).to receive(:agent).and_return(mock_agent)
     scenarios_relation = instance_double(Captain::Scenario)
@@ -189,6 +230,56 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       )
       expect(result).not_to have_key('profile_question')
       expect(result).not_to have_key('profile_question_field')
+    end
+
+    it 'uses successful tool evidence as the authority for commercial metadata' do
+      assistant.update!(config: assistant.config.merge('feature_commercial_response_contract' => true))
+      conversation.update_labels(['lead_morno'])
+      prepare_identity_reply_context
+      observed_context = nil
+      allow(mock_runner).to receive(:run) do |_input, **options|
+        runner_context = options.fetch(:context)
+        expect(options.fetch(:max_turns)).to eq(10)
+        observed_context = runner_context
+        persist_smoke_identity
+        runner_context[:captain_v2_tool_results] = [
+          {
+            name: 'captain--tools--capture_contact_profile',
+            result: { status: 'saved', saved_fields: %w[name company_name] }.to_json
+          },
+          {
+            name: 'captain--tools--classify_lead',
+            result: "Conversation ##{conversation.display_id} classified as 'lead_quente'"
+          }
+        ]
+        output = {
+          'response' => "Perfeito, Marina, registrei o **Sabor QA**. 🚀\n\nQual WhatsApp e e-mail você prefere usar?",
+          'reasoning' => 'Use persisted identity and advance contact collection.',
+          'classification' => 'lead_morno',
+          'customer_intent' => 'prospect',
+          'commercial_stage' => 'qualification',
+          'immediate_objective' => 'Collect direct contact details',
+          'captured_profile_fields' => [],
+          'requested_profile_fields' => %w[phone_number email],
+          'declined_profile_fields' => [],
+          'knowledge_grounded' => false
+        }
+        instance_double(Agents::RunResult, output: output, context: runner_context)
+      end
+
+      result = service.generate_response(message_history: message_history)
+
+      expect(result).not_to have_key('error'), result.inspect
+      expect(result.slice('captured_profile_fields', 'classification', 'customer_intent', 'requested_profile_fields')).to eq(
+        'captured_profile_fields' => %w[name company_name],
+        'classification' => 'lead_quente',
+        'customer_intent' => 'prospect',
+        'requested_profile_fields' => %w[phone_number email]
+      )
+      expect(observed_context[:captain_v2_tool_results].size).to eq(2)
+      expect(observed_context.dig(:state, :commercial_turn, :required_profile_fields_if_prospect)).to contain_exactly(
+        'phone_number', 'email'
+      )
     end
 
     it 'uses a tool-free Nemmo correction pass after a mutating tool completed' do

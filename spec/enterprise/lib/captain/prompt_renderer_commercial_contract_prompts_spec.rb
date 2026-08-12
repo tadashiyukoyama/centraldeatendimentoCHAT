@@ -40,6 +40,8 @@ RSpec.describe Captain::PromptRenderer do
     expect(rendered).to include('hard profile-coverage obligation')
     expect(rendered).to include('request all named fields together')
     expect(rendered).to include('name, company_name')
+    expect(rendered).to include('request both together')
+    expect(rendered).to include('remove factual product claims')
   end
 
   it 'applies the same correction rule to scenario agents' do
@@ -47,5 +49,7 @@ RSpec.describe Captain::PromptRenderer do
 
     expect(rendered).to include('request every due profile field together')
     expect(rendered).to include('corrected response must request every named field together')
+    expect(rendered).to include('request both together')
+    expect(rendered).to include('remove factual product claims')
   end
 end

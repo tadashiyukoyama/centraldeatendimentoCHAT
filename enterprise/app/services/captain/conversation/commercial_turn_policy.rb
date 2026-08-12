@@ -2,6 +2,7 @@ class Captain::Conversation::CommercialTurnPolicy
   PROFILE_FIELDS = %w[name company_name phone_number email].freeze
   IDENTITY_FIELDS = %w[name company_name].freeze
   CONTACT_FIELDS = %w[phone_number email].freeze
+  PROFILE_REPLY_MAX_WORDS = 30
   MACHINE_FIELD_PATTERNS = {
     'email' => /[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/i,
     'phone_number' => /(?:\+?\d[\d\s().-]{7,}\d)/
@@ -83,7 +84,7 @@ class Captain::Conversation::CommercialTurnPolicy
     available_missing_fields = missing_profile_fields - declined_profile_fields
     identity_fields = available_missing_fields & IDENTITY_FIELDS
     return suppress_immediate_repeat(identity_fields) if identity_fields.any?
-    return [] if customer_messages.size < 3
+    return [] if customer_messages.size < 2
 
     suppress_immediate_repeat(available_missing_fields & CONTACT_FIELDS)
   end
@@ -136,7 +137,7 @@ class Captain::Conversation::CommercialTurnPolicy
     return false if latest_customer_content.match?(ACKNOWLEDGEMENT_PATTERN)
     return false if latest_customer_content.match?(NON_PROFILE_INTENT_PATTERN)
 
-    latest_customer_content.split.size <= 12
+    latest_customer_content.split.size <= PROFILE_REPLY_MAX_WORDS
   end
 
   def latest_message_has_profile_refusal?

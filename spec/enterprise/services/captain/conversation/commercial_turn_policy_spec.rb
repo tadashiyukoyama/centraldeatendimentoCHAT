@@ -35,7 +35,7 @@ RSpec.describe Captain::Conversation::CommercialTurnPolicy do
     expect(policy).not_to have_key(:response_template)
   end
 
-  it 'moves to WhatsApp and email only after identity and enough conversation context' do
+  it 'moves to WhatsApp and email on the next customer turn after identity is known' do
     contact.update!(
       name: 'Rodrigo Silva',
       phone_number: nil,
@@ -44,11 +44,36 @@ RSpec.describe Captain::Conversation::CommercialTurnPolicy do
     )
     incoming('Estou conhecendo')
     incoming('Quero melhorar o atendimento')
-    incoming('Hoje perdemos mensagens entre canais')
 
     policy = described_class.new(conversation: conversation).perform
 
     expect(policy[:required_profile_fields_if_prospect]).to contain_exactly('phone_number', 'email')
+  end
+
+  it 'recognizes a natural sentence that answers the previous identity request' do
+    assistant = create(:captain_assistant, account: account)
+    incoming('Estou conhecendo a solução')
+    create(
+      :captain_agent_session,
+      account: account,
+      assistant: assistant,
+      subject: conversation,
+      run_context: [
+        {
+          role: 'assistant',
+          content: {
+            commercial_stage: 'qualification',
+            requested_profile_fields: %w[name company_name],
+            declined_profile_fields: []
+          }
+        }
+      ]
+    )
+    incoming('Tenho interesse em uma demonstração. Meu nome é Marina Teste Smoke e o restaurante é Sabor QA.')
+
+    policy = described_class.new(conversation: conversation).perform
+
+    expect(policy[:likely_profile_reply]).to be true
   end
 
   it 'does not repeat the same profile request in the immediately following turn' do
