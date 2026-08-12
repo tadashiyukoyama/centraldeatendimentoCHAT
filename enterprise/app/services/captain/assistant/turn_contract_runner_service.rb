@@ -25,6 +25,7 @@ class Captain::Assistant::TurnContractRunnerService
       run_result = active_runner.run(message_to_process, context: context, max_turns: 10)
       response = @result_processor.call(run_result)
       response = reconcile_tool_evidence(response, run_result)
+      response = Captain::Assistant::TurnResponsePresentationService.new(response: response).perform
       validation_errors = validate(response, run_result, message_history)
       return Result.new(response: response, run_result: run_result) if validation_errors.empty? || response['handoff_tool_called']
 

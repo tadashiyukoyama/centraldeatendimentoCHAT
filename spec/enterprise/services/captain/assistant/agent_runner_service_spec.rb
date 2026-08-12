@@ -261,7 +261,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       expect(result).not_to have_key('profile_question_field')
     end
 
-    it 'uses successful tool evidence as the authority for commercial metadata' do
+    it 'uses successful tool evidence and fixes presentation without a second model call' do
       assistant.update!(config: assistant.config.merge('feature_commercial_response_contract' => true))
       conversation.update_labels(['lead_morno'])
       prepare_identity_reply_context
@@ -282,7 +282,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
           }
         ]
         output = {
-          'response' => "Perfeito, Marina, registrei o **Sabor QA**. 🚀\n\nQual WhatsApp e e-mail você prefere usar?",
+          'response' => "Perfeito, Marina, registrei o **Sabor QA**.\n\nQual WhatsApp e e-mail você prefere usar?",
           'reasoning' => 'Use persisted identity and advance contact collection.',
           'classification' => 'lead_morno',
           'customer_intent' => 'prospect',
@@ -299,6 +299,8 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       result = service.generate_response(message_history: message_history)
 
       expect(result).not_to have_key('error'), result.inspect
+      expect(mock_runner).to have_received(:run).once
+      expect(result['response']).to end_with('💬')
       expect(result.slice('captured_profile_fields', 'classification', 'customer_intent', 'requested_profile_fields')).to eq(
         'captured_profile_fields' => %w[name company_name],
         'classification' => 'lead_quente',
