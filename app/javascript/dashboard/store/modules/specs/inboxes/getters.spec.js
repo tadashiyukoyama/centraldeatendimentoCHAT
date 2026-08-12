@@ -32,7 +32,7 @@ describe('#getters', () => {
     expect(getters.getEmailInboxes(state)).toEqual([emailInbox]);
   });
 
-  it('getWhatsAppCampaignInboxes returns only official Cloud API inboxes', () => {
+  it('getWhatsAppCampaignInboxes returns Cloud API and Evolution inboxes', () => {
     const state = {
       records: [
         {
@@ -48,6 +48,7 @@ describe('#getters', () => {
 
     expect(getters.getWhatsAppCampaignInboxes(state)).toEqual([
       { id: 1, channel_type: 'Channel::Whatsapp', provider: 'whatsapp_cloud' },
+      { id: 2, channel_type: 'Channel::Whatsapp', provider: 'evolution' },
     ]);
   });
 

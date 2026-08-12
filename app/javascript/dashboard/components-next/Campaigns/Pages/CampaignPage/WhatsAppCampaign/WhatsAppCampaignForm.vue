@@ -2,18 +2,28 @@
 import { reactive, computed, watch, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useVuelidate } from '@vuelidate/core';
-import { required, minLength } from '@vuelidate/validators';
+import {
+  required,
+  minLength,
+  minValue,
+  maxValue,
+  sameAs,
+} from '@vuelidate/validators';
 import { useMapGetter } from 'dashboard/composables/store';
+import { useRoute } from 'vue-router';
 
 import Input from 'dashboard/components-next/input/Input.vue';
+import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import ComboBox from 'dashboard/components-next/combobox/ComboBox.vue';
 import TagMultiSelectComboBox from 'dashboard/components-next/combobox/TagMultiSelectComboBox.vue';
 import WhatsAppTemplateParser from 'dashboard/components-next/whatsapp/WhatsAppTemplateParser.vue';
+import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 
 const emit = defineEmits(['submit', 'cancel']);
 
 const { t } = useI18n();
+const route = useRoute();
 
 const formState = {
   uiFlags: useMapGetter('campaigns/getUIFlags'),
@@ -30,18 +40,36 @@ const initialState = {
   templateId: null,
   scheduledAt: null,
   selectedAudience: [],
+  message: '',
+  messageVariantTwo: '',
+  messageVariantThree: '',
+  deliveryIntervalMinutes: 4,
+  lawfulBasisConfirmed: false,
 };
 
 const state = reactive({ ...initialState });
 const templateParserRef = ref(null);
 
-const rules = {
+const selectedInbox = computed(() =>
+  formState.inboxes.value.find(inbox => inbox.id === Number(state.inboxId))
+);
+
+const isEvolutionInbox = computed(
+  () => selectedInbox.value?.provider === 'evolution'
+);
+
+const rules = computed(() => ({
   title: { required, minLength: minLength(1) },
   inboxId: { required },
-  templateId: { required },
+  templateId: isEvolutionInbox.value ? {} : { required },
   scheduledAt: { required },
   selectedAudience: { required },
-};
+  message: isEvolutionInbox.value ? { required, minLength: minLength(1) } : {},
+  deliveryIntervalMinutes: isEvolutionInbox.value
+    ? { required, minValue: minValue(4), maxValue: maxValue(45) }
+    : {},
+  lawfulBasisConfirmed: isEvolutionInbox.value ? { sameAs: sameAs(true) } : {},
+}));
 
 const v$ = useVuelidate(rules, state);
 
@@ -91,20 +119,35 @@ const selectedTemplate = computed(() => {
     ?.template;
 });
 
-const getErrorMessage = (field, errorKey) => {
-  const baseKey = 'CAMPAIGN.WHATSAPP.CREATE.FORM';
-  return v$.value[field].$error ? t(`${baseKey}.${errorKey}.ERROR`) : '';
-};
+const errorMessages = computed(() => ({
+  title: t('CAMPAIGN.WHATSAPP.CREATE.FORM.TITLE.ERROR'),
+  inboxId: t('CAMPAIGN.WHATSAPP.CREATE.FORM.INBOX.ERROR'),
+  templateId: t('CAMPAIGN.WHATSAPP.CREATE.FORM.TEMPLATE.ERROR'),
+  scheduledAt: t('CAMPAIGN.WHATSAPP.CREATE.FORM.SCHEDULED_AT.ERROR'),
+  selectedAudience: t('CAMPAIGN.WHATSAPP.CREATE.FORM.AUDIENCE.ERROR'),
+  message: t('CAMPAIGN.WHATSAPP.CREATE.FORM.MESSAGE.ERROR'),
+  deliveryIntervalMinutes: t(
+    'CAMPAIGN.WHATSAPP.CREATE.FORM.DELIVERY_INTERVAL.ERROR'
+  ),
+  lawfulBasisConfirmed: t('CAMPAIGN.WHATSAPP.CREATE.FORM.LAWFUL_BASIS.ERROR'),
+}));
+
+const getErrorMessage = field =>
+  v$.value[field].$error ? errorMessages.value[field] : '';
 
 const formErrors = computed(() => ({
-  title: getErrorMessage('title', 'TITLE'),
-  inbox: getErrorMessage('inboxId', 'INBOX'),
-  template: getErrorMessage('templateId', 'TEMPLATE'),
-  scheduledAt: getErrorMessage('scheduledAt', 'SCHEDULED_AT'),
-  audience: getErrorMessage('selectedAudience', 'AUDIENCE'),
+  title: getErrorMessage('title'),
+  inbox: getErrorMessage('inboxId'),
+  template: getErrorMessage('templateId'),
+  scheduledAt: getErrorMessage('scheduledAt'),
+  audience: getErrorMessage('selectedAudience'),
+  message: getErrorMessage('message'),
+  deliveryInterval: getErrorMessage('deliveryIntervalMinutes'),
+  lawfulBasis: getErrorMessage('lawfulBasisConfirmed'),
 }));
 
 const hasRequiredTemplateParams = computed(() => {
+  if (isEvolutionInbox.value) return true;
   return templateParserRef.value?.v$?.$invalid === false || true;
 });
 
@@ -115,14 +158,32 @@ const isSubmitDisabled = computed(
 const formatToUTCString = localDateTime =>
   localDateTime ? new Date(localDateTime).toISOString() : null;
 
-const resetState = () => {
-  Object.assign(state, initialState);
-  v$.value.$reset();
-};
-
 const handleCancel = () => emit('cancel');
 
 const prepareCampaignDetails = () => {
+  if (isEvolutionInbox.value) {
+    const messageVariants = [
+      state.messageVariantTwo,
+      state.messageVariantThree,
+    ].filter(message => message.trim());
+
+    return {
+      title: state.title,
+      message: state.message,
+      inbox_id: state.inboxId,
+      scheduled_at: formatToUTCString(state.scheduledAt),
+      audience: state.selectedAudience?.map(id => ({
+        id,
+        type: 'Label',
+      })),
+      trigger_rules: {
+        delivery_interval_minutes: Number(state.deliveryIntervalMinutes),
+        lawful_basis_confirmed: state.lawfulBasisConfirmed,
+        message_variants: messageVariants,
+      },
+    };
+  }
+
   // Find the selected template to get its content
   const currentTemplate = selectedTemplate.value;
   const parserData = templateParserRef.value;
@@ -157,8 +218,6 @@ const handleSubmit = async () => {
   if (!isFormValid) return;
 
   emit('submit', prepareCampaignDetails());
-  resetState();
-  handleCancel();
 };
 
 // Reset template selection when inbox changes
@@ -166,6 +225,9 @@ watch(
   () => state.inboxId,
   () => {
     state.templateId = null;
+    state.message = '';
+    state.messageVariantTwo = '';
+    state.messageVariantThree = '';
   }
 );
 </script>
@@ -195,7 +257,7 @@ watch(
       />
     </div>
 
-    <div class="flex flex-col gap-1">
+    <div v-if="!isEvolutionInbox" class="flex flex-col gap-1">
       <label for="template" class="mb-0.5 text-sm font-medium text-n-slate-12">
         {{ t('CAMPAIGN.WHATSAPP.CREATE.FORM.TEMPLATE.LABEL') }}
       </label>
@@ -215,10 +277,61 @@ watch(
 
     <!-- Template Parser -->
     <WhatsAppTemplateParser
-      v-if="selectedTemplate"
+      v-if="!isEvolutionInbox && selectedTemplate"
       ref="templateParserRef"
       :template="selectedTemplate"
     />
+
+    <template v-if="isEvolutionInbox">
+      <div
+        class="rounded-lg border border-n-weak bg-n-alpha-2 p-3 text-xs text-n-slate-11"
+      >
+        {{ t('CAMPAIGN.WHATSAPP.CREATE.FORM.PERSONALIZATION.INFO') }}
+        <router-link
+          :to="{
+            name: 'contacts_dashboard_index',
+            params: { accountId: route.params.accountId },
+          }"
+          class="ml-1 font-medium text-n-blue-11"
+        >
+          {{ t('CAMPAIGN.WHATSAPP.CREATE.FORM.IMPORT_LEADS.LINK') }}
+        </router-link>
+      </div>
+
+      <TextArea
+        v-model="state.message"
+        :label="t('CAMPAIGN.WHATSAPP.CREATE.FORM.MESSAGE.LABEL')"
+        :placeholder="t('CAMPAIGN.WHATSAPP.CREATE.FORM.MESSAGE.PLACEHOLDER')"
+        :message="formErrors.message"
+        :message-type="formErrors.message ? 'error' : 'info'"
+      />
+      <TextArea
+        v-model="state.messageVariantTwo"
+        :label="t('CAMPAIGN.WHATSAPP.CREATE.FORM.VARIANT_TWO.LABEL')"
+        :placeholder="
+          t('CAMPAIGN.WHATSAPP.CREATE.FORM.VARIANT_TWO.PLACEHOLDER')
+        "
+      />
+      <TextArea
+        v-model="state.messageVariantThree"
+        :label="t('CAMPAIGN.WHATSAPP.CREATE.FORM.VARIANT_THREE.LABEL')"
+        :placeholder="
+          t('CAMPAIGN.WHATSAPP.CREATE.FORM.VARIANT_THREE.PLACEHOLDER')
+        "
+      />
+      <Input
+        v-model="state.deliveryIntervalMinutes"
+        :label="t('CAMPAIGN.WHATSAPP.CREATE.FORM.DELIVERY_INTERVAL.LABEL')"
+        type="number"
+        min="4"
+        max="45"
+        :message="
+          formErrors.deliveryInterval ||
+          t('CAMPAIGN.WHATSAPP.CREATE.FORM.DELIVERY_INTERVAL.INFO')
+        "
+        :message-type="formErrors.deliveryInterval ? 'error' : 'info'"
+      />
+    </template>
 
     <div class="flex flex-col gap-1">
       <label for="audience" class="mb-0.5 text-sm font-medium text-n-slate-12">
@@ -244,6 +357,19 @@ watch(
       :message="formErrors.scheduledAt"
       :message-type="formErrors.scheduledAt ? 'error' : 'info'"
     />
+
+    <template v-if="isEvolutionInbox">
+      <label class="flex items-start gap-2 text-sm text-n-slate-11">
+        <Checkbox
+          v-model="state.lawfulBasisConfirmed"
+          class="mt-0.5 shrink-0"
+        />
+        <span>{{ t('CAMPAIGN.WHATSAPP.CREATE.FORM.LAWFUL_BASIS.LABEL') }}</span>
+      </label>
+      <span v-if="formErrors.lawfulBasis" class="text-xs text-n-ruby-9">
+        {{ formErrors.lawfulBasis }}
+      </span>
+    </template>
 
     <div class="flex gap-3 justify-between items-center w-full">
       <Button

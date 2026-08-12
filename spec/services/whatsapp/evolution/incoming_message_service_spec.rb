@@ -65,4 +65,27 @@ RSpec.describe Whatsapp::Evolution::IncomingMessageService do
 
     expect(scoped_service.send(:lock_message_source_id!)).to be(true)
   end
+
+  it 'records an incoming SAIR message as a marketing opt-out on the contact' do
+    inbox = create(:channel_whatsapp, provider: 'evolution', validate_provider_config: false,
+                                      sync_templates: false).inbox
+    params = {
+      messages: [
+        {
+          id: 'evolution-opt-out-message',
+          from: '5511999998888',
+          timestamp: Time.current.to_i.to_s,
+          type: 'text',
+          text: { body: 'SAIR' }
+        }
+      ],
+      contacts: [{ wa_id: '5511999998888', profile: { name: 'Lead Teste' } }]
+    }.with_indifferent_access
+
+    described_class.new(inbox: inbox, params: params, outgoing_echo: false, provisioning: provisioning).perform
+
+    contact = inbox.contacts.find_by!(phone_number: '+5511999998888')
+    expect(contact.additional_attributes['whatsapp_marketing_unsubscribed']).to be(true)
+    expect(contact.additional_attributes['whatsapp_marketing_unsubscribed_at']).to be_present
+  end
 end

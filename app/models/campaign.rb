@@ -31,6 +31,7 @@
 #
 class Campaign < ApplicationRecord
   include UrlHelper
+  include Campaigns::EvolutionWhatsappValidatable
   validates :account_id, presence: true
   validates :inbox_id, presence: true
   validates :title, presence: true
@@ -40,7 +41,6 @@ class Campaign < ApplicationRecord
   validate :prevent_completed_campaign_from_update, on: :update
   validate :sender_must_belong_to_account
   validate :inbox_must_belong_to_account
-  validate :whatsapp_campaign_requires_cloud_provider
   validate :validate_email_campaign
 
   belongs_to :account
@@ -142,13 +142,6 @@ class Campaign < ApplicationRecord
     errors.add(:inbox_id, 'must belong to the same account as the campaign')
   end
 
-  def whatsapp_campaign_requires_cloud_provider
-    return unless inbox&.inbox_type == 'Whatsapp'
-    return if inbox.channel.provider == 'whatsapp_cloud'
-
-    errors.add(:inbox_id, 'must use a WhatsApp Cloud inbox for campaigns')
-  end
-
   def sender_must_belong_to_account
     return unless sender
 
@@ -181,14 +174,14 @@ class Campaign < ApplicationRecord
   end
 
   def validate_email_audience
-    label_ids = email_audience_label_ids
+    label_ids = campaign_audience_label_ids
     valid_label_count = account.labels.where(id: label_ids).count
     return if label_ids.any? && valid_label_count == label_ids.size
 
     errors.add(:audience, 'must include at least one valid account label')
   end
 
-  def email_audience_label_ids
+  def campaign_audience_label_ids
     Array(audience)
       .select { |item| item['type'] == 'Label' }
       .pluck('id')

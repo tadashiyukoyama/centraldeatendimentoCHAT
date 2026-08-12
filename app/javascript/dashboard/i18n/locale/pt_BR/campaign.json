@@ -213,7 +213,8 @@
         "CAMPAIGN_DETAILS": {
           "SENT_FROM": "Enviado de",
           "ON": "ativado"
-        }
+        },
+        "DELIVERY_COUNTS": "Preparando: {pending} · Enfileirados: {queued} · Ignorados: {skipped} · Falhas: {failed}"
       },
       "CREATE": {
         "TITLE": "Criar campanha do WhatsApp",
@@ -240,6 +241,34 @@
             "CATEGORY": "Categorias",
             "VARIABLES_LABEL": "Variáveis",
             "VARIABLE_PLACEHOLDER": "Digite um valor para {variable}"
+          },
+          "PERSONALIZATION": {
+            "INFO": "Caixas por QR/Evolution enviam mensagens comuns, sem modelo Meta. Use {{contact.name}} em todas as versões. Os contatos precisam ter nome, telefone e uma etiqueta de público."
+          },
+          "IMPORT_LEADS": {
+            "LINK": "Importar contatos e etiquetas"
+          },
+          "MESSAGE": {
+            "LABEL": "Mensagem principal",
+            "PLACEHOLDER": "Olá, {{contact.name}}! Gostaria de conversar sobre...",
+            "ERROR": "A mensagem principal é obrigatória e deve incluir {{contact.name}}"
+          },
+          "VARIANT_TWO": {
+            "LABEL": "Variação A/B 2 (opcional)",
+            "PLACEHOLDER": "Boa tarde, {{contact.name}}! Como vai?"
+          },
+          "VARIANT_THREE": {
+            "LABEL": "Variação A/B 3 (opcional)",
+            "PLACEHOLDER": "Oi, {{contact.name}}! Posso falar com você?"
+          },
+          "DELIVERY_INTERVAL": {
+            "LABEL": "Intervalo fixo entre entregas (minutos)",
+            "INFO": "Escolha de 4 a 45 minutos. A cadência é previsível e auditável.",
+            "ERROR": "Informe um intervalo entre 4 e 45 minutos"
+          },
+          "LAWFUL_BASIS": {
+            "LABEL": "Confirmo que este público pode receber a campanha e que existe consentimento ou outra base legal aplicável. Contatos bloqueados ou descadastrados serão ignorados.",
+            "ERROR": "É necessário confirmar a base legal dos destinatários"
           },
           "AUDIENCE": {
             "LABEL": "Público",

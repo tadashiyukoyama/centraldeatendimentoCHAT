@@ -213,7 +213,8 @@
         "CAMPAIGN_DETAILS": {
           "SENT_FROM": "Sent from",
           "ON": "on"
-        }
+        },
+        "DELIVERY_COUNTS": "Preparing: {pending} · Queued: {queued} · Skipped: {skipped} · Failed: {failed}"
       },
       "CREATE": {
         "TITLE": "Create WhatsApp campaign",
@@ -240,6 +241,34 @@
             "CATEGORY": "Category",
             "VARIABLES_LABEL": "Variables",
             "VARIABLE_PLACEHOLDER": "Enter value for {variable}"
+          },
+          "PERSONALIZATION": {
+            "INFO": "QR/Evolution inboxes send regular messages without a Meta template. Use {{contact.name}} in every version. Contacts need a name, phone number, and an audience label."
+          },
+          "IMPORT_LEADS": {
+            "LINK": "Import contacts and labels"
+          },
+          "MESSAGE": {
+            "LABEL": "Primary message",
+            "PLACEHOLDER": "Hello, {{contact.name}}! I would like to talk about...",
+            "ERROR": "The primary message is required and must include {{contact.name}}"
+          },
+          "VARIANT_TWO": {
+            "LABEL": "A/B variation 2 (optional)",
+            "PLACEHOLDER": "Good afternoon, {{contact.name}}! How are you?"
+          },
+          "VARIANT_THREE": {
+            "LABEL": "A/B variation 3 (optional)",
+            "PLACEHOLDER": "Hi, {{contact.name}}! May I speak with you?"
+          },
+          "DELIVERY_INTERVAL": {
+            "LABEL": "Fixed interval between deliveries (minutes)",
+            "INFO": "Choose from 4 to 45 minutes. The cadence is predictable and auditable.",
+            "ERROR": "Enter an interval between 4 and 45 minutes"
+          },
+          "LAWFUL_BASIS": {
+            "LABEL": "I confirm that this audience may receive the campaign and that consent or another applicable lawful basis exists. Blocked or unsubscribed contacts will be skipped.",
+            "ERROR": "You must confirm the recipients' lawful basis"
           },
           "AUDIENCE": {
             "LABEL": "Audience",

@@ -28,9 +28,6 @@ describe Whatsapp::OneoffCampaignService do
     stub_request(:post, /graph\.facebook\.com.*messages/)
       .to_return(status: 200, body: { messages: [{ id: 'message_id_123' }] }.to_json, headers: { 'Content-Type' => 'application/json' })
 
-    # Ensure the service uses our mocked channel object by stubbing the whole delegation chain
-    # Using allow_any_instance_of here because the service is instantiated within individual tests
-    # and we need to mock the delegated channel method for proper test isolation
     allow_any_instance_of(described_class).to receive(:channel).and_return(whatsapp_channel) # rubocop:disable RSpec/AnyInstance
   end
 
@@ -62,10 +59,10 @@ describe Whatsapp::OneoffCampaignService do
         expect { described_class.new(campaign: campaign).perform }.to raise_error "Invalid campaign #{campaign.id}"
       end
 
-      it 'raises error when channel provider is not whatsapp_cloud' do
+      it 'raises error when channel provider is unsupported' do
         whatsapp_channel.update!(provider: 'default')
 
-        expect { described_class.new(campaign: campaign).perform }.to raise_error 'WhatsApp Cloud provider required'
+        expect { described_class.new(campaign: campaign).perform }.to raise_error 'Supported WhatsApp provider required'
       end
 
       it 'raises error when WhatsApp campaigns feature is not enabled' do
@@ -254,6 +251,53 @@ describe Whatsapp::OneoffCampaignService do
 
         described_class.new(campaign: campaign).perform
         expect(campaign.reload.completed?).to be true
+      end
+    end
+
+    context 'with an Evolution inbox' do
+      let(:sender) { create(:user, account: account) }
+      let(:evolution_channel) do
+        create(:channel_whatsapp, account: account, provider: 'evolution',
+                                  validate_provider_config: false, sync_templates: false)
+      end
+      let(:evolution_campaign) do
+        create(
+          :campaign,
+          account: account,
+          inbox: evolution_channel.inbox,
+          sender: sender,
+          message: 'Olá, {{contact.name}}!',
+          audience: [{ type: 'Label', id: label1.id }],
+          trigger_rules: {
+            delivery_interval_minutes: 4,
+            lawful_basis_confirmed: true,
+            message_variants: ['Boa tarde, {{contact.name}}!']
+          }
+        )
+      end
+
+      before do
+        allow_any_instance_of(described_class).to receive(:channel).and_return(evolution_channel) # rubocop:disable RSpec/AnyInstance
+      end
+
+      it 'creates an idempotent delivery snapshot and schedules each recipient at a fixed interval' do
+        first_contact, second_contact = create_list(:contact, 2, :with_phone_number, account: account, name: 'Lead')
+        first_contact.update_labels([label1.title])
+        second_contact.update_labels([label1.title])
+        evolution_campaign.processing!
+        scheduled_job = instance_double(ActiveJob::ConfiguredJob, perform_later: true)
+        allow(Whatsapp::CampaignDeliveryJob).to receive(:set).and_return(scheduled_job)
+
+        travel_to(Time.zone.parse('2026-08-12 12:00:00')) do
+          described_class.new(campaign: evolution_campaign).perform
+        end
+
+        deliveries = evolution_campaign.campaign_deliveries.order(:id)
+        expect(deliveries.pluck(:contact_id)).to contain_exactly(first_contact.id, second_contact.id)
+        expect(deliveries.second.scheduled_for - deliveries.first.scheduled_for).to eq(4.minutes)
+        expect(Whatsapp::CampaignDeliveryJob).to have_received(:set).twice
+        expect(scheduled_job).to have_received(:perform_later).twice
+        expect(evolution_campaign.reload).to be_processing
       end
     end
   end

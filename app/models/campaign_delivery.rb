@@ -5,6 +5,7 @@
 #  id              :bigint           not null, primary key
 #  error_message   :text
 #  processed_at    :datetime
+#  scheduled_for   :datetime
 #  status          :integer          default("pending"), not null
 #  campaign_id     :bigint           not null
 #  contact_id      :bigint           not null

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_28_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_08_12_120000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -322,9 +322,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_28_120000) do
     t.integer "status", default: 0, null: false
     t.text "error_message"
     t.datetime "processed_at"
+    t.datetime "scheduled_for"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["campaign_id", "contact_id"], name: "index_campaign_deliveries_on_campaign_id_and_contact_id", unique: true
+    t.index ["campaign_id", "scheduled_for"], name: "index_campaign_deliveries_on_campaign_id_and_scheduled_for"
     t.index ["campaign_id", "status"], name: "index_campaign_deliveries_on_campaign_id_and_status"
     t.index ["campaign_id"], name: "index_campaign_deliveries_on_campaign_id"
     t.index ["contact_id"], name: "index_campaign_deliveries_on_contact_id"

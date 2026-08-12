@@ -163,7 +163,7 @@ export const getters = {
     return $state.records.filter(
       item =>
         item.channel_type === INBOX_TYPES.WHATSAPP &&
-        item.provider === 'whatsapp_cloud'
+        ['whatsapp_cloud', 'evolution'].includes(item.provider)
     );
   },
   dialogFlowEnabledInboxes($state) {

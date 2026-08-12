@@ -8,6 +8,11 @@ class Whatsapp::Evolution::IncomingMessageService < Whatsapp::IncomingMessageBas
 
   attr_reader :provisioning
 
+  def create_regular_message(message)
+    super
+    Whatsapp::Evolution::MarketingOptOutService.new(contact: @contact, message: @message).perform unless outgoing_echo
+  end
+
   def download_attachment_file(attachment_payload)
     response = api_client.media_base64(message: attachment_payload[:evolution_message])
     decoded = decode_media(response.fetch('base64'))

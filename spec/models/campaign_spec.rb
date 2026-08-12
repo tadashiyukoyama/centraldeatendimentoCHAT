@@ -297,13 +297,48 @@ RSpec.describe Campaign do
   context 'when validating a WhatsApp campaign provider' do
     let(:account) { create(:account) }
 
-    it 'rejects an Evolution inbox before a campaign can be scheduled' do
+    it 'accepts a compliant Evolution campaign without Meta templates' do
       channel = create(:channel_whatsapp, account: account, provider: 'evolution',
                                           validate_provider_config: false, sync_templates: false)
-      campaign = build(:campaign, account: account, inbox: channel.inbox)
+      label = create(:label, account: account)
+      sender = create(:user, account: account)
+      campaign = build(
+        :campaign,
+        account: account,
+        inbox: channel.inbox,
+        sender: sender,
+        message: 'Olá, {{contact.name}}!',
+        audience: [{ type: 'Label', id: label.id }],
+        trigger_rules: {
+          delivery_interval_minutes: 4,
+          lawful_basis_confirmed: true,
+          message_variants: ['Boa tarde, {{ contact.name }}!']
+        }
+      )
+
+      expect(campaign).to be_valid
+      expect(campaign.template_params).to be_blank
+    end
+
+    it 'rejects Evolution campaigns without a valid interval, audience, lawful basis, or contact-name personalization' do
+      channel = create(:channel_whatsapp, account: account, provider: 'evolution',
+                                          validate_provider_config: false, sync_templates: false)
+      sender = create(:user, account: account)
+      campaign = build(
+        :campaign,
+        account: account,
+        inbox: channel.inbox,
+        sender: sender,
+        message: 'Mensagem sem personalização',
+        audience: [],
+        trigger_rules: { delivery_interval_minutes: 46, lawful_basis_confirmed: false }
+      )
 
       expect(campaign).not_to be_valid
-      expect(campaign.errors[:inbox_id]).to include('must use a WhatsApp Cloud inbox for campaigns')
+      expect(campaign.errors[:audience]).to include('must include at least one valid account label')
+      expect(campaign.errors[:trigger_rules]).to include('delivery interval must be between 4 and 45 minutes')
+      expect(campaign.errors[:trigger_rules]).to include('recipient permission or lawful basis must be confirmed')
+      expect(campaign.errors[:message]).to include('must include {{contact.name}} for Evolution campaigns')
     end
   end
 end

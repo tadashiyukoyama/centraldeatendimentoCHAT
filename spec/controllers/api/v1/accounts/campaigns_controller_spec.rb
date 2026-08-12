@@ -176,6 +176,34 @@ RSpec.describe 'Campaigns API', type: :request do
         expect(campaign.sender).to eq(administrator)
         expect(campaign).to be_one_off
       end
+
+      it 'creates a template-free Evolution campaign with the current administrator as sender' do
+        channel = create(:channel_whatsapp, account: account, provider: 'evolution',
+                                            validate_provider_config: false, sync_templates: false)
+        label = create(:label, account: account)
+
+        post "/api/v1/accounts/#{account.id}/campaigns",
+             params: {
+               inbox_id: channel.inbox.id,
+               title: 'Prospects with permission',
+               message: 'Olá, {{contact.name}}!',
+               scheduled_at: 1.hour.from_now,
+               audience: [{ type: 'Label', id: label.id }],
+               trigger_rules: {
+                 delivery_interval_minutes: 10,
+                 lawful_basis_confirmed: true,
+                 message_variants: ['Boa tarde, {{contact.name}}!']
+               }
+             },
+             headers: administrator.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:success)
+        campaign = account.campaigns.order(:id).last
+        expect(campaign.sender).to eq(administrator)
+        expect(campaign.template_params).to be_blank
+        expect(campaign.trigger_rules['delivery_interval_minutes']).to eq(10)
+      end
     end
   end
 

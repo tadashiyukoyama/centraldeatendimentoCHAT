@@ -3,7 +3,9 @@ class Whatsapp::OneoffCampaignService
 
   def perform
     validate_campaign!
-    process_audience(extract_audience_labels)
+    return perform_evolution_campaign if evolution_provider?
+
+    process_cloud_audience(extract_audience_labels)
     campaign.completed!
   end
 
@@ -25,7 +27,9 @@ class Whatsapp::OneoffCampaignService
   end
 
   def validate_provider!
-    raise 'WhatsApp Cloud provider required' if channel.provider != 'whatsapp_cloud'
+    return if %w[whatsapp_cloud evolution].include?(channel.provider)
+
+    raise 'Supported WhatsApp provider required'
   end
 
   def validate_feature_flag!
@@ -44,7 +48,7 @@ class Whatsapp::OneoffCampaignService
     campaign.account.labels.where(id: audience_label_ids).pluck(:title)
   end
 
-  def process_contact(contact)
+  def process_cloud_contact(contact)
     Rails.logger.info "Processing contact: #{contact.name} (#{contact.phone_number})"
 
     if contact.phone_number.blank?
@@ -63,11 +67,11 @@ class Whatsapp::OneoffCampaignService
     send_whatsapp_template_message(to: contact.phone_number, template_params: processed_template_params)
   end
 
-  def process_audience(audience_labels)
+  def process_cloud_audience(audience_labels)
     contacts = campaign.account.contacts.tagged_with(audience_labels, any: true)
     Rails.logger.info "Processing #{contacts.count} contacts for campaign #{campaign.id}"
 
-    contacts.each { |contact| process_contact(contact) }
+    contacts.each { |contact| process_cloud_contact(contact) }
 
     Rails.logger.info "Campaign #{campaign.id} processing completed"
   end
@@ -106,5 +110,40 @@ class Whatsapp::OneoffCampaignService
     Rails.logger.error "Backtrace: #{e.backtrace.first(5).join('\n')}"
     # continue processing remaining contacts
     nil
+  end
+
+  def evolution_provider?
+    channel.provider == 'evolution'
+  end
+
+  def perform_evolution_campaign
+    create_evolution_delivery_snapshot!
+    enqueue_evolution_deliveries
+    campaign.completed! unless campaign.campaign_deliveries.unfinished.exists?
+  end
+
+  def create_evolution_delivery_snapshot!
+    audience_contacts.find_each do |contact|
+      campaign.campaign_deliveries.find_or_create_by!(contact: contact)
+    end
+  end
+
+  def enqueue_evolution_deliveries
+    first_delivery_at = Time.current
+    campaign.campaign_deliveries.pending.order(:id).find_each.with_index do |delivery, index|
+      scheduled_for = first_delivery_at + (index * evolution_delivery_interval_minutes).minutes
+      delivery.update!(scheduled_for: scheduled_for)
+      Whatsapp::CampaignDeliveryJob.set(wait_until: scheduled_for).perform_later(delivery.id)
+    end
+  end
+
+  def audience_contacts
+    return campaign.account.contacts.none if extract_audience_labels.empty?
+
+    campaign.account.contacts.tagged_with(extract_audience_labels, any: true)
+  end
+
+  def evolution_delivery_interval_minutes
+    campaign.trigger_rules.fetch('delivery_interval_minutes').to_i
   end
 end

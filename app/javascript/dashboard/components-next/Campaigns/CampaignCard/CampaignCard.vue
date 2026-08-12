@@ -88,10 +88,28 @@ const inboxName = computed(() => props.inbox?.name || '');
 const isEmailCampaign = computed(
   () => props.inbox?.channel_type === INBOX_TYPES.EMAIL
 );
-const hasEmailDeliveries = computed(
+const isWhatsAppCampaign = computed(
+  () => props.inbox?.channel_type === INBOX_TYPES.WHATSAPP
+);
+const hasTrackedDeliveries = computed(
   () =>
-    isEmailCampaign.value &&
+    (isEmailCampaign.value || isWhatsAppCampaign.value) &&
     Object.values(props.deliveryCounts).some(count => Number(count) > 0)
+);
+
+const deliveryCountParams = computed(() => ({
+  pending:
+    Number(props.deliveryCounts.pending || 0) +
+    Number(props.deliveryCounts.processing || 0),
+  queued: Number(props.deliveryCounts.queued || 0),
+  skipped: Number(props.deliveryCounts.skipped || 0),
+  failed: Number(props.deliveryCounts.failed || 0),
+}));
+
+const deliveryCountsText = computed(() =>
+  isEmailCampaign.value
+    ? t('CAMPAIGN.EMAIL.CARD.DELIVERY_COUNTS', deliveryCountParams.value)
+    : t('CAMPAIGN.WHATSAPP.CARD.DELIVERY_COUNTS', deliveryCountParams.value)
 );
 
 const inboxIcon = computed(() => {
@@ -134,19 +152,10 @@ const inboxIcon = computed(() => {
           :scheduled-at="scheduledAt"
         />
         <span
-          v-if="hasEmailDeliveries"
+          v-if="hasTrackedDeliveries"
           class="flex-1 text-xs truncate text-n-slate-11"
         >
-          {{
-            t('CAMPAIGN.EMAIL.CARD.DELIVERY_COUNTS', {
-              pending:
-                Number(deliveryCounts.pending || 0) +
-                Number(deliveryCounts.processing || 0),
-              queued: Number(deliveryCounts.queued || 0),
-              skipped: Number(deliveryCounts.skipped || 0),
-              failed: Number(deliveryCounts.failed || 0),
-            })
-          }}
+          {{ deliveryCountsText }}
         </span>
       </div>
     </div>

@@ -162,6 +162,11 @@ identificador remoto é registrado em `Message#source_id`.
 As capacidades são consultadas no serviço do provedor. A lógica Evolution não
 deve ser acrescentada como exceção dispersa em componentes Meta.
 
+Campanhas Evolution usam mensagens comuns individualizadas, cadência fixa
+configurável, personalização por contato e descadastro auditável. O contrato
+operacional está em
+`docs/operations/EVOLUTION-WHATSAPP-CAMPAIGNS.md`.
+
 ## Fronteiras de manutenção
 
 - API, autenticação e TLS:
