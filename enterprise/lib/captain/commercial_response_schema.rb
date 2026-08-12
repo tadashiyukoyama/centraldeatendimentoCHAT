@@ -30,7 +30,7 @@ class Captain::CommercialResponseSchema < RubyLLM::Schema
         max_items: 4,
         of: :string
   array :requested_profile_fields,
-        description: 'Profile fields naturally requested in the final response during this turn',
+        description: 'Profile fields naturally requested in the final response; include every field due in this turn',
         max_items: 4,
         of: :string
   array :declined_profile_fields,

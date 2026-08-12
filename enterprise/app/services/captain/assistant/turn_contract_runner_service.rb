@@ -1,5 +1,5 @@
 class Captain::Assistant::TurnContractRunnerService
-  MAX_ATTEMPTS = 2
+  MAX_ATTEMPTS = 3
   READ_ONLY_TOOL_SUFFIXES = %w[faq_lookup lookup_payment_status].freeze
   Result = Data.define(:response, :run_result)
 

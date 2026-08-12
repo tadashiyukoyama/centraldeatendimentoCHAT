@@ -280,6 +280,54 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       expect(result['requested_profile_fields']).to eq(['company_name'])
     end
 
+    it 'gives the same Nemmo a third structured correction without repeating mutating tools' do
+      assistant.update!(config: assistant.config.merge('feature_commercial_response_contract' => true))
+      attempts = 0
+      repair_agent = instance_double(Agents::Agent)
+      repair_runner = instance_double(Agents::AgentRunner)
+
+      allow(assistant).to receive(:agent).with(tools: []).and_return(repair_agent)
+      allow(Agents::Runner).to receive(:with_agents).with(repair_agent).and_return(repair_runner)
+
+      generate_attempt = lambda do |_input, context:, max_turns:|
+        attempts += 1
+        expect(max_turns).to eq(10)
+        context[:captain_v2_tool_results] = [
+          {
+            name: 'captain--tools--classify_lead',
+            result: "Conversation ##{conversation.display_id} classified as 'lead_morno'"
+          }
+        ]
+        valid = attempts == 3
+        output = {
+          'response' => if valid
+                          "Posso explicar com uma **visão prática**. \u{1F44B}\n\nComo posso te chamar e qual é o nome do seu estabelecimento?"
+                        else
+                          "Posso explicar com uma **visão prática**. \u{1F44B}\n\nQual parte da operação mais precisa de ajuda?"
+                        end,
+          'reasoning' => 'Adaptive commercial decision',
+          'classification' => 'lead_morno',
+          'customer_intent' => 'prospect',
+          'commercial_stage' => 'qualification',
+          'immediate_objective' => 'Identify the prospect without losing the live context',
+          'captured_profile_fields' => [],
+          'requested_profile_fields' => valid ? %w[name company_name] : [],
+          'declined_profile_fields' => [],
+          'knowledge_grounded' => false
+        }
+        instance_double(Agents::RunResult, output: output, context: context)
+      end
+      allow(mock_runner).to receive(:run, &generate_attempt)
+      allow(repair_runner).to receive(:run, &generate_attempt)
+
+      result = service.generate_response(message_history: message_history)
+
+      expect(attempts).to eq(3)
+      expect(mock_runner).to have_received(:run).once
+      expect(repair_runner).to have_received(:run).twice
+      expect(result['requested_profile_fields']).to contain_exactly('name', 'company_name')
+    end
+
     it 'exposes the raw run result via last_run_result' do
       service.generate_response(message_history: message_history)
 
