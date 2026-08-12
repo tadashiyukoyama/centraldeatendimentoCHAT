@@ -36,6 +36,36 @@ RSpec.describe Captain::Assistant::TurnContractValidator do
     expect(validator.errors).to eq([])
   end
 
+  it 'does not confuse the restaurant name with the contact person name' do
+    response = base_response.merge(
+      response: 'Para eu entender seu cenário, qual é o **nome do restaurante** e a cidade onde ele fica? 👋'
+    )
+
+    expect(validator(response: response).errors).to include(
+      'requested profile fields are missing from the customer-facing question: name'
+    )
+  end
+
+  it 'accepts distinct person and establishment wording in one natural question' do
+    response = base_response.merge(
+      response: 'Para eu te orientar, qual é o **nome da pessoa responsável** e o nome do restaurante? 👋'
+    )
+
+    expect(validator(response: response).errors).to eq([])
+  end
+
+  it 'requires both contact fields to be present in the question paragraph' do
+    policy = base_policy.merge(required_profile_fields_if_prospect: %w[phone_number email])
+    response = base_response.merge(
+      response: 'Para continuar, qual é o seu **WhatsApp**? 👋',
+      requested_profile_fields: %w[phone_number email]
+    )
+
+    expect(validator(response: response, policy: policy).errors).to include(
+      'requested profile fields are missing from the customer-facing question: email'
+    )
+  end
+
   it 'rejects a prospect turn that silently skips due profile coverage' do
     response = base_response.merge(requested_profile_fields: [], response: 'Vamos entender sua operação. 👋')
 

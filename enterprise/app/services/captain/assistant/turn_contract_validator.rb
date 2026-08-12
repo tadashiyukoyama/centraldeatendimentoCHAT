@@ -86,7 +86,20 @@ class Captain::Assistant::TurnContractValidator
   end
 
   def validate_profile_question(errors, requested)
-    errors << 'requested profile fields are not represented by a customer-facing question' if requested.any? && question_count.zero?
+    return if requested.empty?
+
+    if question_count.zero?
+      errors << 'requested profile fields are not represented by a customer-facing question'
+      return
+    end
+
+    missing = Captain::Assistant::ProfileRequestSemantics.new(
+      response: @response['response'],
+      requested_fields: requested
+    ).missing_fields
+    return if missing.empty?
+
+    errors << "requested profile fields are missing from the customer-facing question: #{missing.join(', ')}"
   end
 
   def validate_profile_persistence(errors, captured)

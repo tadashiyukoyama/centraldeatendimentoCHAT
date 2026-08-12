@@ -86,6 +86,7 @@ This is an adaptive agent contract, not a chatbot script or a fixed questionnair
 ## Runtime validation feedback
 The previous SDK attempt was not delivered. Correct every issue below while preserving the customer's request.
 If an issue says profile fields were due but neither captured nor requested, the corrected response must use its one customer-facing question to request all named fields together and must list them in `requested_profile_fields`. A diagnostic question does not correct that issue.
+If an issue says a requested profile field is missing from the customer-facing question, name that field unambiguously in the question. `name` means the person's name and cannot be satisfied by the establishment name.
 If no approved FAQ evidence exists in this logical turn, remove factual product claims from the correction instead of repeating an earlier product summary.
 {% if commercial_retry.tools_locked -%}
 A tool that may persist data was already called in this logical turn. This correction run has no tools: do not repeat an action, invent a new result, or claim success unless `completed_tool_results` confirms it. Reuse those audited results in the structured metadata and rewrite only what is necessary.
