@@ -1,5 +1,6 @@
 class Captain::Conversation::LeadClassificationService
   CLASSIFICATIONS = %w[cliente lead_morno lead_quente].freeze
+  RECENT_COMMERCIAL_MESSAGE_LIMIT = 3
 
   HOT_LEAD_SIGNALS = [
     'preco', 'plano', 'planos', 'valor', 'proposta', 'contratar', 'contratacao',
@@ -68,11 +69,12 @@ class Captain::Conversation::LeadClassificationService
   end
 
   def fallback_classification
-    content = latest_customer_message&.content_for_llm.to_s
-    normalized_content = ActiveSupport::Inflector.transliterate(content).downcase
+    customer_messages = current_episode_customer_messages
+    latest_content = normalized_content(customer_messages.last)
+    commercial_context = customer_messages.last(RECENT_COMMERCIAL_MESSAGE_LIMIT).map { |message| normalized_content(message) }.join(' ')
 
-    return 'lead_quente' if HOT_LEAD_SIGNALS.any? { |signal| normalized_content.include?(signal) }
-    return 'cliente' if CUSTOMER_PATTERNS.any? { |pattern| normalized_content.match?(pattern) }
+    return 'lead_quente' if HOT_LEAD_SIGNALS.any? { |signal| commercial_context.include?(signal) }
+    return 'cliente' if CUSTOMER_PATTERNS.any? { |pattern| latest_content.match?(pattern) }
 
     'lead_morno'
   end
@@ -94,11 +96,14 @@ class Captain::Conversation::LeadClassificationService
     normalized
   end
 
-  def latest_customer_message
-    @conversation.messages
-                 .where(message_type: :incoming, private: false, sender_type: 'Contact')
-                 .order(created_at: :desc)
-                 .first
+  def current_episode_customer_messages
+    Captain::Conversation::MessageContextWindow.new(@conversation).perform.select do |message|
+      message.incoming? && message.sender_type == 'Contact'
+    end
+  end
+
+  def normalized_content(message)
+    ActiveSupport::Inflector.transliterate(message&.content_for_llm.to_s).downcase
   end
 
   def ensure_label!(classification)

@@ -94,6 +94,32 @@ RSpec.describe Captain::Conversation::LeadClassificationService, type: :service 
     expect(conversation.reload.label_list).to include('lead_quente')
   end
 
+  it 'preserves a buying signal while the lead supplies profile details in the current episode' do
+    add_customer_message('Quero marcar uma demonstracao')
+    add_customer_message('Meu WhatsApp e +5511999999999 e o e-mail e lead@example.com')
+    conversation.update_labels(['lead_morno'])
+
+    expect(service.perform(classification: 'lead_quente')).to eq('lead_quente')
+    expect(conversation.reload.label_list).to contain_exactly('lead_quente')
+  end
+
+  it 'does not reuse a buying signal from an episode that was already resolved' do
+    add_customer_message('Quero marcar uma demonstracao')
+    create(
+      :message,
+      conversation: conversation,
+      account: account,
+      inbox: inbox,
+      message_type: :activity,
+      content_attributes: { activity: { type: 'conversation_status_changed', status: 'resolved' } }
+    )
+    add_customer_message('Meu WhatsApp e +5511999999999')
+    conversation.update_labels(['lead_morno'])
+
+    expect(service.perform(classification: 'lead_quente')).to eq('lead_morno')
+    expect(conversation.reload.label_list).to contain_exactly('lead_morno')
+  end
+
   it 'does not accept a hot model classification without a buying signal' do
     add_customer_message('Gostaria de entender como funciona')
 
