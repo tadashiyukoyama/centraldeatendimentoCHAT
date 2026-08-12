@@ -62,8 +62,13 @@ Here's the metadata we have about the current conversation and the contact assoc
 - When profile fields are reported as due, the corrected response must request every named field together in its one customer-facing question and list them in `requested_profile_fields`.
 - When a requested field is missing from the customer-facing question, name it unambiguously; the person's `name` is distinct from the establishment name.
 - Without approved FAQ evidence in the logical turn, remove factual product claims from the correction rather than repeating an earlier summary.
-{% if commercial_retry.tools_locked -%}
-- A tool that may persist data was already called. This correction run has no tools; reuse only its audited result, do not repeat it, and claim success only when the result confirms it.
+{% if commercial_retry.restricted_tools -%}
+- A tool that may persist data was already called. Never repeat a completed action; reuse its audited result and claim success only when the result confirms it.
+{% if commercial_retry.available_tools.size > 0 -%}
+- Only these still-needed tools are available in this correction: {{ commercial_retry.available_tools | join: ", " }}. Every other tool remains unavailable.
+{% else -%}
+- This correction run has no tools available.
+{% endif -%}
 {% endif -%}
 - Previous rejected customer-facing draft: {{ commercial_retry.previous_response.response }}
 {% for tool_result in commercial_retry.completed_tool_results -%}

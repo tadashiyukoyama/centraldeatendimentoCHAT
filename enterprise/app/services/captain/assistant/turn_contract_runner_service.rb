@@ -1,6 +1,10 @@
 class Captain::Assistant::TurnContractRunnerService
   MAX_ATTEMPTS = 3
   READ_ONLY_TOOL_SUFFIXES = %w[faq_lookup lookup_payment_status].freeze
+  REPAIRABLE_MUTATING_TOOLS = {
+    'classify_lead' => /requires classify_lead/,
+    'capture_contact_profile' => /(?:explicit profile fields require capture_contact_profile|likely profile reply requires capture_contact_profile)/
+  }.freeze
   Result = Data.define(:response, :run_result)
 
   def initialize(assistant:, conversation:, runner:, repair_runner_provider:, runtime:)
@@ -131,10 +135,13 @@ class Captain::Assistant::TurnContractRunnerService
     context[:captain_v2_tool_results] = tool_results(previous_context)
     carry_knowledge_metadata!(context, previous_context)
     context[:state][:commercial_validation_feedback] = validation_errors
+    available_tools = available_repair_tools(validation_errors, previous_context)
     context[:state][:commercial_retry] = {
       previous_response: response.except('reasoning'),
       completed_tool_results: tool_results(previous_context),
-      tools_locked: mutating_tool_used?(run_result)
+      restricted_tools: mutating_tool_used?(run_result),
+      available_tools: available_tools,
+      tools_locked: mutating_tool_used?(run_result) && available_tools.empty?
     }
     context
   end
@@ -152,9 +159,21 @@ class Captain::Assistant::TurnContractRunnerService
   end
 
   def runner_for(attempt, context)
-    return @runner if attempt.zero? || !context.dig(:state, :commercial_retry, :tools_locked)
+    retry_state = context.dig(:state, :commercial_retry) || {}
+    return @runner if attempt.zero? || !retry_state[:restricted_tools]
 
-    @repair_runner_provider.call
+    @repair_runner_provider.call(Array(retry_state[:available_tools]))
+  end
+
+  def available_repair_tools(validation_errors, context)
+    completed_names = tool_results(context).map { |entry| tool_name(entry) }
+
+    REPAIRABLE_MUTATING_TOOLS.filter_map do |tool_id, error_pattern|
+      next unless validation_errors.any? { |error| error.match?(error_pattern) }
+      next if completed_names.any? { |name| name.end_with?(tool_id) }
+
+      tool_id
+    end
   end
 
   def tool_results(context)

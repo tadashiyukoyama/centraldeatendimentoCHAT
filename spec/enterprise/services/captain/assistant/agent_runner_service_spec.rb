@@ -64,6 +64,35 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
     )
   end
 
+  def profile_capture_result
+    {
+      name: 'captain--tools--capture_contact_profile',
+      result: { status: 'saved', saved_fields: %w[name company_name] }.to_json
+    }
+  end
+
+  def hot_lead_contact_request(reasoning)
+    {
+      'response' => "Obrigada pelos dados. \u{1F680}\n\nQual e o melhor WhatsApp e e-mail para contato?",
+      'reasoning' => reasoning,
+      'classification' => 'lead_quente',
+      'customer_intent' => 'prospect',
+      'commercial_stage' => 'qualification',
+      'immediate_objective' => 'Collect direct contact details',
+      'captured_profile_fields' => [],
+      'requested_profile_fields' => %w[phone_number email],
+      'declined_profile_fields' => [],
+      'knowledge_grounded' => false
+    }
+  end
+
+  def expect_classification_only_repair(context)
+    expect(context.dig(:state, :commercial_retry, :available_tools)).to eq(['classify_lead'])
+    expect(context[:captain_v2_tool_results].map { |entry| entry[:name] }).to contain_exactly(
+      'captain--tools--capture_contact_profile'
+    )
+  end
+
   before do
     allow(assistant).to receive(:agent).and_return(mock_agent)
     scenarios_relation = instance_double(Captain::Scenario)
@@ -282,6 +311,50 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       )
     end
 
+    it 'allows only the missing classification tool after profile data was already persisted' do
+      assistant.update!(config: assistant.config.merge('feature_commercial_response_contract' => true))
+      conversation.update_labels(['lead_morno'])
+      prepare_identity_reply_context
+      repair_agent = instance_double(Agents::Agent)
+      repair_runner = instance_double(Agents::AgentRunner)
+      attempts = 0
+
+      expect(assistant).to receive(:agent).with(
+        tools: satisfy do |tools|
+          tools.one? && tools.first.is_a?(Captain::Tools::ClassifyLeadTool)
+        end
+      ).and_return(repair_agent)
+      allow(Agents::Runner).to receive(:with_agents).with(repair_agent).and_return(repair_runner)
+      allow(repair_runner).to receive(:on_tool_complete).and_return(repair_runner)
+
+      allow(mock_runner).to receive(:run) do |_input, context:, **|
+        attempts += 1
+        persist_smoke_identity
+        context[:captain_v2_tool_results] = [profile_capture_result]
+        output = hot_lead_contact_request('The customer asked for a demonstration and supplied identity details.')
+        instance_double(Agents::RunResult, output: output, context: context)
+      end
+
+      allow(repair_runner).to receive(:run) do |_input, context:, **|
+        attempts += 1
+        expect_classification_only_repair(context)
+        context[:captain_v2_tool_results] << {
+          name: 'captain--tools--classify_lead',
+          result: "Conversation ##{conversation.display_id} classified as 'lead_quente'"
+        }
+        output = hot_lead_contact_request('Classification was persisted by the only available repair tool.')
+        instance_double(Agents::RunResult, output: output, context: context)
+      end
+
+      result = service.generate_response(message_history: message_history)
+
+      expect(attempts).to eq(2)
+      expect(result).not_to have_key('error'), result.inspect
+      expect(result['captured_profile_fields']).to contain_exactly('name', 'company_name')
+      expect(result['classification']).to eq('lead_quente')
+      expect(result['requested_profile_fields']).to contain_exactly('phone_number', 'email')
+    end
+
     it 'uses a tool-free Nemmo correction pass after a mutating tool completed' do
       assistant.update!(config: assistant.config.merge('feature_commercial_response_contract' => true))
       attempts = 0
@@ -291,6 +364,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
 
       allow(assistant).to receive(:agent).with(tools: []).and_return(repair_agent)
       allow(Agents::Runner).to receive(:with_agents).with(repair_agent).and_return(repair_runner)
+      allow(repair_runner).to receive(:on_tool_complete).and_return(repair_runner)
 
       generate_attempt = lambda do |_input, context:, max_turns:|
         attempts += 1
@@ -379,6 +453,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
 
       allow(assistant).to receive(:agent).with(tools: []).and_return(repair_agent)
       allow(Agents::Runner).to receive(:with_agents).with(repair_agent).and_return(repair_runner)
+      allow(repair_runner).to receive(:on_tool_complete).and_return(repair_runner)
 
       generate_attempt = lambda do |_input, context:, max_turns:|
         attempts += 1

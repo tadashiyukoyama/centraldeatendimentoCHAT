@@ -70,9 +70,18 @@ module Captain::Assistant::RunnerStateHelper
     ActiveModel::Type::Boolean.new.cast(@assistant.config['feature_commercial_response_contract'])
   end
 
-  def repair_runner
-    @repair_runner ||= begin
-      configured_runner = Agents::Runner.with_agents(@assistant.agent(tools: []))
+  def repair_runner(tool_names = [])
+    @repair_runners ||= {}
+    key = Array(tool_names).map(&:to_s).sort.freeze
+    @repair_runners[key] ||= begin
+      tools = key.map do |tool_name|
+        tool_class = @assistant.class.resolve_tool_class(tool_name)
+        raise ArgumentError, "Unsupported Captain repair tool: #{tool_name}" unless tool_class
+
+        tool_class.new(@assistant)
+      end
+      configured_runner = Agents::Runner.with_agents(@assistant.agent(tools: tools))
+      configured_runner = add_usage_metadata_callback(configured_runner)
       install_instrumentation(configured_runner)
     end
   end
