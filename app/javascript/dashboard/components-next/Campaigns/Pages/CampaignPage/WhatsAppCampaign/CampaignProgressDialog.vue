@@ -27,6 +27,15 @@ let pollTimer = null;
 const progress = computed(() => payload.value?.progress || {});
 const deliveries = computed(() => payload.value?.deliveries || []);
 const meta = computed(() => payload.value?.meta || {});
+const phase = computed(() => progress.value.phase || 'in_progress');
+const isQueuePending = computed(() =>
+  ['scheduled', 'preparing'].includes(phase.value)
+);
+const displayTotal = computed(() =>
+  isQueuePending.value
+    ? Number(progress.value.planned_total || 0)
+    : Number(progress.value.total || 0)
+);
 
 const sentCount = computed(
   () =>
@@ -39,12 +48,14 @@ const errorCount = computed(
   () => Number(progress.value.failed || 0) + Number(progress.value.skipped || 0)
 );
 
-const scheduledCount = computed(
-  () =>
+const scheduledCount = computed(() => {
+  const queued =
     Number(progress.value.pending || 0) +
     Number(progress.value.processing || 0) +
-    Number(progress.value.queued || 0)
-);
+    Number(progress.value.queued || 0);
+
+  return isQueuePending.value ? displayTotal.value : queued;
+});
 
 const dateFormatter = computed(
   () =>
@@ -56,6 +67,35 @@ const dateFormatter = computed(
 
 const formatDate = value =>
   value ? dateFormatter.value.format(new Date(value)) : '—';
+
+const queueState = computed(() => {
+  if (phase.value === 'scheduled') {
+    return {
+      icon: 'i-lucide-calendar-clock',
+      title: t('CAMPAIGN.WHATSAPP.PROGRESS.SCHEDULED_TITLE'),
+      description: t('CAMPAIGN.WHATSAPP.PROGRESS.SCHEDULED_DESCRIPTION', {
+        count: displayTotal.value,
+        date: formatDate(payload.value?.campaign?.scheduled_at),
+      }),
+    };
+  }
+
+  if (phase.value === 'preparing') {
+    return {
+      icon: 'i-lucide-loader-circle animate-spin',
+      title: t('CAMPAIGN.WHATSAPP.PROGRESS.PREPARING_TITLE'),
+      description: t('CAMPAIGN.WHATSAPP.PROGRESS.PREPARING_DESCRIPTION', {
+        count: displayTotal.value,
+      }),
+    };
+  }
+
+  return {
+    icon: 'i-lucide-users-round',
+    title: t('CAMPAIGN.WHATSAPP.PROGRESS.EMPTY_TITLE'),
+    description: t('CAMPAIGN.WHATSAPP.PROGRESS.EMPTY_DESCRIPTION'),
+  };
+});
 
 const statusLabels = computed(() => ({
   pending: t('CAMPAIGN.WHATSAPP.PROGRESS.STATUS.PENDING'),
@@ -204,7 +244,7 @@ defineExpose({ open, close });
             {{ t('CAMPAIGN.WHATSAPP.PROGRESS.TOTAL') }}
           </p>
           <p class="mb-0 text-xl font-semibold tabular-nums text-n-slate-12">
-            {{ progress.total || 0 }}
+            {{ displayTotal }}
           </p>
         </div>
         <div class="rounded-lg border border-n-weak bg-n-alpha-2 p-3">
@@ -248,13 +288,22 @@ defineExpose({ open, close });
 
         <div
           v-if="!deliveries.length"
-          class="rounded-lg border border-dashed border-n-weak p-6 text-center"
+          class="flex flex-col items-center rounded-lg border border-dashed border-n-weak p-6 text-center"
+          :class="{ 'bg-n-blue-2': isQueuePending }"
         >
+          <span
+            class="mb-3 size-6"
+            :class="[
+              queueState.icon,
+              isQueuePending ? 'text-n-blue-10' : 'text-n-slate-10',
+            ]"
+            aria-hidden="true"
+          />
           <p class="mb-1 text-sm font-medium text-n-slate-12">
-            {{ t('CAMPAIGN.WHATSAPP.PROGRESS.EMPTY_TITLE') }}
+            {{ queueState.title }}
           </p>
           <p class="mb-0 text-xs leading-5 text-n-slate-11">
-            {{ t('CAMPAIGN.WHATSAPP.PROGRESS.EMPTY_DESCRIPTION') }}
+            {{ queueState.description }}
           </p>
         </div>
 

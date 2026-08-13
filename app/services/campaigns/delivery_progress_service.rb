@@ -60,16 +60,44 @@ class Campaigns::DeliveryProgressService
   end
 
   def progress_payload
-    total = deliveries.size
+    total = delivery_total
     completed = COMPLETED_STATUSES.sum { |status| status_counts[status] }
     counters = DELIVERY_STATUSES.index_with { |status| status_counts[status] }
 
     counters.merge(
+      phase: queue_phase(total: total, completed: completed),
+      planned_total: planned_audience_count,
       total: total,
       completed: completed,
       percentage: total.zero? ? 0 : ((completed.to_f / total) * 100).round,
       next_delivery_at: deliveries.find(&:pending?)&.scheduled_for&.iso8601
     )
+  end
+
+  def delivery_total
+    @delivery_total ||= deliveries.size
+  end
+
+  def queue_phase(total:, completed:)
+    return campaign.completed? ? 'empty' : 'scheduled' if total.zero? && !campaign.processing?
+    return 'preparing' if total.zero?
+    return 'completed' if campaign.completed? || completed == total
+
+    'in_progress'
+  end
+
+  def planned_audience_count
+    @planned_audience_count ||= begin
+      label_names = campaign.account.labels.where(id: audience_label_ids).pluck(:title)
+      label_names.empty? ? 0 : campaign.account.contacts.tagged_with(label_names, any: true).distinct.count
+    end
+  end
+
+  def audience_label_ids
+    Array(campaign.audience).filter_map do |item|
+      attributes = item.with_indifferent_access
+      attributes[:id].to_i if attributes[:type] == 'Label' && attributes[:id].present?
+    end.uniq
   end
 
   def campaign_payload
