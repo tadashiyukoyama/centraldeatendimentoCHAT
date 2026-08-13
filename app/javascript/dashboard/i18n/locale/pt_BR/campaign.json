@@ -214,7 +214,8 @@
           "SENT_FROM": "Enviado de",
           "ON": "ativado"
         },
-        "DELIVERY_COUNTS": "Preparando: {pending} · Enfileirados: {queued} · Ignorados: {skipped} · Falhas: {failed}"
+        "DELIVERY_COUNTS": "Preparando: {pending} · Enfileirados: {queued} · Ignorados: {skipped} · Falhas: {failed}",
+        "TRACK": "Acompanhar"
       },
       "CREATE": {
         "TITLE": "Criar campanha do WhatsApp",
@@ -248,9 +249,21 @@
           "IMPORT_LEADS": {
             "LINK": "Importar lista CSV",
             "SAMPLE": "Baixar modelo CSV",
-            "INFO": "Use uma etiqueta já cadastrada na coluna labels e aguarde a conclusão da importação antes do horário da campanha.",
-            "SUCCESS": "Lista enviada para importação. Aguarde a confirmação de conclusão antes de iniciar a campanha.",
-            "ERROR": "Não foi possível importar a lista de contatos."
+            "INFO": "Importe uma lista própria ou use etiquetas existentes. A lista será validada antes de poder ser selecionada.",
+            "SUCCESS": "Lista recebida. A importação será acompanhada aqui e selecionada quando estiver pronta.",
+            "READY": "Lista pronta com {count} contatos e selecionada como público.",
+            "EMPTY": "A importação terminou sem contatos válidos. Revise o arquivo e tente novamente.",
+            "ERROR": "Não foi possível importar a lista de contatos.",
+            "STATUS_ERROR": "Não foi possível atualizar o andamento da importação.",
+            "DIALOG_TITLE": "Importar público da campanha",
+            "DIALOG_DESCRIPTION": "Cada arquivo se torna uma lista identificável e reutilizável. A coluna labels da planilha não é usada para definir o público desta campanha.",
+            "IMPORT": "Importar lista",
+            "NAME_LABEL": "Nome da lista",
+            "NAME_PLACEHOLDER": "Ex.: Restaurantes de Jundiaí — agosto",
+            "FILE_LABEL": "Arquivo CSV",
+            "NO_FILE": "Nenhum arquivo selecionado",
+            "CHOOSE_FILE": "Escolher arquivo",
+            "FILE_HELP": "Aceita CSV de até 10 MB. Nome e telefone são necessários para o envio pelo WhatsApp."
           },
           "MESSAGE": {
             "LABEL": "Mensagem principal",
@@ -278,7 +291,16 @@
           "AUDIENCE": {
             "LABEL": "Público",
             "PLACEHOLDER": "Selecionar etiquetas dos clientes",
-            "ERROR": "Público é necessário"
+            "ERROR": "Selecione uma lista pronta ou pelo menos uma etiqueta com contatos",
+            "SOURCE_LABEL": "Como deseja selecionar o público?",
+            "SOURCE_LIST": "Lista importada",
+            "SOURCE_LABELS": "Etiquetas existentes",
+            "LIST_LABEL": "Lista de contatos",
+            "LIST_PLACEHOLDER": "Selecione uma lista pronta",
+            "LIST_HELP": "Somente listas concluídas e com contatos válidos podem ser usadas.",
+            "LABELS_LABEL": "Etiquetas dos contatos",
+            "LIST_OPTION": "{name} ({count} contatos)",
+            "IMPORTING": "Importando “{name}”… Esta lista aparecerá assim que a validação terminar."
           },
           "SCHEDULED_AT": {
             "LABEL": "Horário agendado",
@@ -293,6 +315,40 @@
             "SUCCESS_MESSAGE": "Campanha do WhatsApp criada com sucesso",
             "ERROR_MESSAGE": "Houve um erro. Por favor, tente novamente."
           }
+        }
+      },
+      "PROGRESS": {
+        "TITLE": "Andamento: {title}",
+        "CLOSE": "Fechar",
+        "COMPLETION": "Conclusão da fila",
+        "PERCENTAGE": "{value}%",
+        "AUTO_REFRESH": "Atualização automática a cada 5 segundos",
+        "TOTAL": "Total",
+        "SENT": "Enviadas",
+        "SCHEDULED": "Próximas",
+        "ERRORS": "Ignoradas ou com erro",
+        "NEXT_DELIVERY": "Próximo envio previsto para {date}",
+        "DELIVERIES": "Destinatários e entregas",
+        "CONTACT": "Contato",
+        "STATUS_LABEL": "Status",
+        "SCHEDULE": "Horário previsto",
+        "DETAIL": "Detalhe do erro",
+        "EMPTY_TITLE": "Nenhum destinatário entrou nesta campanha",
+        "EMPTY_DESCRIPTION": "O público estava vazio no momento do processamento. Nenhuma mensagem foi enviada.",
+        "LOAD_ERROR": "Não foi possível carregar o andamento da campanha.",
+        "RETRY": "Tentar novamente",
+        "PREVIOUS": "Anterior",
+        "NEXT": "Próxima",
+        "PAGE": "Página {current} de {total}",
+        "STATUS": {
+          "PENDING": "Agendada",
+          "PROCESSING": "Processando",
+          "QUEUED": "Enfileirada",
+          "SENT": "Enviada",
+          "DELIVERED": "Entregue",
+          "READ": "Lida",
+          "SKIPPED": "Ignorada",
+          "FAILED": "Falhou"
         }
       }
     },

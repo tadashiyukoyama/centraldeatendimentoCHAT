@@ -48,7 +48,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['edit', 'delete']);
+const emit = defineEmits(['edit', 'delete', 'view']);
 
 const { t } = useI18n();
 
@@ -120,7 +120,15 @@ const inboxIcon = computed(() => {
 
 <template>
   <CardLayout layout="row">
-    <div class="flex flex-col items-start justify-between flex-1 min-w-0 gap-2">
+    <div
+      class="flex flex-col items-start justify-between flex-1 min-w-0 gap-2"
+      :class="{ 'cursor-pointer': isWhatsAppCampaign }"
+      :role="isWhatsAppCampaign ? 'button' : undefined"
+      :tabindex="isWhatsAppCampaign ? 0 : undefined"
+      @click="isWhatsAppCampaign && emit('view')"
+      @keydown.enter="isWhatsAppCampaign && emit('view')"
+      @keydown.space.prevent="isWhatsAppCampaign && emit('view')"
+    >
       <div class="flex justify-between gap-3 w-fit">
         <span
           class="text-base font-medium capitalize text-n-slate-12 line-clamp-1"
@@ -159,21 +167,30 @@ const inboxIcon = computed(() => {
         </span>
       </div>
     </div>
-    <div class="flex items-center justify-end w-20 gap-2">
+    <div class="flex items-center justify-end gap-2">
+      <Button
+        v-if="isWhatsAppCampaign"
+        variant="faded"
+        color="slate"
+        size="sm"
+        icon="i-lucide-activity"
+        :label="t('CAMPAIGN.WHATSAPP.CARD.TRACK')"
+        @click.stop="emit('view')"
+      />
       <Button
         v-if="isLiveChatType"
         variant="faded"
         size="sm"
         color="slate"
         icon="i-lucide-sliders-vertical"
-        @click="emit('edit')"
+        @click.stop="emit('edit')"
       />
       <Button
         variant="faded"
         color="ruby"
         size="sm"
         icon="i-lucide-trash"
-        @click="emit('delete')"
+        @click.stop="emit('delete')"
       />
     </div>
   </CardLayout>

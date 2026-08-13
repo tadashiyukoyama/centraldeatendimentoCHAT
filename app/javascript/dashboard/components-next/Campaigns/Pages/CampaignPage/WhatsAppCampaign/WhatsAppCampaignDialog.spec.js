@@ -2,13 +2,17 @@ import { flushPromises, shallowMount } from '@vue/test-utils';
 
 import WhatsAppCampaignDialog from './WhatsAppCampaignDialog.vue';
 import WhatsAppCampaignForm from './WhatsAppCampaignForm.vue';
-import ContactImportDialog from 'dashboard/components-next/Contacts/ContactsForm/ContactImportDialog.vue';
+import CampaignAudienceImportDialog from './CampaignAudienceImportDialog.vue';
 
-const { dispatch, useAlert, useTrack } = vi.hoisted(() => ({
-  dispatch: vi.fn(),
-  useAlert: vi.fn(),
-  useTrack: vi.fn(),
-}));
+const { dispatch, useAlert, useTrack, getAudiences, createList } = vi.hoisted(
+  () => ({
+    dispatch: vi.fn(),
+    useAlert: vi.fn(),
+    useTrack: vi.fn(),
+    getAudiences: vi.fn(),
+    createList: vi.fn(),
+  })
+);
 
 vi.mock('dashboard/composables/store', () => ({
   useStore: () => ({ dispatch }),
@@ -23,6 +27,13 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: key => key }),
 }));
 
+vi.mock('dashboard/api/campaignAudiences', () => ({
+  default: {
+    get: getAudiences,
+    createList,
+  },
+}));
+
 const campaignDetails = {
   title: 'Prospecção autorizada',
   message: 'Olá, {{contact.name}}!',
@@ -32,6 +43,7 @@ const campaignDetails = {
 describe('WhatsAppCampaignDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getAudiences.mockResolvedValue({ data: [] });
   });
 
   it('closes only after the campaign is created successfully', async () => {
@@ -63,16 +75,27 @@ describe('WhatsAppCampaignDialog', () => {
   });
 
   it('imports a contact CSV from the campaign flow', async () => {
-    dispatch.mockResolvedValue({});
+    createList.mockResolvedValue({
+      data: {
+        id: 12,
+        name: 'Leads agosto',
+        label_id: 18,
+        status: 'pending',
+        contact_count: 0,
+      },
+    });
     const wrapper = shallowMount(WhatsAppCampaignDialog);
     const file = new File(['name,phone_number,labels'], 'leads.csv', {
       type: 'text/csv',
     });
 
-    wrapper.findComponent(ContactImportDialog).vm.$emit('import', file);
+    wrapper.findComponent(CampaignAudienceImportDialog).vm.$emit('import', {
+      name: 'Leads agosto',
+      file,
+    });
     await flushPromises();
 
-    expect(dispatch).toHaveBeenCalledWith('contacts/import', file);
+    expect(createList).toHaveBeenCalledWith({ name: 'Leads agosto', file });
     expect(useAlert).toHaveBeenCalledWith(
       'CAMPAIGN.WHATSAPP.CREATE.FORM.IMPORT_LEADS.SUCCESS'
     );
@@ -80,12 +103,15 @@ describe('WhatsAppCampaignDialog', () => {
   });
 
   it('keeps the campaign form open when contact import fails', async () => {
-    dispatch.mockRejectedValue(new Error('Falha na lista'));
+    createList.mockRejectedValue({
+      response: { data: { message: 'Falha na lista' } },
+    });
     const wrapper = shallowMount(WhatsAppCampaignDialog);
 
-    wrapper
-      .findComponent(ContactImportDialog)
-      .vm.$emit('import', new File(['invalid'], 'leads.csv'));
+    wrapper.findComponent(CampaignAudienceImportDialog).vm.$emit('import', {
+      name: 'Leads',
+      file: new File(['invalid'], 'leads.csv'),
+    });
     await flushPromises();
 
     expect(useAlert).toHaveBeenCalledWith('Falha na lista');

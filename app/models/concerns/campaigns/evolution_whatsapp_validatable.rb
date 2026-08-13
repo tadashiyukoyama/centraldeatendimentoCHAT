@@ -27,10 +27,16 @@ module Campaigns::EvolutionWhatsappValidatable
 
   def validate_whatsapp_audience
     label_ids = campaign_audience_label_ids
-    valid_label_count = account.labels.where(id: label_ids).count
-    return if label_ids.any? && valid_label_count == label_ids.size
+    labels = account.labels.where(id: label_ids)
 
-    errors.add(:audience, 'must include at least one valid account label')
+    unless label_ids.any? && labels.count == label_ids.size
+      errors.add(:audience, 'must include at least one valid account label')
+      return
+    end
+
+    return if account.contacts.tagged_with(labels.pluck(:title), any: true).exists?
+
+    errors.add(:audience, 'must include at least one contact ready for delivery')
   end
 
   def validate_evolution_campaign

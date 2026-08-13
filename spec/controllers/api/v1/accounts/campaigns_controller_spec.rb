@@ -181,6 +181,8 @@ RSpec.describe 'Campaigns API', type: :request do
         channel = create(:channel_whatsapp, account: account, provider: 'evolution',
                                             validate_provider_config: false, sync_templates: false)
         label = create(:label, account: account)
+        contact = create(:contact, :with_phone_number, account: account, name: 'Lead')
+        contact.update_labels([label.title])
 
         post "/api/v1/accounts/#{account.id}/campaigns",
              params: {
@@ -206,6 +208,65 @@ RSpec.describe 'Campaigns API', type: :request do
         expect(campaign.trigger_rules['delivery_interval_min_minutes']).to eq(10)
         expect(campaign.trigger_rules['delivery_interval_max_minutes']).to eq(30)
       end
+
+      it 'rejects an Evolution campaign whose selected audience has no contacts' do
+        channel = create(:channel_whatsapp, account: account, provider: 'evolution',
+                                            validate_provider_config: false, sync_templates: false)
+        empty_label = create(:label, account: account)
+
+        post "/api/v1/accounts/#{account.id}/campaigns",
+             params: {
+               inbox_id: channel.inbox.id,
+               title: 'Empty audience',
+               message: 'Olá, {{contact.name}}!',
+               scheduled_at: 1.hour.from_now,
+               audience: [{ type: 'Label', id: empty_label.id }],
+               trigger_rules: {
+                 delivery_interval_min_minutes: 4,
+                 delivery_interval_max_minutes: 45,
+                 lawful_basis_confirmed: true
+               }
+             },
+             headers: administrator.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['message']).to include('Audience must include at least one contact ready for delivery')
+      end
+    end
+  end
+
+  describe 'GET /api/v1/accounts/{account.id}/campaigns/:id/deliveries' do
+    let(:administrator) { create(:user, account: account, role: :administrator) }
+    let(:agent) { create(:user, account: account, role: :agent) }
+    let(:campaign) { create(:campaign, account: account, trigger_rules: { url: 'https://test.com' }) }
+
+    it 'returns real-time delivery status and progress to administrators' do
+      contact = create(:contact, :with_phone_number, account: account, name: 'Marina')
+      conversation = create(:conversation, account: account, inbox: campaign.inbox, contact: contact, campaign: campaign)
+      create(:campaign_delivery, campaign: campaign, contact: contact, conversation: conversation,
+                                 status: :queued, scheduled_for: 1.minute.ago, processed_at: Time.current)
+      create(:message, account: account, inbox: campaign.inbox, conversation: conversation,
+                       message_type: :outgoing, status: :delivered,
+                       additional_attributes: { campaign_id: campaign.id })
+
+      get "/api/v1/accounts/#{account.id}/campaigns/#{campaign.display_id}/deliveries",
+          headers: administrator.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body.dig('progress', 'total')).to eq(1)
+      expect(response.parsed_body.dig('progress', 'delivered')).to eq(1)
+      expect(response.parsed_body.dig('deliveries', 0, 'status')).to eq('delivered')
+      expect(response.parsed_body.dig('deliveries', 0, 'contact', 'name')).to eq('Marina')
+    end
+
+    it 'does not expose campaign recipients to agents' do
+      get "/api/v1/accounts/#{account.id}/campaigns/#{campaign.display_id}/deliveries",
+          headers: agent.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:unauthorized)
     end
   end
 

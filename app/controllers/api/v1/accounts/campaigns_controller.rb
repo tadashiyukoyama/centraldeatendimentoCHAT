@@ -8,6 +8,11 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
 
   def show; end
 
+  def deliveries
+    service = Campaigns::DeliveryProgressService.new(campaign: @campaign)
+    render json: service.payload(page: params[:page], per_page: params[:per_page])
+  end
+
   def create
     attributes = campaign_params
     attributes[:sender_id] ||= current_user.id

@@ -27,6 +27,10 @@ RSpec.describe Whatsapp::CampaignDeliveryService do
   let(:contact) { create(:contact, account: account, name: 'Marina', phone_number: '+5511999999999') }
   let(:delivery) { create(:campaign_delivery, campaign: campaign, contact: contact, scheduled_for: Time.current) }
 
+  before do
+    contact.update_labels([label.title])
+  end
+
   it 'creates one personalized, traceable message without Meta template parameters', :aggregate_failures do
     expect do
       described_class.new(delivery: delivery).perform

@@ -19,6 +19,13 @@ import TagMultiSelectComboBox from 'dashboard/components-next/combobox/TagMultiS
 import WhatsAppTemplateParser from 'dashboard/components-next/whatsapp/WhatsAppTemplateParser.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 
+const props = defineProps({
+  campaignAudiences: {
+    type: Array,
+    default: () => [],
+  },
+});
+
 const emit = defineEmits(['submit', 'cancel', 'import']);
 
 const { t } = useI18n();
@@ -38,6 +45,7 @@ const initialState = {
   templateId: null,
   scheduledAt: null,
   selectedAudience: [],
+  audienceSource: 'list',
   message: '',
   messageVariantTwo: '',
   messageVariantThree: '',
@@ -106,8 +114,66 @@ const mapToOptions = (items, valueKey, labelKey) =>
   })) ?? [];
 
 const audienceList = computed(() =>
-  mapToOptions(formState.labels.value, 'id', 'title')
+  mapToOptions(
+    formState.labels.value.filter(
+      label =>
+        !props.campaignAudiences.some(
+          audience => Number(audience.label_id) === Number(label.id)
+        )
+    ),
+    'id',
+    'title'
+  )
 );
+
+const importedAudienceOptions = computed(() =>
+  props.campaignAudiences
+    .filter(
+      audience =>
+        ['completed', 'completed_with_errors'].includes(audience.status) &&
+        audience.contact_count > 0 &&
+        audience.label_id
+    )
+    .map(audience => ({
+      value: audience.label_id,
+      label: t('CAMPAIGN.WHATSAPP.CREATE.FORM.AUDIENCE.LIST_OPTION', {
+        name: audience.name,
+        count: audience.contact_count,
+      }),
+    }))
+);
+
+const audienceSourceOptions = computed(() => [
+  {
+    value: 'list',
+    label: t('CAMPAIGN.WHATSAPP.CREATE.FORM.AUDIENCE.SOURCE_LIST'),
+  },
+  {
+    value: 'labels',
+    label: t('CAMPAIGN.WHATSAPP.CREATE.FORM.AUDIENCE.SOURCE_LABELS'),
+  },
+]);
+
+const selectedImportedAudience = computed({
+  get: () => state.selectedAudience[0] || null,
+  set: value => {
+    state.selectedAudience = value ? [value] : [];
+  },
+});
+
+const activeAudienceImports = computed(() =>
+  props.campaignAudiences.filter(audience =>
+    ['pending', 'processing'].includes(audience.status)
+  )
+);
+
+const selectImportedAudience = labelId => {
+  state.audienceSource = 'list';
+  state.selectedAudience = [labelId];
+  v$.value.selectedAudience.$touch();
+};
+
+defineExpose({ selectImportedAudience });
 
 const inboxOptions = computed(() =>
   mapToOptions(formState.inboxes.value, 'id', 'name')
@@ -252,6 +318,13 @@ watch(
     state.messageVariantThree = '';
   }
 );
+
+watch(
+  () => state.audienceSource,
+  () => {
+    state.selectedAudience = [];
+  }
+);
 </script>
 
 <template>
@@ -384,7 +457,77 @@ watch(
       </p>
     </template>
 
-    <div class="flex flex-col gap-1">
+    <div v-if="isEvolutionInbox" class="flex flex-col gap-3">
+      <div class="flex flex-col gap-1">
+        <label
+          for="audience-source"
+          class="mb-0.5 text-sm font-medium text-n-slate-12"
+        >
+          {{ t('CAMPAIGN.WHATSAPP.CREATE.FORM.AUDIENCE.SOURCE_LABEL') }}
+        </label>
+        <ComboBox
+          id="audience-source"
+          v-model="state.audienceSource"
+          :options="audienceSourceOptions"
+          class="[&>div>button]:bg-n-alpha-black2"
+        />
+      </div>
+
+      <div v-if="state.audienceSource === 'list'" class="flex flex-col gap-1">
+        <label
+          for="imported-audience"
+          class="mb-0.5 text-sm font-medium text-n-slate-12"
+        >
+          {{ t('CAMPAIGN.WHATSAPP.CREATE.FORM.AUDIENCE.LIST_LABEL') }}
+        </label>
+        <ComboBox
+          id="imported-audience"
+          v-model="selectedImportedAudience"
+          :options="importedAudienceOptions"
+          :has-error="!!formErrors.audience"
+          :placeholder="
+            t('CAMPAIGN.WHATSAPP.CREATE.FORM.AUDIENCE.LIST_PLACEHOLDER')
+          "
+          :message="formErrors.audience"
+          class="[&>div>button]:bg-n-alpha-black2"
+        />
+        <p class="mt-1 mb-0 text-xs leading-5 text-n-slate-11">
+          {{ t('CAMPAIGN.WHATSAPP.CREATE.FORM.AUDIENCE.LIST_HELP') }}
+        </p>
+        <p
+          v-if="activeAudienceImports.length"
+          class="mt-1 mb-0 text-xs leading-5 text-n-blue-11"
+          aria-live="polite"
+        >
+          {{
+            t('CAMPAIGN.WHATSAPP.CREATE.FORM.AUDIENCE.IMPORTING', {
+              name: activeAudienceImports[0].name,
+            })
+          }}
+        </p>
+      </div>
+
+      <div v-else class="flex flex-col gap-1">
+        <label
+          for="audience"
+          class="mb-0.5 text-sm font-medium text-n-slate-12"
+        >
+          {{ t('CAMPAIGN.WHATSAPP.CREATE.FORM.AUDIENCE.LABELS_LABEL') }}
+        </label>
+        <TagMultiSelectComboBox
+          id="audience"
+          v-model="state.selectedAudience"
+          :options="audienceList"
+          :label="t('CAMPAIGN.WHATSAPP.CREATE.FORM.AUDIENCE.LABELS_LABEL')"
+          :placeholder="t('CAMPAIGN.WHATSAPP.CREATE.FORM.AUDIENCE.PLACEHOLDER')"
+          :has-error="!!formErrors.audience"
+          :message="formErrors.audience"
+          class="[&>div>button]:bg-n-alpha-black2"
+        />
+      </div>
+    </div>
+
+    <div v-else class="flex flex-col gap-1">
       <label for="audience" class="mb-0.5 text-sm font-medium text-n-slate-12">
         {{ t('CAMPAIGN.WHATSAPP.CREATE.FORM.AUDIENCE.LABEL') }}
       </label>

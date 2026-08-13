@@ -46,7 +46,7 @@ class DataImportJob < ApplicationJob
 
   def build_contact_from_row(row, contacts, rejected_contacts)
     row_hash = row.to_h.with_indifferent_access
-    labels = extract_labels(row_hash)
+    labels = labels_for_row(row_hash)
     invalid_labels = labels.map(&:downcase) - approved_labels
 
     if invalid_labels.present?
@@ -64,6 +64,16 @@ class DataImportJob < ApplicationJob
 
   def extract_labels(row_hash)
     row_hash[:labels].to_s.split(LABELS_DELIMITER).map(&:strip).reject(&:blank?)
+  end
+
+  def labels_for_row(row_hash)
+    return [campaign_audience_label.title] if @data_import.campaign_audience_import?
+
+    extract_labels(row_hash)
+  end
+
+  def campaign_audience_label
+    @campaign_audience_label ||= @data_import.account.labels.find(@data_import.campaign_audience_label_id)
   end
 
   def append_rejected_contact(row, contact, rejected_contacts)
@@ -151,7 +161,7 @@ class DataImportJob < ApplicationJob
   end
 
   def update_data_import_status(processed_records, rejected_records)
-    @data_import.update!(status: :completed, processed_records: processed_records, total_records: processed_records + rejected_records)
+    @data_import.mark_completed!(processed_records: processed_records, rejected_records: rejected_records)
   end
 
   def save_failed_records_csv(rejected_contacts)

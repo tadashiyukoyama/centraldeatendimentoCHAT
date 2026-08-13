@@ -214,7 +214,8 @@
           "SENT_FROM": "Sent from",
           "ON": "on"
         },
-        "DELIVERY_COUNTS": "Preparing: {pending} · Queued: {queued} · Skipped: {skipped} · Failed: {failed}"
+        "DELIVERY_COUNTS": "Preparing: {pending} · Queued: {queued} · Skipped: {skipped} · Failed: {failed}",
+        "TRACK": "Track"
       },
       "CREATE": {
         "TITLE": "Create WhatsApp campaign",
@@ -248,9 +249,21 @@
           "IMPORT_LEADS": {
             "LINK": "Import CSV list",
             "SAMPLE": "Download CSV template",
-            "INFO": "Use an existing label in the labels column and wait for the import to finish before the campaign schedule.",
-            "SUCCESS": "The list was submitted for import. Wait for the completion confirmation before starting the campaign.",
-            "ERROR": "The contact list could not be imported."
+            "INFO": "Import a dedicated list or use existing labels. A list is validated before it can be selected.",
+            "SUCCESS": "List received. Its import will be tracked here and selected when ready.",
+            "READY": "List ready with {count} contacts and selected as the audience.",
+            "EMPTY": "The import finished without valid contacts. Review the file and try again.",
+            "ERROR": "The contact list could not be imported.",
+            "STATUS_ERROR": "The import status could not be refreshed.",
+            "DIALOG_TITLE": "Import campaign audience",
+            "DIALOG_DESCRIPTION": "Each file becomes an identifiable, reusable list. The CSV labels column is not used to define this campaign audience.",
+            "IMPORT": "Import list",
+            "NAME_LABEL": "List name",
+            "NAME_PLACEHOLDER": "Example: August restaurant leads",
+            "FILE_LABEL": "CSV file",
+            "NO_FILE": "No file selected",
+            "CHOOSE_FILE": "Choose file",
+            "FILE_HELP": "CSV up to 10 MB. Name and phone number are required for WhatsApp delivery."
           },
           "MESSAGE": {
             "LABEL": "Primary message",
@@ -278,7 +291,16 @@
           "AUDIENCE": {
             "LABEL": "Audience",
             "PLACEHOLDER": "Select the customer labels",
-            "ERROR": "Audience is required"
+            "ERROR": "Select a ready list or at least one label with contacts",
+            "SOURCE_LABEL": "How do you want to select the audience?",
+            "SOURCE_LIST": "Imported list",
+            "SOURCE_LABELS": "Existing labels",
+            "LIST_LABEL": "Contact list",
+            "LIST_PLACEHOLDER": "Select a ready list",
+            "LIST_HELP": "Only completed lists with valid contacts can be used.",
+            "LABELS_LABEL": "Contact labels",
+            "LIST_OPTION": "{name} ({count} contacts)",
+            "IMPORTING": "Importing “{name}”… This list will appear when validation finishes."
           },
           "SCHEDULED_AT": {
             "LABEL": "Scheduled time",
@@ -293,6 +315,40 @@
             "SUCCESS_MESSAGE": "WhatsApp campaign created successfully",
             "ERROR_MESSAGE": "There was an error. Please try again."
           }
+        }
+      },
+      "PROGRESS": {
+        "TITLE": "Progress: {title}",
+        "CLOSE": "Close",
+        "COMPLETION": "Queue completion",
+        "PERCENTAGE": "{value}%",
+        "AUTO_REFRESH": "Automatically refreshed every 5 seconds",
+        "TOTAL": "Total",
+        "SENT": "Sent",
+        "SCHEDULED": "Upcoming",
+        "ERRORS": "Skipped or failed",
+        "NEXT_DELIVERY": "Next delivery scheduled for {date}",
+        "DELIVERIES": "Recipients and deliveries",
+        "CONTACT": "Contact",
+        "STATUS_LABEL": "Status",
+        "SCHEDULE": "Scheduled time",
+        "DETAIL": "Error detail",
+        "EMPTY_TITLE": "No recipients entered this campaign",
+        "EMPTY_DESCRIPTION": "The audience was empty when processing started. No messages were sent.",
+        "LOAD_ERROR": "Campaign progress could not be loaded.",
+        "RETRY": "Try again",
+        "PREVIOUS": "Previous",
+        "NEXT": "Next",
+        "PAGE": "Page {current} of {total}",
+        "STATUS": {
+          "PENDING": "Scheduled",
+          "PROCESSING": "Processing",
+          "QUEUED": "Queued",
+          "SENT": "Sent",
+          "DELIVERED": "Delivered",
+          "READ": "Read",
+          "SKIPPED": "Skipped",
+          "FAILED": "Failed"
         }
       }
     },

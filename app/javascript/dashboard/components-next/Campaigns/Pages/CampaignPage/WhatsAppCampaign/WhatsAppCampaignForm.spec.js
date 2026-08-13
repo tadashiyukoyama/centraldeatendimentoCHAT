@@ -5,7 +5,6 @@ import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import ComboBox from 'dashboard/components-next/combobox/ComboBox.vue';
-import TagMultiSelectComboBox from 'dashboard/components-next/combobox/TagMultiSelectComboBox.vue';
 import WhatsAppTemplateParser from 'dashboard/components-next/whatsapp/WhatsAppTemplateParser.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 
@@ -70,9 +69,7 @@ describe('WhatsAppCampaignForm', () => {
     inputs[1].vm.$emit('update:modelValue', 10);
     inputs[2].vm.$emit('update:modelValue', 30);
     inputs[3].vm.$emit('update:modelValue', '2026-08-13T12:00');
-    wrapper
-      .findComponent(TagMultiSelectComboBox)
-      .vm.$emit('update:modelValue', [9]);
+    wrapper.vm.selectImportedAudience(9);
     wrapper.findComponent(Checkbox).vm.$emit('update:modelValue', true);
     await flushPromises();
 
@@ -131,9 +128,7 @@ describe('WhatsAppCampaignForm', () => {
     inputs[1].vm.$emit('update:modelValue', 20);
     inputs[2].vm.$emit('update:modelValue', 20);
     inputs[3].vm.$emit('update:modelValue', '2026-08-13T12:00');
-    wrapper
-      .findComponent(TagMultiSelectComboBox)
-      .vm.$emit('update:modelValue', [9]);
+    wrapper.vm.selectImportedAudience(9);
     wrapper.findComponent(Checkbox).vm.$emit('update:modelValue', true);
     await flushPromises();
 

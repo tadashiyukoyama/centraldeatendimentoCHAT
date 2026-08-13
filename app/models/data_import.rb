@@ -33,6 +33,9 @@
 #
 class DataImport < ApplicationRecord
   ACTIVE_INTERCOM_IMPORT_RUN_ID_KEY = 'active_intercom_import_run_id'.freeze
+  CAMPAIGN_AUDIENCE_KIND = 'campaign_audience'.freeze
+  CAMPAIGN_AUDIENCE_KIND_KEY = 'kind'.freeze
+  CAMPAIGN_AUDIENCE_LABEL_ID_KEY = 'label_id'.freeze
   LEGACY_DATA_TYPES = ['contacts'].freeze
   INTEGRATION_DATA_TYPES = ['intercom'].freeze
   IMPORT_TYPES = %w[contacts conversations].freeze
@@ -61,6 +64,23 @@ class DataImport < ApplicationRecord
 
   def legacy_contacts_csv_import?
     data_type == 'contacts' && source_provider.blank?
+  end
+
+  def campaign_audience_import?
+    legacy_contacts_csv_import? && source_metadata.to_h[CAMPAIGN_AUDIENCE_KIND_KEY] == CAMPAIGN_AUDIENCE_KIND
+  end
+
+  def campaign_audience_label_id
+    source_metadata.to_h[CAMPAIGN_AUDIENCE_LABEL_ID_KEY]
+  end
+
+  def mark_completed!(processed_records:, rejected_records:)
+    update!(
+      status: rejected_records.positive? ? :completed_with_errors : :completed,
+      processed_records: processed_records,
+      total_records: processed_records + rejected_records,
+      stats: stats.to_h.merge('imported_records' => processed_records, 'rejected_records' => rejected_records)
+    )
   end
 
   def intercom_import?

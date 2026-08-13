@@ -301,6 +301,8 @@ RSpec.describe Campaign do
       channel = create(:channel_whatsapp, account: account, provider: 'evolution',
                                           validate_provider_config: false, sync_templates: false)
       label = create(:label, account: account)
+      contact = create(:contact, :with_phone_number, account: account, name: 'Lead')
+      contact.update_labels([label.title])
       sender = create(:user, account: account)
       campaign = build(
         :campaign,

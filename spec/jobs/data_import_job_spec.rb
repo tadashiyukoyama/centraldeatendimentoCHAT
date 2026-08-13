@@ -282,6 +282,44 @@ RSpec.describe DataImportJob do
         expect(unknown_label_import.reload.failed_records).to be_attached
         expect(unknown_label_import.failed_records.download).to include('Unknown labels: unknown_label')
       end
+
+      it 'uses the dedicated campaign list label and ignores source labels for campaign audience imports' do
+        campaign_data = [
+          %w[id name email phone_number labels],
+          ['1', 'Lead One', 'lead-one@example.com', '+5511999999901', 'unknown source classification'],
+          ['2', 'Lead Two', 'lead-two@example.com', '+5511999999902', 'another unknown classification']
+        ]
+        campaign_import = create(:data_import, account: labels_data_import.account,
+                                               name: 'August leads',
+                                               import_file: generate_csv_file(campaign_data))
+        list_label = create(:label, account: labels_data_import.account, title: "campaign_list_#{campaign_import.id}")
+        campaign_import.update!(source_metadata: {
+                                  DataImport::CAMPAIGN_AUDIENCE_KIND_KEY => DataImport::CAMPAIGN_AUDIENCE_KIND,
+                                  DataImport::CAMPAIGN_AUDIENCE_LABEL_ID_KEY => list_label.id
+                                })
+
+        described_class.perform_now(campaign_import)
+
+        expect(campaign_import.reload).to be_completed
+        expect(campaign_import.processed_records).to eq(2)
+        expect(campaign_import.stats).to include('imported_records' => 2, 'rejected_records' => 0)
+        expect(labels_data_import.account.contacts.tagged_with(list_label.title).count).to eq(2)
+      end
+
+      it 'marks imports with rejected rows as completed with errors' do
+        invalid_data = [
+          %w[id name email phone_number],
+          ['1', 'Valid Lead', 'valid-lead@example.com', '+5511999999903'],
+          ['2', '', '', 'invalid-phone']
+        ]
+        import_with_rejection = create(:data_import, account: labels_data_import.account,
+                                                     import_file: generate_csv_file(invalid_data))
+
+        described_class.perform_now(import_with_rejection)
+
+        expect(import_with_rejection.reload).to be_completed_with_errors
+        expect(import_with_rejection.stats['rejected_records']).to eq(1)
+      end
     end
   end
 end
