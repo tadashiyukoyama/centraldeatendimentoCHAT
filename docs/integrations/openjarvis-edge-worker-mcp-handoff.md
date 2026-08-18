@@ -14,9 +14,11 @@ O resultado deve permitir simultaneamente:
 1. OpenJarvis Core na VPS delegar jobs para um Edge Worker no computador por WSS.
 2. Edge Worker usar o Codex app-server local para tarefas aprovadas.
 3. Codex local consumir ferramentas OpenJarvis por MCP STDIO.
-4. ChatGPT remoto consumir um subconjunto seguro por MCP Streamable HTTP, quando
-   habilitado.
-5. AceleraChat permanecer a autoridade de e-mail, WhatsApp, contatos e
+4. Tablet/desktop consumir a PWA `/jarvis`, Agent Core, eventos e Gemini Live na
+   VPS.
+5. ChatGPT remoto consumir um subconjunto seguro por MCP Streamable HTTP apenas
+   em fase opcional posterior com plugin/autenticação adequados.
+6. AceleraChat permanecer a autoridade de e-mail, WhatsApp, contatos e
    conversas.
 
 ## 2. Estado de entrada comprovado
@@ -54,8 +56,26 @@ Componentes existentes que devem ser reaproveitados:
 - integração existente com o Codex app-server.
 
 O `src/openjarvis/server/ws_bridge.py` atual encaminha EventBus para clientes
-WebSocket. Ele não comprova o canal Edge Worker outbound, lease, retomada ou fila
-durável exigidos aqui.
+WebSocket. Ele não comprova o canal Edge Worker outbound, lease, retomada ou o
+ledger durável de jobs já aceitos/resultados exigido aqui.
+
+O `src/openjarvis/mcp/server.py` atual também não é a fachada aprovada: ele
+autodetecta ferramentas antigas e chama `ToolExecutor` diretamente. Protocolo e
+transporte podem ser reaproveitados, mas `tools/call` deve entrar no Agent Core
+canônico, passando por catálogo, política, proposta, aprovação, idempotência,
+execução e auditoria.
+
+Fluxo obrigatório:
+
+```text
+MCP -> Agent Core canônico -> política -> aprovação -> adaptador
+```
+
+Fluxo proibido:
+
+```text
+MCP -> ToolExecutor legado -> execução direta
+```
 
 ## 3. Fronteiras obrigatórias
 
@@ -71,6 +91,10 @@ durável exigidos aqui.
 - Não incluir segredos em testes, fixtures, logs, docs ou Git.
 - Não instalar na VPS antes de produzir SHA limpo, artefato reproduzível e
   rollback.
+- Não manter dois Agent Cores: o Core da VPS é a única autoridade de sessões,
+  ações, aprovações, jobs, catálogo e histórico operacional.
+- Não guardar comando Codex aprovado para execução automática quando o worker
+  voltar a ficar online.
 
 ## 4. Catálogo canônico
 
@@ -110,9 +134,11 @@ O MCP apresentado ao Codex local deve filtrar todas as ferramentas cujo
 ferramentas, ainda sujeito a capacidades reais e permissões. O catálogo global
 continua com 16.
 
-O MCP remoto do ChatGPT pode oferecer delegação ao Codex somente depois que Edge
+O MCP remoto opcional pode oferecer delegação ao Codex somente depois que Edge
 Worker, aprovação, identidade e auditoria estiverem ativos. Essa ferramenta deve
-ser omitida quando nenhum worker autorizado estiver conectado.
+ser omitida quando nenhum worker autorizado estiver conectado. Publicar `/mcp`
+não torna o ChatGPT Web automaticamente compatível: o uso web depende de plugin
+MCP remoto e controles do workspace.
 
 ## 5. Edge Worker outbound
 
@@ -126,7 +152,8 @@ ser omitida quando nenhum worker autorizado estiver conectado.
 - Heartbeat com timeout e estado offline real.
 - Backoff exponencial com jitter e limite.
 - Retomada após reconexão usando cursor/sequence persistido.
-- Limite de payload e fila local.
+- Limite de payload e spool local somente para eventos/resultados de job já
+  aceito ou concluído; não criar fila local de comandos Codex pendentes.
 
 ### 5.2 Envelope mínimo
 
@@ -184,7 +211,8 @@ Core → Cliente:
 ### 5.4 Estados de job
 
 ```text
-queued
+proposed
+  -> approved
   -> offered
   -> accepted
   -> running
@@ -197,6 +225,11 @@ Regras:
 
 - somente estados terminais encerram o lease;
 - perda de conexão não significa falha automática;
+- se o worker estiver offline antes de `offered/accepted`, a delegação termina
+  em `DEVICE_OFFLINE`; ela não fica aguardando reconexão;
+- quando o dispositivo voltar, o usuário cria e aprova uma nova proposta;
+- reconexão pode reconciliar somente job já aceito/iniciado e entregar resultado
+  concluído que ainda não chegou ao Core;
 - Core não oferece o mesmo job simultaneamente a dois workers, salvo política
   explícita de reentrega após lease expirado;
 - reentrega mantém o `job_id` e uma attempt separada;
@@ -224,7 +257,8 @@ Implementar uma fronteira separada do frontend local:
 
 - registry de dispositivos;
 - credenciais atuais e anteriores com expiração;
-- fila persistente de jobs;
+- persistência de jobs aceitos/em execução e resultados; delegações Codex não
+  ficam em fila oculta aguardando worker offline;
 - leases e attempts;
 - ledger de eventos/deduplicação;
 - sequência por job/dispositivo;
@@ -240,7 +274,29 @@ O Core não deve montar Docker socket, diretório AceleraChat, credenciais SSH o
 filesystem do host. A comunicação com AceleraChat ocorre apenas pela API HTTPS
 publicada.
 
-## 7. MCP local para Codex
+O Core da VPS é a única autoridade para sessões, ações, aprovações, jobs,
+catálogo, timeline e histórico operacional. O Edge local não mantém um
+orquestrador concorrente; ele executa uma oferta válida e reporta estado.
+
+## 7. Interface `/jarvis` na VPS
+
+O release deve servir a interface já existente para tablet, desktop e PWA:
+
+- frontend em `/jarvis`;
+- Agent Core sob `/v1/jarvis/agent/*`;
+- SSE canônico em `/v1/jarvis/agent/events` e poll de reconciliação;
+- Gemini Live status em `/v1/jarvis/live/status`;
+- token curto, de uso único, em `POST /v1/jarvis/live/token`;
+- eventos Gemini em `/v1/jarvis/live/events`;
+- autenticação da interface, API e streams;
+- worker/capability offline visível sem falso estado conectado;
+- aprovações visuais vinculadas ao payload exato.
+
+A chave longa Gemini permanece no servidor. O navegador recebe apenas token
+efêmero. O gateway deve preservar SSE/streaming e não expor APIs administrativas
+desnecessárias.
+
+## 8. MCP local para Codex
 
 A documentação oficial suporta servidor local STDIO iniciado pelo Codex. Usar
 esse transporte como padrão.
@@ -251,12 +307,21 @@ Requisitos:
 - filtrar ferramentas pela capability snapshot da sessão;
 - remover todas as ferramentas `codex.*` da superfície entregue ao Codex;
 - converter `ToolDefinition` para MCP `tools/list` e `tools/call`;
+- criar uma fachada nova e fina para o Agent Core; não reutilizar a execução
+  direta de `ToolExecutor` do MCP legado;
+- toda mutação atravessa proposta, decisão visual, idempotência e auditoria do
+  Agent Core;
 - preservar JSON Schema fechado, limites e descrições;
 - adicionar annotations de leitura/mutação/destrutividade;
 - incluir `instructions` curtas com aprovação, rate limit e proibição de
   recursão;
 - mapear erros estáveis sem stack trace;
-- não iniciar frontend, app-server ou outro worker para responder ao MCP;
+- executar o Edge Worker como serviço Windows persistente e independente do
+  processo MCP;
+- o processo MCP STDIO comunica-se com o Edge/Agent Core por named pipe ou
+  loopback autenticado;
+- não iniciar, encerrar ou controlar frontend, app-server ou Edge Worker para
+  responder ao MCP;
 - stdout reservado ao protocolo; logs somente em stderr ou arquivo redigido;
 - encerramento gracioso quando o Codex fecha STDIO.
 
@@ -276,9 +341,10 @@ Testes mínimos:
 - erro de configuração não imprime segredo;
 - protocolo não é corrompido por logs.
 
-## 8. MCP remoto para ChatGPT
+## 9. MCP remoto para ChatGPT — fase opcional
 
-Implementar apenas no Core da VPS e atrás de HTTPS.
+Não é bloqueador do Edge Worker, PWA ou Codex local. Implementar apenas quando a
+fase ChatGPT remoto for autorizada, no Core da VPS e atrás de HTTPS.
 
 - Transporte: Streamable HTTP.
 - Endpoint: `/mcp`.
@@ -293,10 +359,11 @@ Implementar apenas no Core da VPS e atrás de HTTPS.
 - `codex.delegate` só aparece com Edge Worker elegível e online.
 - nenhum segredo em URL, query ou browser storage inseguro.
 
-O MCP remoto não é necessário para o Codex local. Ele é necessário somente para
-ChatGPT/consumidor remoto.
+O MCP remoto não é necessário para o Codex local. ChatGPT Web não lê a
+configuração MCP local do Codex; ele usa ferramentas remotas por plugin. Portanto
+o endpoint pode permanecer desabilitado no primeiro corte.
 
-## 9. Mapeamento AceleraChat
+## 10. Mapeamento AceleraChat
 
 Não codificar rotas ou capacidades duplicadas. Descobrir o catálogo e health do
 AceleraChat.
@@ -331,7 +398,7 @@ Capacidades formalmente não suportadas não podem aparecer no MCP ou UI:
   broadcast e voz;
 - e-mail: composição nova, upload de anexos, archive e trash.
 
-## 10. Autenticação e rotação
+## 11. Autenticação e rotação
 
 Quatro fronteiras independentes:
 
@@ -346,7 +413,7 @@ Nunca reutilizar uma credencial em outra fronteira. Implementar sobreposição d
 credencial anterior por período limitado, revogação imediata e auditoria sem
 valor completo.
 
-## 11. Persistência e retenção
+## 12. Persistência e retenção
 
 Definir migrations/versionamento para:
 
@@ -367,7 +434,11 @@ Valores recomendados a validar:
 - heartbeat efêmero: não persistir indefinidamente;
 - credencial anterior: expiração explícita, preferencialmente 24 horas.
 
-## 12. Segurança
+Não persistir comando Codex aprovado para execução futura após
+`DEVICE_OFFLINE`. Persistência de job serve para execução já aceita,
+reconciliação, resultado terminal e auditoria.
+
+## 13. Segurança
 
 - schemas fechados e limites de tamanho;
 - allowlist de ferramentas por identidade;
@@ -384,7 +455,7 @@ Valores recomendados a validar:
 - approvals persistidas e vinculadas ao conteúdo exato;
 - testes de isolamento entre contas, caixas, sessões e dispositivos.
 
-## 13. Testes obrigatórios
+## 14. Testes obrigatórios
 
 ### Unitários/contratuais
 
@@ -398,6 +469,9 @@ Valores recomendados a validar:
 - cancelamento;
 - approval;
 - provider offline;
+- `DEVICE_OFFLINE` sem fila ou execução posterior;
+- fechar MCP/Codex não derruba Edge Worker;
+- MCP nunca alcança `ToolExecutor` legado;
 - cursor/backfill AceleraChat;
 - unknown result;
 - rate limit;
@@ -413,7 +487,8 @@ Valores recomendados a validar:
 - reinício do worker;
 - Codex app-server fake e real somente com status/read;
 - MCP STDIO real com Codex em projeto de teste;
-- MCP HTTP autenticado;
+- PWA `/jarvis`, autenticação, SSE e token efêmero Gemini;
+- MCP HTTP autenticado somente se a fase opcional for incluída;
 - webhook AceleraChat assinado usando fixture sanitizada;
 - nenhum envio externo.
 
@@ -428,35 +503,40 @@ Valores recomendados a validar:
 - `git diff --check`;
 - instalação limpa reproduzida sem `node_modules` copiado.
 
-## 14. Entregáveis do agente OpenJarvis
+## 15. Entregáveis do agente OpenJarvis
 
 1. Branch limpa e SHA final.
 2. Lista de arquivos alterados.
 3. Edge Worker implementado.
 4. Core WSS implementado.
 5. MCP local conectado ao catálogo.
-6. MCP remoto, se incluído, com auth e streaming.
-7. Schemas e fixtures dos frames Edge.
-8. Migrations e retenção.
-9. Compose/Dockerfile de produção.
-10. Arquivo `.env.example` sem segredos.
-11. Runbook de instalação e atualização.
-12. Runbook de rotação/revogação.
-13. Testes e resultados.
-14. Rollback para SHA anterior.
-15. Confirmação de nenhum envio real.
-16. Lista explícita de bloqueadores restantes.
+6. PWA `/jarvis`, APIs, SSE e Gemini Live preparados para a VPS.
+7. MCP remoto, se incluído, com auth e streaming.
+8. Schemas e fixtures dos frames Edge.
+9. Migrations e retenção.
+10. Compose/Dockerfile de produção.
+11. Arquivo `.env.example` sem segredos.
+12. Runbook de instalação e atualização.
+13. Runbook de rotação/revogação.
+14. Testes e resultados.
+15. Rollback para SHA anterior.
+16. Confirmação de nenhum envio real.
+17. Lista explícita de bloqueadores restantes.
 
-Não declarar “pronto para produção” enquanto Edge Worker, Core, MCP local,
-artefato reproduzível, rollback e testes de reconexão não estiverem concluídos.
+Não declarar “pronto para produção” enquanto Edge Worker, Core, PWA, MCP local,
+artefato reproduzível, rollback e testes de reconexão/offline não estiverem
+concluídos.
 
-## 15. Gate para a instalação na VPS
+## 16. Gate para a instalação na VPS
 
 O lado OpenJarvis será aceito para instalação somente quando:
 
 - `git status` estiver limpo;
 - SHA final estiver publicado/reproduzível;
 - testes direcionados estiverem verdes;
+- PWA, Agent Core, SSE e token Gemini estiverem incluídos no artefato;
+- offline Codex retornar `DEVICE_OFFLINE`, sem fila automática;
+- MCP usar Agent Core e não `ToolExecutor` legado;
 - imagem e digest existirem;
 - Compose não tocar serviços ICP/AceleraChat;
 - variáveis privadas estiverem documentadas sem valores;
@@ -468,7 +548,7 @@ O lado OpenJarvis será aceito para instalação somente quando:
 Depois disso, seguir
 `docs/integrations/openjarvis-vps-release-runbook.md`.
 
-## 16. Manifesto privado
+## 17. Manifesto privado
 
 O agente deve consultar, sem imprimir, o arquivo:
 

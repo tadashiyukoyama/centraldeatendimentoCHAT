@@ -40,6 +40,8 @@ Limites obrigatórios:
 - SHA da implementação: `23487c8e7c92ae40d884105ca450809cde118598`.
 - SHA do relatório/handoff antes destes runbooks:
   `612244e1e9e2e2edb88e1bbd5ffeab071a7b9f43`.
+- SHA da primeira versão dos runbooks:
+  `b0ca12a706f23c371cb39e98f8367ecd18793404`.
 - Contrato: `2026-08-18.2`.
 - Schema de webhook: `1.0`.
 - Rollback lógico documentado: imagem correspondente ao SHA
@@ -68,12 +70,14 @@ manual ou diretório `node_modules` local.
 
 ```mermaid
 flowchart LR
+    TB["Tablet / PWA"] -->|"HTTPS"| OJ["OpenJarvis Core na VPS"]
     AC["AceleraChat na VPS"] -->|"HTTPS + Bearer"| OJ["OpenJarvis Core na VPS"]
     AC -->|"webhook HMAC"| OJ
-    CH["ChatGPT remoto"] -->|"MCP Streamable HTTP"| OJ
+    CH["ChatGPT remoto / plugin opcional"] -.->|"MCP Streamable HTTP — fase posterior"| OJ
     OJ -->|"jobs por WSS"| EW["OpenJarvis Edge Worker no Windows"]
     EW -->|"thread/resume + turn/start"| CX["Codex app-server local"]
-    CX -->|"MCP STDIO"| EW
+    CX -->|"MCP STDIO filtrado"| MF["Fachada MCP local"]
+    MF -->|"named pipe ou loopback"| EW
 ```
 
 Responsabilidades:
@@ -81,10 +85,15 @@ Responsabilidades:
 | Componente | Responsabilidade | Não deve fazer |
 | --- | --- | --- |
 | AceleraChat | Autoridade sobre contatos, conversas, caixas, WhatsApp, Instagram e e-mail de atendimento | Expor shell, credenciais de provedor ou recursos fora da allowlist |
-| OpenJarvis Core | Catálogo, jobs, auditoria, webhook, MCP remoto e coordenação dos Edge Workers | Afirmar que um worker offline está disponível |
-| Edge Worker | Conexão de saída, execução local autorizada e integração com Codex app-server | Abrir porta de entrada no roteador ou publicar a porta 8131 |
-| MCP local | Dar ao Codex acesso tipado às ferramentas OpenJarvis | Acordar o Codex, delegar para ele mesmo ou expor comando genérico |
+| OpenJarvis Core | Autoridade única de sessões, ações, aprovações, jobs, catálogo, timeline, webhook e coordenação dos Edge Workers | Afirmar que um worker offline está disponível ou criar outro orquestrador local |
+| Edge Worker | Serviço Windows persistente, conexão de saída e execução local autorizada via Codex app-server | Guardar comando aprovado para executar quando o computador voltar ou publicar a porta 8131 |
+| MCP local | Fachada STDIO fina entre Codex e Agent Core/Edge já ativos | Iniciar/controlar o Edge Worker, usar `ToolExecutor` legado ou delegar para o próprio Codex |
 | Codex app-server | Executar e retomar tarefas Codex locais | Ser publicado no OpenResty ou internet |
+
+O OpenJarvis Core da VPS é a única autoridade para sessões, ações, aprovações,
+jobs, catálogo e histórico operacional. O Edge Worker é apenas executor de
+capacidades dependentes do computador. Não pode existir um segundo Agent Core
+independente no Windows.
 
 A documentação oficial do Codex reconhece MCP local por STDIO e remoto por
 Streamable HTTP com Bearer ou OAuth:
@@ -103,8 +112,15 @@ Streamable HTTP com Bearer ou OAuth:
 ### Planejados
 
 - Host público OpenJarvis: `openjarvis.meugerenciador.pro`.
+- PWA autenticada: `https://openjarvis.meugerenciador.pro/jarvis`.
 - Health mínimo: `GET https://openjarvis.meugerenciador.pro/healthz`.
-- MCP remoto, quando habilitado: `https://openjarvis.meugerenciador.pro/mcp`.
+- Agent Core: `https://openjarvis.meugerenciador.pro/v1/jarvis/agent/*`.
+- Eventos Agent Core: `GET https://openjarvis.meugerenciador.pro/v1/jarvis/agent/events`.
+- Gemini Live status/token/eventos:
+  `/v1/jarvis/live/status`, `/v1/jarvis/live/token` e
+  `/v1/jarvis/live/events`.
+- MCP remoto opcional e posterior:
+  `https://openjarvis.meugerenciador.pro/mcp`.
 - Edge Worker: `wss://openjarvis.meugerenciador.pro/edge`.
 - Callback AceleraChat:
   `https://openjarvis.meugerenciador.pro/v1/jarvis/agent/providers/acelerachat/webhooks`.
@@ -119,6 +135,8 @@ TLS, autenticação e smoke real.
 - working tree limpo e SHA final registrado;
 - Edge Worker WSS implementado e testado;
 - catálogo canônico conectado ao MCP local;
+- PWA `/jarvis`, autenticação, Agent Core, eventos e token efêmero Gemini
+  preparados para execução na VPS;
 - imagem/artefato reproduzível para o Core da VPS;
 - manifesto de variáveis sem valores secretos;
 - migração de persistência versionada, quando necessária;
@@ -178,6 +196,7 @@ O agente OpenJarvis deve entregar antes da instalação:
 
 - `Dockerfile` ou imagem imutável;
 - arquivo Compose separado dos serviços AceleraChat;
+- frontend/PWA `/jarvis` construído e servido pelo release da VPS;
 - health check interno;
 - processo sem privilégios;
 - filesystem somente leitura onde possível;
@@ -195,7 +214,9 @@ registrado pelo agente; não reutilizar `/opt/central-atendimento` para estado o
 Compose do OpenJarvis.
 
 O Core deve subir inicialmente desabilitado para mutações externas. Health,
-catálogo, receiver HMAC, MCP e Edge podem ser validados sem enviar mensagens.
+catálogo, receiver HMAC, PWA, Agent Core, Edge e MCP local podem ser validados
+sem enviar mensagens. MCP remoto é uma fase opcional e não bloqueia o Codex
+local.
 
 ## 8. OpenResty, TLS e DNS
 
@@ -205,8 +226,14 @@ Requisitos do virtual host `openjarvis.meugerenciador.pro`:
 
 - TLS válido e redirecionamento HTTP para HTTPS;
 - upstream privado do OpenJarvis Core;
+- `/jarvis` e assets PWA sob autenticação da interface;
+- `/v1/jarvis/agent/*` sob a mesma identidade da interface, preservando SSE;
+- `/v1/jarvis/live/status`, `/v1/jarvis/live/token` e
+  `/v1/jarvis/live/events` sob autenticação; a chave Gemini longa nunca chega ao
+  navegador;
 - `/healthz` com resposta mínima, sem versões internas ou segredos;
-- `/mcp` somente com autenticação e suporte a streaming;
+- `/mcp` desabilitado por padrão; quando a fase remota for autorizada, usar
+  autenticação própria e suporte a streaming;
 - `/edge` com upgrade WebSocket, timeout longo e autenticação do dispositivo;
 - callback AceleraChat sem Basic Auth de navegador, porque usa HMAC no corpo;
 - limite de corpo de `1 MiB` no callback;
@@ -214,7 +241,8 @@ Requisitos do virtual host `openjarvis.meugerenciador.pro`:
 - `proxy_buffering off` apenas nas rotas de streaming;
 - logs sem query strings, Authorization ou assinatura HMAC;
 - demais caminhos negados por padrão;
-- UI administrativa não publicada neste corte.
+- publicar apenas a PWA `/jarvis` e as APIs mínimas necessárias; painéis
+  administrativos genéricos permanecem privados.
 
 Para o Edge Worker não é necessário túnel reverso: o worker inicia WSS de saída
 pela porta `443`. Cloudflare Quick Tunnel permanece proibido para produção.
@@ -288,8 +316,9 @@ arquivo privado indicado pelo manifesto e nunca em issue, commit ou relatório.
 8. Backfill inicial exclusivamente de leitura.
 9. Edge Worker conecta e anuncia capacidades reais.
 10. MCP local lista somente ferramentas elegíveis.
-11. MCP remoto, se necessário, é testado com identidade sem mutação.
-12. Janela de rollback permanece aberta até todos os smokes terminarem.
+11. PWA `/jarvis`, SSE e token efêmero Gemini são validados.
+12. MCP remoto só é testado se sua fase opcional foi explicitamente incluída.
+13. Janela de rollback permanece aberta até todos os smokes terminarem.
 
 ## 12. Smoke controlado sem mutação
 
@@ -324,13 +353,29 @@ arquivo privado indicado pelo manifesto e nunca em issue, commit ou relatório.
 
 - worker abre somente conexão de saída;
 - registro, heartbeat e reconexão funcionam;
-- job sintético de leitura percorre fila e termina sem chamar canal;
+- job sintético de leitura é oferecido somente com worker online;
+- tentativa de delegação com worker offline termina imediatamente em
+  `DEVICE_OFFLINE` e exige nova proposta/aprovação quando o dispositivo voltar;
+- reconexão recupera apenas job já aceito/iniciado e entrega resultado já
+  concluído, sem executar comando antigo ocultamente;
 - job duplicado não executa duas vezes;
 - worker offline aparece como indisponível;
 - porta `8131` continua ligada apenas a loopback;
 - MCP STDIO inicializa e lista ferramentas;
+- fechar/reiniciar o Codex ou sua fachada MCP não encerra o serviço Edge;
+- `tools/call` atravessa o Agent Core canônico e nunca o `ToolExecutor` legado;
 - MCP do Codex não inclui `codex_delegate_task` nem ferramentas `codex.*`;
 - nenhuma ferramenta mutável executa sem aprovação.
+
+### PWA e acesso remoto
+
+- `/jarvis` carrega em desktop, tablet e celular;
+- autenticação da interface protege HTML, APIs e streams;
+- sessão, ação, aprovação, job e timeline vêm do mesmo Core da VPS;
+- SSE conecta, reconcilia e retoma sem duplicar eventos;
+- token Gemini é curto, de uso único e não revela a chave longa;
+- worker offline é apresentado como indisponível;
+- nenhuma UI oferece execução automática posterior de comando aprovado.
 
 ## 13. Primeiro smoke mutável
 
