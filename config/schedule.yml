@@ -82,6 +82,13 @@ instagram_comment_automation_retention_job:
   class: 'Instagram::CommentAutomation::RetentionJob'
   queue: purgable
 
+# Removes expired OpenJarvis idempotency responses and webhook delivery metadata.
+# Credential overlap is also cleared after the documented 24-hour grace period.
+openjarvis_retention_job:
+  cron: '45 2 * * *'
+  class: 'Openjarvis::RetentionJob'
+  queue: purgable
+
 # executed every 12 hours
 # to remove orphan conversations without contact
 remove_orphan_conversations_job:

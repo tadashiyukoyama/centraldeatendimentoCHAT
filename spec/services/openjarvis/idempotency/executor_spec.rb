@@ -41,4 +41,15 @@ RSpec.describe Openjarvis::Idempotency::Executor do
 
     expect { invalid.execute }.to raise_error(Openjarvis::ApiError, /8 to 128/)
   end
+
+  it 'reports an in-progress duplicate as an unknown result' do
+    hook.openjarvis_api_requests.create!(
+      idempotency_key: 'contact-0001', operation: 'contacts.create',
+      request_digest: Digest::SHA256.hexdigest(JSON.generate(payload.deep_stringify_keys))
+    )
+
+    expect { executor.execute }.to raise_error(Openjarvis::ApiError) do |error|
+      expect(error).to have_attributes(code: 'request_in_progress', retryable: true, result_state: 'unknown')
+    end
+  end
 end

@@ -1,0 +1,229 @@
+{
+  "catalog.get": {
+    "response": {
+      "name": "AceleraChat OpenJarvis API",
+      "version": "2026-08-18.2"
+    }
+  },
+  "openapi.get": {
+    "response": { "content_type": "application/yaml", "openapi": "3.1.0" }
+  },
+  "health.get": {
+    "response": {
+      "status": "ok",
+      "checked_at": "2026-08-18T12:00:00Z",
+      "release": "sanitized-release-sha"
+    }
+  },
+  "diagnostics.get": {
+    "response": {
+      "status": "ok",
+      "dependencies": { "postgres": "ok", "redis": "ok", "sidekiq": "ok" }
+    }
+  },
+  "operations.list": {
+    "response": { "api_requests": [], "webhook_deliveries": [] }
+  },
+  "inboxes.list": {
+    "response": {
+      "data": [
+        {
+          "id": 15,
+          "name": "Example Website",
+          "channel_type": "Channel::WebWidget",
+          "connection": { "state": "active", "connected": true },
+          "capabilities": {}
+        }
+      ]
+    }
+  },
+  "inboxes.health": {
+    "response": {
+      "data": {
+        "inbox_id": 19,
+        "channel_type": "Channel::Whatsapp",
+        "connection": {
+          "state": "connected",
+          "connected": true,
+          "source": "whatsapp_evolution_provisioning"
+        },
+        "capabilities": {
+          "messages.reaction": { "supported": false, "mode": "not_supported" }
+        }
+      }
+    }
+  },
+  "agents.list": {
+    "response": {
+      "data": [
+        {
+          "id": 7,
+          "name": "Example Agent",
+          "email": "agent@example.test",
+          "role": "agent"
+        }
+      ]
+    }
+  },
+  "teams.list": {
+    "response": {
+      "data": [{ "id": 3, "name": "support", "allow_auto_assign": true }]
+    }
+  },
+  "labels.list": {
+    "response": {
+      "data": [{ "id": 9, "title": "qualified-lead", "color": "#2563EB" }]
+    }
+  },
+  "contacts.search": {
+    "response": {
+      "data": [],
+      "meta": {
+        "limit": 25,
+        "returned": 0,
+        "has_more": false,
+        "next_cursor": null
+      }
+    }
+  },
+  "contacts.get": {
+    "response": {
+      "data": {
+        "id": 41,
+        "name": "Example Customer",
+        "email": "customer@example.test",
+        "contact_type": "lead"
+      }
+    }
+  },
+  "contacts.create": {
+    "request": {
+      "contact": {
+        "name": "Example Customer",
+        "email": "customer@example.test",
+        "phone_number": "+5511999990000",
+        "contact_type": "lead"
+      }
+    },
+    "response": { "data": { "id": 41, "contact_type": "lead" } }
+  },
+  "contacts.update": {
+    "request": { "contact": { "contact_type": "customer" } },
+    "response": { "data": { "id": 41, "contact_type": "customer" } }
+  },
+  "conversations.search": {
+    "response": {
+      "data": [],
+      "meta": {
+        "limit": 25,
+        "returned": 0,
+        "has_more": false,
+        "next_cursor": null
+      }
+    }
+  },
+  "conversations.get": {
+    "response": {
+      "data": {
+        "id": 104,
+        "internal_id": 550,
+        "status": "open",
+        "inbox": { "id": 15 },
+        "contact": { "id": 41 }
+      }
+    }
+  },
+  "conversations.create": {
+    "request": { "conversation": { "inbox_id": 15, "contact_id": 41 } },
+    "response": { "data": { "id": 104, "status": "open" } }
+  },
+  "conversations.update": {
+    "request": {
+      "conversation": {
+        "status": "pending",
+        "assignee_id": 7,
+        "team_id": 3,
+        "labels": ["qualified-lead"]
+      }
+    },
+    "response": { "data": { "id": 104, "status": "pending" } }
+  },
+  "conversations.mark_read": {
+    "response": {
+      "data": {
+        "conversation_id": 104,
+        "read_at": "2026-08-18T12:00:00Z",
+        "provider_receipt_sent": false
+      }
+    }
+  },
+  "messages.search": {
+    "response": {
+      "data": [],
+      "meta": {
+        "limit": 25,
+        "returned": 0,
+        "has_more": false,
+        "next_cursor": null
+      }
+    }
+  },
+  "messages.list": {
+    "response": {
+      "data": [
+        {
+          "id": 900,
+          "conversation_id": 104,
+          "message_type": "incoming",
+          "content": "Hello",
+          "status": "sent"
+        }
+      ],
+      "meta": {
+        "limit": 25,
+        "returned": 1,
+        "has_more": false,
+        "next_cursor": null
+      }
+    }
+  },
+  "messages.create": {
+    "request": {
+      "message": { "content": "Sanitized private note", "private": true }
+    },
+    "response": {
+      "data": { "id": 901, "conversation_id": 104, "status": "sent" },
+      "result": {
+        "state": "accepted",
+        "delivery_confirmation": "asynchronous",
+        "result_state": "unknown_until_message_updated"
+      }
+    }
+  },
+  "sync.backfill": {
+    "response": {
+      "data": [
+        {
+          "schema_version": "1.0",
+          "event_id": "backfill:Contact:41:example",
+          "event": "resource.snapshot",
+          "resource": {
+            "type": "Contact",
+            "id": 41,
+            "internal_id": 41,
+            "version": "2026-08-18T12:00:00.000000Z:41",
+            "sequence": 2
+          },
+          "data": { "id": 41 }
+        }
+      ],
+      "meta": {
+        "resource": "contacts",
+        "limit": 25,
+        "returned": 1,
+        "has_more": false,
+        "next_cursor": null
+      }
+    }
+  }
+}

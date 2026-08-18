@@ -1,0 +1,420 @@
+Catalog:
+  value:
+    name: AceleraChat OpenJarvis API
+    version: 2026-08-18.2
+    schema_version: '1.0'
+    implementation_base_sha: 128d00a1743e198eb370f55fbaf7bffe7a2b01f1
+    implementation_release: sanitized-release-sha
+    openapi: /api/v1/openjarvis/openapi
+    authentication:
+      {
+        type: bearer,
+        header: Authorization,
+        rotation_grace_seconds: 86400,
+        simultaneous_credentials: 2,
+      }
+    idempotency:
+      {
+        required_for: [POST, PATCH],
+        header: Idempotency-Key,
+        minimum_length: 8,
+        replay_header: Idempotency-Replayed,
+        retention_seconds: 2592000,
+      }
+    rate_limits:
+      read: { limit: 120, window_seconds: 60, retry_after_header: true }
+      write: { limit: 30, window_seconds: 60, retry_after_header: true }
+    retention:
+      {
+        idempotency_seconds: 2592000,
+        webhook_delivery_metadata_seconds: 2592000,
+        webhook_payload_persisted: false,
+      }
+    scopes: [inboxes:read]
+    webhook_subscriptions: [message.created]
+    webhook_delivery:
+      {
+        semantic: at_least_once,
+        duplicates_possible: true,
+        global_ordering: false,
+        per_resource_sequence: true,
+        retry_attempts: 5,
+        temporary_failures: [transport, 408, 409, 425, 429, 5xx],
+        permanent_failures: [other_4xx],
+        reconciliation_endpoint: /api/v1/openjarvis/backfill,
+      }
+    channel_capabilities: {}
+    errors: {}
+    operations:
+      - id: inboxes.health
+        method: GET
+        path: /api/v1/openjarvis/inboxes/{inbox_id}/health
+        scope: inboxes:read
+        description: Read inbox connection and capabilities
+        executable: true
+        idempotency_required: false
+        input_schema: { type: object, required: [inbox_id] }
+        output_schema:
+          {
+            $ref: /api/v1/openjarvis/openjarvis-openapi/schemas.yaml#/InboxHealthResponse,
+          }
+    endpoints:
+      - {
+          method: GET,
+          path: '/api/v1/openjarvis/inboxes/{inbox_id}/health',
+          scope: inboxes:read,
+          description: Read inbox connection and capabilities,
+        }
+Health:
+  value:
+    status: ok
+    checked_at: '2026-08-18T12:00:00Z'
+    release: sanitized-release-sha
+    version: 4.0.0
+    account: { id: 1, name: Example Account }
+    integration:
+      {
+        status: enabled,
+        webhooks_enabled: true,
+        allowed_inbox_count: 1,
+        service_user_id: 7,
+        pending_deliveries: 0,
+        failed_deliveries: 0,
+      }
+    inboxes:
+      - id: 15
+        channel_type: Channel::WebWidget
+        connection:
+          {
+            state: active,
+            connected: true,
+            operational: true,
+            source: web_widget_configuration,
+          }
+Diagnostics:
+  value:
+    status: ok
+    checked_at: '2026-08-18T12:00:00Z'
+    release: sanitized-release-sha
+    version: 4.0.0
+    account: { id: 1, name: Example Account }
+    integration:
+      {
+        status: enabled,
+        webhooks_enabled: true,
+        allowed_inbox_count: 1,
+        service_user_id: 7,
+        pending_deliveries: 0,
+        failed_deliveries: 0,
+      }
+    checks:
+      postgres: { status: ok, latency_ms: 1.2, migrations: current }
+      redis: { status: ok, latency_ms: 0.7 }
+      sidekiq:
+        {
+          status: ok,
+          latency_ms: 2.1,
+          processes: 1,
+          enqueued: 0,
+          scheduled: 0,
+          retries: 0,
+          dead: 0,
+        }
+Operations:
+  value:
+    api_requests:
+      - id: 101
+        operation: contacts.create
+        status: completed
+        response_status: 201
+        resource_type: Contact
+        resource_id: 41
+        created_at: '2026-08-18T12:00:00Z'
+        completed_at: '2026-08-18T12:00:00Z'
+        expires_at: '2026-09-17T12:00:00Z'
+    webhook_deliveries:
+      - delivery_id: 14e30f77-b3a7-46b6-92bc-74080d12ab00
+        event_id: b5fa78ee-c3d8-45f9-97a4-658029ae3f73
+        event_name: contact.updated
+        schema_version: '1.0'
+        status: delivered
+        attempts: 1
+        created_at: '2026-08-18T12:00:00Z'
+        expires_at: '2026-09-17T12:00:00Z'
+Inboxes:
+  value:
+    data:
+      - id: 15
+        name: Example Website
+        channel_type: Channel::WebWidget
+        inbox_type: Website
+        auto_assignment_enabled: true
+        connection:
+          {
+            state: active,
+            connected: true,
+            operational: true,
+            source: web_widget_configuration,
+          }
+        capabilities:
+          messages.send:
+            {
+              supported: true,
+              mode: acelerachat,
+              endpoint: '/api/v1/openjarvis/conversations/{conversation_id}/messages',
+            }
+          messages.reaction:
+            {
+              supported: false,
+              mode: not_supported,
+              reason: No provider reaction mutation is implemented by the AceleraChat channel adapter,
+            }
+        created_at: '2026-08-18T10:00:00Z'
+        updated_at: '2026-08-18T10:00:00Z'
+InboxHealth:
+  value:
+    data:
+      inbox_id: 19
+      channel_type: Channel::Whatsapp
+      checked_at: '2026-08-18T12:00:00Z'
+      connection:
+        state: connected
+        connected: true
+        operational: true
+        source: whatsapp_evolution_provisioning
+        provider: evolution
+      capabilities:
+        messages.send:
+          {
+            supported: true,
+            mode: acelerachat,
+            endpoint: '/api/v1/openjarvis/conversations/{conversation_id}/messages',
+          }
+        messages.reply:
+          {
+            supported: false,
+            mode: not_supported,
+            reason: The current channel adapter does not execute provider-native contextual replies,
+          }
+        messages.mark_read_provider:
+          {
+            supported: false,
+            mode: not_supported,
+            reason: AceleraChat does not send provider read receipts through this API,
+          }
+Agents:
+  value:
+    data:
+      - {
+          id: 7,
+          name: Example Agent,
+          email: agent@example.test,
+          role: agent,
+          inbox_id: 15,
+        }
+Teams:
+  value:
+    data:
+      - {
+          id: 3,
+          name: support,
+          description: Example support team,
+          allow_auto_assign: true,
+        }
+Labels:
+  value:
+    data:
+      - {
+          id: 9,
+          title: qualified-lead,
+          description: Qualified lead,
+          color: '#2563EB',
+          show_on_sidebar: true,
+        }
+Contact:
+  value:
+    data:
+      id: 41
+      name: Example Customer
+      email: customer@example.test
+      phone_number: '+5511999990000'
+      identifier: example-customer-41
+      contact_type: lead
+      blocked: false
+      additional_attributes: { company_name: Example Company }
+      custom_attributes: { origin: openjarvis }
+      created_at: '2026-08-18T10:00:00Z'
+      updated_at: '2026-08-18T12:00:00Z'
+Contacts:
+  value:
+    data:
+      - id: 41
+        name: Example Customer
+        email: customer@example.test
+        contact_type: lead
+        blocked: false
+        additional_attributes: {}
+        custom_attributes: {}
+        created_at: '2026-08-18T10:00:00Z'
+        updated_at: '2026-08-18T12:00:00Z'
+    meta: { limit: 25, returned: 1, has_more: false, next_cursor: null }
+ContactWriteRequest:
+  value:
+    contact:
+      name: Example Customer
+      email: customer@example.test
+      phone_number: '+5511999990000'
+      contact_type: lead
+      custom_attributes: { origin: openjarvis }
+Conversation:
+  value:
+    data:
+      id: 104
+      internal_id: 550
+      status: open
+      priority: high
+      inbox:
+        id: 15
+        name: Example Website
+        channel_type: Channel::WebWidget
+        inbox_type: Website
+        auto_assignment_enabled: true
+        connection:
+          { state: active, connected: true, source: web_widget_configuration }
+        capabilities: {}
+        created_at: '2026-08-18T10:00:00Z'
+        updated_at: '2026-08-18T10:00:00Z'
+      contact:
+        id: 41
+        name: Example Customer
+        contact_type: lead
+        blocked: false
+        additional_attributes: {}
+        custom_attributes: {}
+        created_at: '2026-08-18T10:00:00Z'
+        updated_at: '2026-08-18T12:00:00Z'
+      assignee: null
+      team: null
+      labels: [qualified-lead]
+      additional_attributes: {}
+      custom_attributes: {}
+      last_activity_at: '2026-08-18T12:00:00Z'
+      created_at: '2026-08-18T10:00:00Z'
+      updated_at: '2026-08-18T12:00:00Z'
+Conversations:
+  value:
+    data: []
+    meta: { limit: 25, returned: 0, has_more: false, next_cursor: null }
+ConversationCreateRequest:
+  value:
+    conversation:
+      inbox_id: 15
+      contact_id: 41
+      status: open
+ConversationUpdateRequest:
+  value:
+    conversation:
+      status: pending
+      priority: high
+      assignee_id: 7
+      team_id: 3
+      labels: [qualified-lead]
+ConversationRead:
+  value:
+    data:
+      conversation_id: 104
+      read_at: '2026-08-18T12:00:00Z'
+      provider_receipt_sent: false
+Messages:
+  value:
+    data:
+      - id: 900
+        conversation_id: 104
+        message_type: incoming
+        content_type: text
+        content: Hello
+        private: false
+        status: sent
+        delivery: { status: sent, result_state: received }
+        reply_to_message_id: null
+        sender:
+          {
+            id: 41,
+            type: Contact,
+            name: Example Customer,
+            email: customer@example.test,
+          }
+        attachments: []
+        email: null
+        unread: true
+        created_at: '2026-08-18T12:00:00Z'
+        updated_at: '2026-08-18T12:00:00Z'
+    meta: { limit: 25, returned: 1, has_more: false, next_cursor: null }
+MessageWriteRequest:
+  value:
+    message:
+      content: Sanitized example response
+      private: true
+EmailWriteRequest:
+  value:
+    message:
+      content: Sanitized email reply
+      to_emails: customer@example.test
+      cc_emails: audit@example.test
+MessageAccepted:
+  value:
+    data:
+      id: 901
+      conversation_id: 104
+      message_type: outgoing
+      content_type: text
+      content: Sanitized example response
+      private: true
+      status: sent
+      delivery: { status: sent, result_state: unknown }
+      reply_to_message_id: null
+      sender:
+        { id: 7, type: User, name: Example Agent, email: agent@example.test }
+      attachments: []
+      email: null
+      unread: false
+      created_at: '2026-08-18T12:01:00Z'
+      updated_at: '2026-08-18T12:01:00Z'
+    result:
+      state: accepted
+      delivery_confirmation: asynchronous
+      result_state: unknown_until_message_updated
+Backfill:
+  value:
+    data:
+      - schema_version: '1.0'
+        event_id: backfill:Contact:41:7b0f0e4aa11f0ab2
+        event: resource.snapshot
+        occurred_at: '2026-08-18T12:00:00Z'
+        resource:
+          {
+            type: Contact,
+            id: 41,
+            internal_id: 41,
+            version: '2026-08-18T12:00:00.000000Z:41',
+            sequence: 3,
+          }
+        data:
+          {
+            id: 41,
+            name: Example Customer,
+            contact_type: lead,
+            blocked: false,
+            additional_attributes: {},
+            custom_attributes: {},
+            created_at: '2026-08-18T10:00:00Z',
+            updated_at: '2026-08-18T12:00:00Z',
+          }
+    meta:
+      {
+        resource: contacts,
+        limit: 25,
+        returned: 1,
+        has_more: false,
+        next_cursor: null,
+      }

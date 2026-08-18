@@ -1,0 +1,523 @@
+CatalogPath:
+  get:
+    operationId: catalog.get
+    tags: [Contract]
+    summary: Get executable API catalog, schemas, capabilities and error taxonomy
+    responses:
+      '200':
+        description: Executable catalog
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/Catalog }
+            examples:
+              catalog: { $ref: ./examples.yaml#/Catalog }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+OpenapiPath:
+  get:
+    operationId: openapi.get
+    tags: [Contract]
+    summary: Get this OpenAPI 3.1 document
+    responses:
+      '200':
+        description: Root OpenAPI document. Relative references remain in the repository package.
+        content:
+          application/yaml:
+            schema: { type: string }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+HealthPath:
+  get:
+    operationId: health.get
+    tags: [Health]
+    summary: Get authenticated integration health
+    responses:
+      '200':
+        description: Sanitized integration health
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/Health }
+            examples:
+              health: { $ref: ./examples.yaml#/Health }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+      '503': { $ref: ./responses.yaml#/Unavailable }
+DiagnosticsPath:
+  get:
+    operationId: diagnostics.get
+    tags: [Health]
+    summary: Get sanitized PostgreSQL, Redis, Sidekiq and release diagnostics
+    responses:
+      '200':
+        description: Sanitized diagnostics
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/Diagnostics }
+            examples:
+              diagnostics: { $ref: ./examples.yaml#/Diagnostics }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+OperationsPath:
+  get:
+    operationId: operations.list
+    tags: [Health]
+    summary: Get sanitized idempotency and webhook delivery ledgers
+    parameters:
+      - $ref: ./parameters.yaml#/Limit
+    responses:
+      '200':
+        description: Integration operations
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/Operations }
+            examples:
+              operations: { $ref: ./examples.yaml#/Operations }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+InboxesPath:
+  get:
+    operationId: inboxes.list
+    tags: [Resources]
+    summary: List authorized inboxes with passive connection state and executable capabilities
+    responses:
+      '200':
+        description: Authorized inboxes
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/InboxListResponse }
+            examples:
+              inboxes: { $ref: ./examples.yaml#/Inboxes }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+InboxHealthPath:
+  parameters:
+    - $ref: ./parameters.yaml#/InboxId
+  get:
+    operationId: inboxes.health
+    tags: [Health, Resources]
+    summary: Get health and capabilities for one authorized inbox
+    description: Connection is derived from channel state and never from enable_auto_assignment.
+    responses:
+      '200':
+        description: Inbox health
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/InboxHealthResponse }
+            examples:
+              inboxHealth: { $ref: ./examples.yaml#/InboxHealth }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '404': { $ref: ./responses.yaml#/NotFound }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+AgentsPath:
+  get:
+    operationId: agents.list
+    tags: [Resources]
+    summary: Resolve agents assignable to an optional inbox
+    parameters:
+      - name: inbox_id
+        in: query
+        schema: { type: integer, minimum: 1 }
+    responses:
+      '200':
+        description: Assignable agents
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/AgentListResponse }
+            examples:
+              agents: { $ref: ./examples.yaml#/Agents }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '404': { $ref: ./responses.yaml#/NotFound }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+TeamsPath:
+  get:
+    operationId: teams.list
+    tags: [Resources]
+    summary: Resolve teams visible to the service user
+    responses:
+      '200':
+        description: Teams
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/TeamListResponse }
+            examples:
+              teams: { $ref: ./examples.yaml#/Teams }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+LabelsPath:
+  get:
+    operationId: labels.list
+    tags: [Resources]
+    summary: Resolve labels that may be applied to conversations
+    responses:
+      '200':
+        description: Labels
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/LabelListResponse }
+            examples:
+              labels: { $ref: ./examples.yaml#/Labels }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+ContactsPath:
+  get:
+    operationId: contacts.search
+    tags: [Contacts]
+    summary: Search authorized contacts
+    parameters:
+      - name: q
+        in: query
+        schema: { type: string }
+      - $ref: ./parameters.yaml#/Cursor
+      - $ref: ./parameters.yaml#/Limit
+    responses:
+      '200':
+        description: Cursor page ordered by updated_at DESC, id DESC
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/ContactListResponse }
+            examples:
+              contacts: { $ref: ./examples.yaml#/Contacts }
+      '400': { $ref: ./responses.yaml#/ValidationError }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+  post:
+    operationId: contacts.create
+    tags: [Contacts]
+    summary: Create or reuse a contact
+    parameters:
+      - $ref: ./parameters.yaml#/IdempotencyKey
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ./schemas.yaml#/ContactWriteRequest }
+          examples:
+            request: { $ref: ./examples.yaml#/ContactWriteRequest }
+    responses:
+      '200':
+        description: Matching contact reused
+        headers:
+          Idempotency-Replayed: { schema: { type: boolean } }
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/ContactResponse }
+      '201':
+        description: Contact created
+        headers:
+          Idempotency-Replayed: { schema: { type: boolean } }
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/ContactResponse }
+            examples:
+              contact: { $ref: ./examples.yaml#/Contact }
+      '400': { $ref: ./responses.yaml#/ValidationError }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '409': { $ref: ./responses.yaml#/Conflict }
+      '422': { $ref: ./responses.yaml#/ValidationError }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+ContactPath:
+  parameters:
+    - $ref: ./parameters.yaml#/Id
+  get:
+    operationId: contacts.get
+    tags: [Contacts]
+    summary: Get an authorized contact
+    responses:
+      '200':
+        description: Contact
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/ContactResponse }
+            examples:
+              contact: { $ref: ./examples.yaml#/Contact }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '404': { $ref: ./responses.yaml#/NotFound }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+  patch:
+    operationId: contacts.update
+    tags: [Contacts]
+    summary: Update an authorized contact
+    parameters:
+      - $ref: ./parameters.yaml#/IdempotencyKey
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ./schemas.yaml#/ContactWriteRequest }
+          examples:
+            request: { $ref: ./examples.yaml#/ContactWriteRequest }
+    responses:
+      '200':
+        description: Contact updated or idempotently replayed
+        headers:
+          Idempotency-Replayed: { schema: { type: boolean } }
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/ContactResponse }
+      '400': { $ref: ./responses.yaml#/ValidationError }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '404': { $ref: ./responses.yaml#/NotFound }
+      '409': { $ref: ./responses.yaml#/Conflict }
+      '422': { $ref: ./responses.yaml#/ValidationError }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+ConversationsPath:
+  get:
+    operationId: conversations.search
+    tags: [Conversations]
+    summary: Search conversations by contact and inbox
+    parameters:
+      - name: contact_id
+        in: query
+        schema: { type: integer, minimum: 1 }
+      - name: inbox_id
+        in: query
+        schema: { type: integer, minimum: 1 }
+      - name: status
+        in: query
+        schema: { type: string, enum: [open, resolved, pending, snoozed] }
+      - name: updated_after
+        in: query
+        schema: { type: string, format: date-time }
+      - $ref: ./parameters.yaml#/Cursor
+      - $ref: ./parameters.yaml#/Limit
+    responses:
+      '200':
+        description: Cursor page ordered by updated_at DESC, internal ID DESC
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/ConversationListResponse }
+            examples:
+              conversations: { $ref: ./examples.yaml#/Conversations }
+      '400': { $ref: ./responses.yaml#/ValidationError }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+  post:
+    operationId: conversations.create
+    tags: [Conversations]
+    summary: Create a conversation without client-supplied source_id
+    description: The server resolves or derives ContactInbox. Provider-only identities must already exist.
+    parameters:
+      - $ref: ./parameters.yaml#/IdempotencyKey
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ./schemas.yaml#/ConversationCreateRequest }
+          examples:
+            request: { $ref: ./examples.yaml#/ConversationCreateRequest }
+    responses:
+      '200':
+        description: Existing conversation reused
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/ConversationResponse }
+      '201':
+        description: Conversation created
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/ConversationResponse }
+            examples:
+              conversation: { $ref: ./examples.yaml#/Conversation }
+      '400': { $ref: ./responses.yaml#/ValidationError }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '409': { $ref: ./responses.yaml#/Conflict }
+      '422': { $ref: ./responses.yaml#/ValidationError }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+ConversationPath:
+  parameters:
+    - $ref: ./parameters.yaml#/Id
+  get:
+    operationId: conversations.get
+    tags: [Conversations]
+    summary: Get a conversation by account-visible display ID
+    responses:
+      '200':
+        description: Conversation
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/ConversationResponse }
+            examples:
+              conversation: { $ref: ./examples.yaml#/Conversation }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '404': { $ref: ./responses.yaml#/NotFound }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+  patch:
+    operationId: conversations.update
+    tags: [Conversations]
+    summary: Update status, priority, resolved agent, team or existing labels
+    parameters:
+      - $ref: ./parameters.yaml#/IdempotencyKey
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ./schemas.yaml#/ConversationUpdateRequest }
+          examples:
+            request: { $ref: ./examples.yaml#/ConversationUpdateRequest }
+    responses:
+      '200':
+        description: Conversation updated
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/ConversationResponse }
+      '400': { $ref: ./responses.yaml#/ValidationError }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '404': { $ref: ./responses.yaml#/NotFound }
+      '409': { $ref: ./responses.yaml#/Conflict }
+      '422': { $ref: ./responses.yaml#/ValidationError }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+ConversationReadPath:
+  parameters:
+    - $ref: ./parameters.yaml#/Id
+  post:
+    operationId: conversations.mark_read
+    tags: [Conversations]
+    summary: Mark conversation read inside AceleraChat
+    description: Does not send a WhatsApp, Instagram or other provider read receipt.
+    parameters:
+      - $ref: ./parameters.yaml#/IdempotencyKey
+    responses:
+      '200':
+        description: AceleraChat read marker updated
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/ConversationReadResponse }
+            examples:
+              result: { $ref: ./examples.yaml#/ConversationRead }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '404': { $ref: ./responses.yaml#/NotFound }
+      '409': { $ref: ./responses.yaml#/Conflict }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+MessagesSearchPath:
+  get:
+    operationId: messages.search
+    tags: [Messages]
+    summary: Search messages across authorized conversations
+    parameters:
+      - name: q
+        in: query
+        schema: { type: string }
+      - name: inbox_id
+        in: query
+        schema: { type: integer, minimum: 1 }
+      - name: contact_id
+        in: query
+        schema: { type: integer, minimum: 1 }
+      - name: conversation_id
+        in: query
+        description: Account-visible display ID.
+        schema: { type: integer, minimum: 1 }
+      - name: unread
+        in: query
+        schema: { type: boolean }
+      - $ref: ./parameters.yaml#/Cursor
+      - $ref: ./parameters.yaml#/Limit
+    responses:
+      '200':
+        description: Cursor page ordered by created_at DESC, ID DESC
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/MessageListResponse }
+            examples:
+              messages: { $ref: ./examples.yaml#/Messages }
+      '400': { $ref: ./responses.yaml#/ValidationError }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+ConversationMessagesPath:
+  parameters:
+    - $ref: ./parameters.yaml#/ConversationId
+  get:
+    operationId: messages.list
+    tags: [Messages]
+    summary: List messages in one conversation
+    parameters:
+      - $ref: ./parameters.yaml#/Cursor
+      - $ref: ./parameters.yaml#/Limit
+    responses:
+      '200':
+        description: Cursor page ordered by created_at DESC, ID DESC
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/MessageListResponse }
+            examples:
+              messages: { $ref: ./examples.yaml#/Messages }
+      '400': { $ref: ./responses.yaml#/ValidationError }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '404': { $ref: ./responses.yaml#/NotFound }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+  post:
+    operationId: messages.create
+    tags: [Messages]
+    summary: Create text, internal note, email reply or supported contextual reply
+    description: Provider delivery is asynchronous. A 201 response is not delivery confirmation.
+    parameters:
+      - $ref: ./parameters.yaml#/IdempotencyKey
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ./schemas.yaml#/MessageWriteRequest }
+          examples:
+            text: { $ref: ./examples.yaml#/MessageWriteRequest }
+            email: { $ref: ./examples.yaml#/EmailWriteRequest }
+    responses:
+      '201':
+        description: Message accepted by AceleraChat; delivery status remains asynchronous
+        headers:
+          Idempotency-Replayed: { schema: { type: boolean } }
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/MessageCreateResponse }
+            examples:
+              accepted: { $ref: ./examples.yaml#/MessageAccepted }
+      '400': { $ref: ./responses.yaml#/ValidationError }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '404': { $ref: ./responses.yaml#/NotFound }
+      '409': { $ref: ./responses.yaml#/Conflict }
+      '422': { $ref: ./responses.yaml#/ValidationError }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+      '500': { $ref: ./responses.yaml#/InternalError }
+BackfillPath:
+  get:
+    operationId: sync.backfill
+    tags: [Synchronization]
+    summary: Backfill current resource snapshots
+    description: Used for initial synchronization and reconciliation after lost or out-of-order webhook delivery.
+    parameters:
+      - name: resource
+        in: query
+        required: true
+        schema: { type: string, enum: [contacts, conversations, messages] }
+      - $ref: ./parameters.yaml#/Cursor
+      - $ref: ./parameters.yaml#/Limit
+    responses:
+      '200':
+        description: Cursor page ordered by updated_at ASC, ID ASC
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/BackfillResponse }
+            examples:
+              backfill: { $ref: ./examples.yaml#/Backfill }
+      '400': { $ref: ./responses.yaml#/ValidationError }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '429': { $ref: ./responses.yaml#/RateLimited }

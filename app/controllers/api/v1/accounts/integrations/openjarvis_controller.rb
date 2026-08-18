@@ -24,6 +24,10 @@ class Api::V1::Accounts::Integrations::OpenjarvisController < Api::V1::Accounts:
       status: :disabled,
       access_token: self.class.generate_token,
       webhook_secret: self.class.generate_token,
+      previous_access_token: nil,
+      previous_access_token_expires_at: nil,
+      previous_webhook_secret: nil,
+      previous_webhook_secret_expires_at: nil,
       access_token_rotated_at: Time.current,
       webhook_secret_rotated_at: Time.current,
       settings: @hook.settings.merge('webhooks_enabled' => false)
@@ -33,25 +37,43 @@ class Api::V1::Accounts::Integrations::OpenjarvisController < Api::V1::Accounts:
 
   def rotate_access_token
     token = self.class.generate_token
-    @hook.update!(access_token: token, access_token_rotated_at: Time.current)
-    render json: { credential: { type: 'bearer', value: token, rotated_at: @hook.access_token_rotated_at.iso8601 } }
+    grace_expires_at = Openjarvis::Configuration::CREDENTIAL_GRACE_PERIOD.from_now
+    @hook.update!(
+      previous_access_token: @hook.access_token,
+      previous_access_token_expires_at: grace_expires_at,
+      access_token: token,
+      access_token_rotated_at: Time.current
+    )
+    render json: {
+      credential: {
+        type: 'bearer', value: token, rotated_at: @hook.access_token_rotated_at.iso8601,
+        previous_valid_until: grace_expires_at.iso8601
+      }
+    }
   end
 
   def rotate_webhook_secret
     secret = self.class.generate_token
-    @hook.update!(webhook_secret: secret, webhook_secret_rotated_at: Time.current)
-    render json: { credential: { type: 'hmac_sha256', value: secret, rotated_at: @hook.webhook_secret_rotated_at.iso8601 } }
+    grace_expires_at = Openjarvis::Configuration::CREDENTIAL_GRACE_PERIOD.from_now
+    @hook.update!(
+      previous_webhook_secret: @hook.webhook_secret,
+      previous_webhook_secret_expires_at: grace_expires_at,
+      webhook_secret: secret,
+      webhook_secret_rotated_at: Time.current
+    )
+    render json: {
+      credential: {
+        type: 'hmac_sha256', value: secret, rotated_at: @hook.webhook_secret_rotated_at.iso8601,
+        previous_valid_until: grace_expires_at.iso8601
+      }
+    }
   end
 
   def test_connection
     configuration = @hook.openjarvis_configuration
     raise Openjarvis::ApiError.new('missing_endpoint', 'Configure the OpenJarvis webhook endpoint first') if configuration.endpoint_url.blank?
 
-    payload = {
-      event: 'integration.test',
-      occurred_at: Time.current.iso8601,
-      data: { account_id: Current.account.id, release: defined?(GIT_HASH) ? GIT_HASH : nil }
-    }
+    payload = Openjarvis::IntegrationTestPayload.new(hook: @hook, account: Current.account).as_json
     webhook_client(configuration).deliver(payload, delivery_id: SecureRandom.uuid)
     record_test_result('connected')
     render json: connection_payload
@@ -65,8 +87,9 @@ class Api::V1::Accounts::Integrations::OpenjarvisController < Api::V1::Accounts:
     render json: {
       data: records.map do |item|
         item.slice(
-          :delivery_id, :event_name, :resource_type, :resource_id, :status, :attempts,
-          :response_status, :error_code, :error_message, :created_at, :delivered_at
+          :delivery_id, :event_id, :schema_version, :event_name, :resource_type, :resource_id,
+          :resource_version, :resource_sequence, :status, :attempts, :response_status,
+          :failure_class, :error_code, :error_message, :next_attempt_at, :created_at, :delivered_at
         )
       end
     }
@@ -140,8 +163,10 @@ class Api::V1::Accounts::Integrations::OpenjarvisController < Api::V1::Accounts:
     {
       access_token_last_four: @hook.access_token.to_s.last(4),
       access_token_rotated_at: @hook.access_token_rotated_at&.iso8601,
+      previous_access_token_expires_at: @hook.previous_access_token_expires_at&.iso8601,
       webhook_secret_last_four: @hook.webhook_secret.to_s.last(4),
-      webhook_secret_rotated_at: @hook.webhook_secret_rotated_at&.iso8601
+      webhook_secret_rotated_at: @hook.webhook_secret_rotated_at&.iso8601,
+      previous_webhook_secret_expires_at: @hook.previous_webhook_secret_expires_at&.iso8601
     }
   end
 
@@ -171,6 +196,6 @@ class Api::V1::Accounts::Integrations::OpenjarvisController < Api::V1::Accounts:
   end
 
   def webhook_client(configuration)
-    Openjarvis::WebhookClient.new(endpoint_url: configuration.endpoint_url, secret: @hook.webhook_secret)
+    Openjarvis::WebhookClient.new(endpoint_url: configuration.endpoint_url, secrets: @hook.active_openjarvis_webhook_secrets)
   end
 end

@@ -30,7 +30,7 @@ RSpec.describe 'OpenJarvis API', type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.parsed_body['granted_scopes']).to include('messages:write')
       expect(response.parsed_body['endpoints']).to include(
-        hash_including('method' => 'POST', 'path' => '/api/v1/openjarvis/conversations/:conversation_id/messages')
+        hash_including('method' => 'POST', 'path' => '/api/v1/openjarvis/conversations/{conversation_id}/messages')
       )
     end
   end
@@ -109,22 +109,23 @@ RSpec.describe 'OpenJarvis API', type: :request do
 
     it 'persists an outgoing message in an authorized conversation' do
       post "/api/v1/openjarvis/conversations/#{conversation.display_id}/messages",
-           params: { message: { content: 'Mensagem controlada' } },
+           params: { message: { content: 'Nota privada controlada', private: true } },
            headers: headers.merge('Idempotency-Key' => 'message-send-0001'),
            as: :json
 
       expect(response).to have_http_status(:created)
-      expect(response.parsed_body.dig('data', 'content')).to eq('Mensagem controlada')
+      expect(response.parsed_body.dig('data', 'content')).to eq('Nota privada controlada')
+      expect(response.parsed_body.dig('data', 'private')).to be(true)
       expect(conversation.messages.outgoing.last.sender).to eq(service_user)
     end
 
     it 'rejects an invalid message cursor' do
       get "/api/v1/openjarvis/conversations/#{conversation.display_id}/messages",
-          params: { before_id: 'not-an-id' },
+          params: { cursor: 'not-a-signed-cursor' },
           headers: headers
 
       expect(response).to have_http_status(:bad_request)
-      expect(response.parsed_body.dig('error', 'code')).to eq('invalid_before_id')
+      expect(response.parsed_body.dig('error', 'code')).to eq('invalid_cursor')
     end
   end
 
@@ -144,7 +145,6 @@ RSpec.describe 'OpenJarvis API', type: :request do
                conversation: {
                  inbox_id: allowed_inbox.id,
                  contact_id: contact.id,
-                 source_id: SecureRandom.uuid,
                  team_id: foreign_team.id
                }
              },
@@ -165,7 +165,6 @@ RSpec.describe 'OpenJarvis API', type: :request do
                conversation: {
                  inbox_id: allowed_inbox.id,
                  contact_id: contact.id,
-                 source_id: SecureRandom.uuid,
                  assignee_id: foreign_agent.id
                }
              },
@@ -182,8 +181,7 @@ RSpec.describe 'OpenJarvis API', type: :request do
            params: {
              conversation: {
                inbox_id: allowed_inbox.id,
-               contact_id: contact.id,
-               source_id: SecureRandom.uuid
+               contact_id: contact.id
              }
            },
            headers: headers.merge('Idempotency-Key' => 'conversation-create-authorized-0001'),
@@ -191,6 +189,16 @@ RSpec.describe 'OpenJarvis API', type: :request do
 
       expect(response).to have_http_status(:created)
       expect(response.parsed_body.dig('data', 'contact', 'id')).to eq(contact.id)
+    end
+
+    it 'rejects a client-supplied source_id' do
+      post '/api/v1/openjarvis/conversations',
+           params: { conversation: { inbox_id: allowed_inbox.id, contact_id: contact.id, source_id: 'guessed-provider-id' } },
+           headers: headers.merge('Idempotency-Key' => 'conversation-source-id-rejected-0001'),
+           as: :json
+
+      expect(response).to have_http_status(:bad_request)
+      expect(response.parsed_body.dig('error', 'code')).to eq('source_id_not_accepted')
     end
 
     it 'applies the target team before validating the assignee under strict visibility' do

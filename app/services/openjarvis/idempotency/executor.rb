@@ -69,7 +69,13 @@ class Openjarvis::Idempotency::Executor
     end
 
     unless request.completed?
-      raise Openjarvis::ApiError.new('request_in_progress', 'A request with this Idempotency-Key is still processing', status: :conflict)
+      raise Openjarvis::ApiError.new(
+        'request_in_progress',
+        'A request with this Idempotency-Key is still processing; reconcile before retrying with another key',
+        status: :conflict,
+        retryable: true,
+        result_state: 'unknown'
+      )
     end
 
     Result.new(status: request.response_status, body: request.parsed_response_body, resource: nil, replayed: true)

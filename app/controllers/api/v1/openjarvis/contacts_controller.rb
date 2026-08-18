@@ -3,8 +3,8 @@ class Api::V1::Openjarvis::ContactsController < Api::V1::Openjarvis::BaseControl
     require_scope!('contacts:read')
     records = openjarvis_access_scope.contacts
     records = search(records) if params[:q].present?
-    records = paginate(records.order(updated_at: :desc))
-    render json: { data: records.map { |contact| present(contact) }, meta: pagination_meta(records) }
+    page = cursor_page(records, type: cursor_type('contacts', q: params[:q]))
+    render json: { data: page.records.map { |contact| present(contact) }, meta: page.meta }
   end
 
   def show

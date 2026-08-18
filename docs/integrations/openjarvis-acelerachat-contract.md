@@ -1,236 +1,264 @@
-# AceleraChat ↔ OpenJarvis integration contract
+# AceleraChat native OpenJarvis contract
 
-- Contract version: `2026-08-18`
-- AceleraChat baseline: `8e34f761c3a85153954529cf67490d6ac540781e`
-- OpenJarvis audited baseline: `ec5e22e360943eb77560be3b9e5ea8ab7300b5eb`
+- Contract version: `2026-08-18.2`.
+- Schema version: `1.0`.
+- Audited implementation base SHA: `128d00a1743e198eb370f55fbaf7bffe7a2b01f1`.
+- The final implementation SHA is recorded in the release report because changing
+  this contract necessarily creates a new Git object.
+- OpenAPI root: `docs/integrations/openjarvis-openapi.yaml`.
+- Sanitized fixtures: `spec/fixtures/openjarvis/endpoints.json` and
+  `spec/fixtures/openjarvis/webhooks.json`.
 
-## Authority boundary
+This delivery changes only AceleraChat. It does not modify OpenJarvis and it does
+not authorize a parallel WhatsApp, Instagram or email provider connection.
 
-AceleraChat is the only authority that reads and writes its WhatsApp, Instagram,
-email and website inboxes. OpenJarvis must call this API instead of opening a
-second Baileys, Gmail or provider connection for the same channel. This avoids
-duplicate sends, split histories and conflicting session state.
+## Authority and isolation
 
-The connection is account-scoped and evaluates every request as the configured
-service user. It then applies the configured inbox allowlist and the existing
-strict team visibility rules. An administrator can see every selected inbox; an
-agent can only see the selected inboxes and teams already available to that user.
+AceleraChat is the sole authority for its configured inboxes. Every API request
+is evaluated as the configured service user, then restricted by the integration
+inbox allowlist and the existing strict-team permission filter. A resource that
+exists outside that boundary is returned as not found.
 
-## Authentication and credentials
+The service user is not a permission bypass. Agents, teams and labels used by a
+mutation must first be returned by `/agents`, `/teams` or `/labels`. Conversation
+assignment additionally verifies that the agent is assignable to the target
+inbox.
 
-All `/api/v1/openjarvis/*` requests require:
+## Authentication, rotation and secrets
 
-```http
-Authorization: Bearer <ACELERACHAT_BEARER_TOKEN>
-Accept: application/json
+All `/api/v1/openjarvis/*` requests require an opaque Bearer credential. POST and
+PATCH mutations also require `Idempotency-Key` with 8 to 128 permitted
+characters.
+
+Bearer and HMAC rotation preserve the previous credential for 24 hours. During
+that overlap:
+
+- both current and previous Bearer tokens authenticate;
+- outbound webhooks carry the current signature in
+  `X-AceleraChat-Signature` and the previous signature, when present, in
+  `X-AceleraChat-Signature-Previous`;
+- ordinary configuration reads expose only suffix and expiry metadata;
+- the new secret is displayed only by the explicit rotation response.
+
+Expired overlap values are removed by `Openjarvis::RetentionJob`. Disconnecting
+disables API access and webhooks immediately. No credential belongs in this
+contract, fixtures, logs, tests or the release report.
+
+## Executable catalog and OpenAPI
+
+`GET /catalog` returns:
+
+- the implementation base SHA and running release;
+- granted scopes;
+- JSON Schema input and output contracts for every executable operation;
+- the public error taxonomy;
+- rate limits, retention and idempotency policy;
+- webhook delivery semantics;
+- the static capability matrix for every known `channel_type`.
+
+`GET /openapi` returns the OpenAPI 3.1 root document. The repository package
+contains its relative schema, path, response, webhook and example files.
+
+## Inbox health and capability truth
+
+`GET /inboxes` and `GET /inboxes/:inbox_id/health` return connection and
+capability data. `enable_auto_assignment` is exposed only as
+`auto_assignment_enabled`; it never represents provider connection.
+
+Connection evidence is deliberately qualified:
+
+- WhatsApp Evolution: state comes from the real
+  `Whatsapp::EvolutionProvisioning` state machine. Only `connected` is reported
+  as connected.
+- WhatsApp Cloud/default: local provider configuration and reauthorization state
+  are reported as `configured_not_probed`; no remote probe is fabricated.
+- Email: IMAP and outbound SMTP/OAuth configuration are reported separately as
+  `configured_not_probed`.
+- Instagram/Facebook: local authorization state is reported as
+  `configured_not_probed` or `authorization_required`.
+- Web widget: a persisted website token is sufficient for local `active` state.
+
+The per-inbox response is authoritative because provider and channel-specific
+details can change the static matrix.
+
+## Capability declarations
+
+Every capability is an object with `supported`, `mode`, optional `endpoint` and
+an explicit reason when unsupported. The complete machine-readable matrix is in
+`Openjarvis::CapabilityResolver` and `/catalog`.
+
+### WhatsApp
+
+- Read/search conversations and messages: supported.
+- Send text through an existing conversation: supported; delivery is
+  asynchronous.
+- Provider-native contextual reply: not supported. AceleraChat does not pretend
+  that internal `in_reply_to` metadata was transmitted by Evolution/Meta.
+- Reactions: not supported by the current AceleraChat WhatsApp adapters.
+- Mark read inside AceleraChat: supported by `/conversations/:id/read`.
+- Provider read receipt: not supported by this API.
+- Read attachment metadata: supported.
+- Upload/send new binary media: not supported by this integration.
+- Delivery status: supported from `Message.status`, `source_id` and
+  `message.updated` events. A successful create response is not delivery proof.
+- Evolution session-window templates: not applicable; the existing Evolution
+  adapter sends session text without the official-template gate.
+
+### Email
+
+This is an AceleraChat customer-service integration, not a generic IMAP mailbox
+client.
+
+- Search AceleraChat email messages and unread incoming messages: supported.
+- AceleraChat conversations are the thread boundary: supported.
+- Reply with `to_emails`, `cc_emails`, `bcc_emails` and optional HTML body:
+  supported.
+- Read attachment metadata: supported.
+- Upload/send new attachments: not supported until a dedicated binary-upload
+  contract exists.
+- Provider mailbox archive and trash: formally outside scope and not supported.
+
+### Website, API and Instagram
+
+Website/API text reads and sends are supported. Contextual AceleraChat reply is
+supported for website/API conversations. Instagram text reads and sends are
+supported, while provider-native contextual reply, reaction, read receipt and
+binary upload remain explicitly unsupported.
+
+## Conversation creation and contact-inbox association
+
+OpenJarvis never supplies or invents `source_id`.
+
+`POST /conversations` accepts `inbox_id` and `contact_id`. The server:
+
+1. reuses an existing `ContactInbox` association;
+2. otherwise derives a safe association for API, website, email, SMS, Twilio or
+   WhatsApp using the contact's existing routing attributes;
+3. rejects provider-only channels such as Instagram with
+   `contact_inbox_missing` until a real inbound/provider association exists;
+4. rejects a missing email or phone with
+   `contact_routing_attribute_missing`.
+
+This prevents guessed provider identities and cross-contact routing.
+
+## Search and stable cursors
+
+Contacts and conversations are ordered by `updated_at DESC, id DESC`. Messages
+are ordered by `created_at DESC, id DESC`. Backfill is ordered by
+`updated_at ASC, id ASC`.
+
+All paged responses include:
+
+```json
+{
+  "meta": {
+    "limit": 25,
+    "returned": 25,
+    "has_more": true,
+    "next_cursor": "opaque-signed-value"
+  }
+}
 ```
 
-Mutating `POST` and `PATCH` requests also require a stable idempotency key:
+Cursors are signed, bind the operation, direction and normalized filters, and
+use the database ID as deterministic tie-breaker. Tampered cursors return
+`invalid_cursor`; reuse with another collection/filter returns
+`cursor_mismatch`. Cursor pagination is stable in ordering but not a database
+snapshot: concurrent updates are reconciled through backfill.
 
-```http
-Idempotency-Key: <8-to-128-character-operation-identifier>
-Content-Type: application/json
-```
+Conversation search accepts `contact_id`, `inbox_id`, `status` and
+`updated_after`. Global message search accepts `q`, `contact_id`, `inbox_id`,
+account-visible `conversation_id` and `unread`.
 
-Replays return the original status and body plus
-`Idempotency-Replayed: true`. Reusing a key with another operation or payload
-returns `409 idempotency_conflict`.
+## Backfill and reconciliation
 
-The Bearer token and webhook signing secret are separate, encrypted at rest when
-Active Record encryption is configured, never returned by ordinary reads and
-shown only after creation or explicit rotation. Production refuses an
-OpenJarvis configuration without Active Record encryption.
+`GET /backfill?resource=contacts|conversations|messages` returns current
+`resource.snapshot` envelopes and an ascending signed cursor. It is used for:
 
-The integration screen exposes separate actions to disable access temporarily,
-rotate either credential, or disconnect completely. Disconnecting disables the
-API, stops webhook delivery and rotates both credentials in the same operation.
+- initial synchronization;
+- recovery after lost webhook delivery;
+- resolution of duplicate or out-of-order events;
+- reconciliation of `unknown` mutation results.
 
-The private handoff report and the actual values belong only in:
+Backfill covers current resources. Deletion tombstones are not part of this
+contract version and are not advertised.
 
-`D:\dev\workspaces\centraldeatendimentoCHAT\credenciais\openjarvis`
+## Webhook schema and delivery guarantees
 
-They must not be committed, pasted into issues, Actions logs or application logs.
+Every webhook contains:
 
-## API endpoints
+- `schema_version`;
+- globally unique `event_id`;
+- event name and microsecond `occurred_at`;
+- resource type, public ID, internal ID, deterministic version and monotonic
+  per-resource sequence;
+- the complete resource presenter;
+- changed attributes when available.
 
-The runtime base URL is shown in the native integration screen. The production
-value is expected to be:
+The event schemas are defined individually in
+`docs/integrations/openjarvis-openapi/webhooks.yaml`.
 
-`https://atendimento.meugerenciador.pro/api/v1/openjarvis`
+Delivery guarantees:
 
-| Method | Path                                                           | Scope                 | Purpose                                            |
-| ------ | -------------------------------------------------------------- | --------------------- | -------------------------------------------------- |
-| GET    | `/catalog`                                                     | authenticated         | Stable contract and granted scopes                 |
-| GET    | `/health`                                                      | authenticated         | Integration health without secrets                 |
-| GET    | `/diagnostics`                                                 | `diagnostics:read`    | PostgreSQL, Redis, Sidekiq and release diagnostics |
-| GET    | `/operations`                                                  | `diagnostics:read`    | Sanitized API and webhook activity                 |
-| GET    | `/inboxes`                                                     | `inboxes:read`        | Authorized inboxes                                 |
-| GET    | `/contacts?q=&page=&limit=`                                    | `contacts:read`       | Authorized contact search                          |
-| GET    | `/contacts/:id`                                                | `contacts:read`       | Contact details                                    |
-| POST   | `/contacts`                                                    | `contacts:write`      | Create or reuse a contact                          |
-| PATCH  | `/contacts/:id`                                                | `contacts:write`      | Update a contact                                   |
-| GET    | `/conversations?inbox_id=&status=&updated_after=&page=&limit=` | `conversations:read`  | Authorized conversations                           |
-| GET    | `/conversations/:id`                                           | `conversations:read`  | Conversation details                               |
-| POST   | `/conversations`                                               | `conversations:write` | Create a conversation in an authorized inbox       |
-| PATCH  | `/conversations/:id`                                           | `conversations:write` | Status, priority, assignment, team and labels      |
-| GET    | `/conversations/:id/messages?before_id=&limit=`                | `messages:read`       | Messages newest first                              |
-| POST   | `/conversations/:id/messages`                                  | `messages:write`      | Send through the conversation channel              |
+- at-least-once, therefore duplicates are possible;
+- no global ordering guarantee;
+- a monotonic sequence per integration/resource permits local reordering;
+- the receiver must durably persist `event_id`/delivery ID before returning 2xx;
+- transport errors, 408, 409, 425, 429 and 5xx are temporary and retried with
+  bounded polynomial backoff, at most five attempts;
+- other 4xx responses are permanent and are not retried;
+- delivery metadata records `temporary` or `permanent` failure class;
+- reconciliation uses the backfill endpoint.
 
-The `:id` used by conversation routes is the account-visible `display_id`, not
-the internal database ID.
+The signature input is exactly `timestamp + "." + raw_body`, HMAC-SHA256. The
+receiver URL must be HTTPS, cannot contain credentials/query/fragment and is
+subject to SSRF controls. Sensitive signature headers are stripped on
+cross-origin redirects.
 
-Allowed enum values are explicit: contact `contact_type` is `visitor`, `lead` or
-`customer`; conversation `status` is `open`, `resolved`, `pending` or `snoozed`;
-and conversation `priority` is `low`, `medium`, `high` or `urgent`. Invalid
-values, malformed ISO-8601 timestamps and non-positive message cursors return a
-stable `400` error instead of an internal exception.
+## Idempotency, unknown results and retention
 
-Errors use one envelope across the API:
+Idempotent replay returns the original status/body and
+`Idempotency-Replayed: true`. Reusing a key with another operation/payload
+returns `idempotency_conflict`.
+
+A processing row after an interrupted request returns `request_in_progress`
+with `result_state: unknown`. OpenJarvis must reconcile using operation history,
+resource search or backfill before choosing a new key. Unexpected mutation
+errors also use `result_state: unknown`; the API never claims a write was not
+applied when that cannot be proven.
+
+- Idempotency response retention: 30 days.
+- Webhook delivery metadata retention: 30 days.
+- Webhook bodies are not retained in the delivery ledger.
+- Resource sequence counters contain only integration/resource identifiers and
+  remain until integration deletion.
+
+## Rate limits
+
+- Reads: 120 requests per 60 seconds per integration.
+- Writes: 30 requests per 60 seconds per integration.
+
+Every response includes limit, remaining and reset headers. A limit breach
+returns HTTP 429, `Retry-After`, and the same stable JSON error envelope as the
+rest of the API.
+
+## Public errors
+
+Errors use:
 
 ```json
 {
   "error": {
     "code": "stable_machine_code",
     "message": "Sanitized explanation",
-    "details": {}
+    "details": {},
+    "retryable": false,
+    "result_state": "not_applied",
+    "request_id": "sanitized-request-id"
   }
 }
 ```
 
-### Contact write example
-
-```json
-{
-  "contact": {
-    "name": "Restaurante Exemplo",
-    "email": "contato@example.com",
-    "phone_number": "+5511999999999",
-    "contact_type": "lead",
-    "additional_attributes": { "company_name": "Restaurante Exemplo" },
-    "custom_attributes": { "origin": "openjarvis" }
-  }
-}
-```
-
-### Message write example
-
-```json
-{
-  "message": {
-    "content": "Olá, esta mensagem foi enviada pelo atendimento AceleraChat.",
-    "private": false,
-    "content_type": "text"
-  }
-}
-```
-
-For email conversations, the same endpoint also accepts `to_emails`,
-`cc_emails`, `bcc_emails` and `email_html_content`. Provider restrictions and
-delivery errors remain the responsibility of the AceleraChat channel adapter.
-
-## Webhooks sent to OpenJarvis
-
-The administrator configures one exact HTTPS receiver URL. AceleraChat sends
-JSON with these headers:
-
-```http
-X-AceleraChat-Delivery: <uuid>
-X-AceleraChat-Timestamp: <unix-seconds>
-X-AceleraChat-Signature: sha256=<hex-hmac>
-```
-
-Verification algorithm:
-
-```text
-expected = HMAC_SHA256(ACELERACHAT_WEBHOOK_SECRET, timestamp + "." + raw_body)
-```
-
-OpenJarvis must compare signatures in constant time, reject timestamps older
-than five minutes, and persist delivery IDs long enough to reject duplicates.
-It must return any `2xx` only after accepting the event durably. AceleraChat
-retries transport and `4xx/5xx` failures with bounded exponential backoff.
-
-Subscriptions:
-
-- `message.created`
-- `message.updated`
-- `conversation.created`
-- `conversation.updated`
-- `conversation.status_changed`
-- `contact.created`
-- `contact.updated`
-
-`integration.test` is sent only by the configuration screen and is not a normal
-subscription.
-
-The receiver URL cannot contain embedded credentials, a query string or a
-fragment, and cannot use `chatwoot.com`, `chatwoot.help`, `chwt.app` or their
-subdomains. Network fetching also blocks private-network SSRF targets by
-default. Signature headers are marked sensitive and are removed from
-cross-origin redirects.
-
-## Required OpenJarvis implementation
-
-The audited OpenJarvis runtime does not automatically expose generic MCP tools
-inside its canonical Gemini Live agent. Implement the native adapter at the
-audited SHA instead of relying only on `SystemBuilder._discover_external_mcp`.
-
-Required code locations:
-
-1. Add `src/openjarvis/server/jarvis_agent/adapters/acelerachat/` with a client,
-   argument models and an adapter implementing `JarvisAdapter`.
-2. Add `src/openjarvis/server/jarvis_agent/registry/acelerachat.py` with immutable
-   `ToolDefinition` entries and input schemas.
-3. Include those definitions in
-   `src/openjarvis/server/jarvis_agent/registry/catalog.py`.
-4. Add `AceleraChatAdapter` to the `adapters` map in
-   `src/openjarvis/server/jarvis_agent/api/container.py`.
-5. Add an authenticated webhook receiver to the FastAPI app, verify the raw
-   body signature before parsing, deduplicate `X-AceleraChat-Delivery`, then
-   publish accepted events into the canonical event ledger.
-6. Add tests for capability discovery, reads, approval-required writes,
-   idempotency, signature verification, stale timestamps, duplicate deliveries,
-   timeouts and sanitized errors.
-
-Recommended canonical tools:
-
-- `acelerachat.health`
-- `acelerachat.diagnostics`
-- `acelerachat.list_inboxes`
-- `acelerachat.search_contacts`
-- `acelerachat.get_contact`
-- `acelerachat.save_contact`
-- `acelerachat.update_contact`
-- `acelerachat.list_conversations`
-- `acelerachat.get_conversation`
-- `acelerachat.create_conversation`
-- `acelerachat.update_conversation`
-- `acelerachat.list_messages`
-- `acelerachat.send_message`
-
-Read tools use `Effect.READ`. Contact, conversation and message writes use
-`Effect.MUTATION`, preserving the existing visual approval flow. Use
-`AdapterContext.request_id` as the AceleraChat `Idempotency-Key`; do not invent a
-second retry identity.
-
-The adapter provider should be `acelerachat_api`, source `acelerachat`, adapter
-ID `acelerachat`, and its capability set should come from the authenticated
-`GET /catalog` response. A failed catalog or health call must mark the provider
-disconnected; it must never silently fall back to direct WhatsApp or Gmail for
-an AceleraChat-managed inbox.
-
-## Operational limits
-
-The diagnostics endpoint deliberately exposes no environment variables, shell,
-Docker socket, arbitrary files, raw Rails logs or database queries. Host-level
-VPS administration requires a separate, allowlisted operations agent and is not
-part of this channel integration.
-
-Version 1 sends text and channel-native message fields. Binary upload is not an
-OpenJarvis API capability yet; existing attachment metadata can be read with
-messages, but a future upload contract must be added before OpenJarvis can send
-new files. This limitation must not be hidden by falling back to direct provider
-connections.
-
-The integration screen reports `awaiting_openjarvis` until the receiver exists
-and reports `connected` only after OpenJarvis acknowledges a signed test event.
+The complete taxonomy is returned by `/catalog` and represented in OpenAPI.
+Provider secrets, raw Rails errors, environment variables, shell access, raw
+logs and arbitrary database queries are never part of this contract.

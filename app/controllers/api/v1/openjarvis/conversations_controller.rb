@@ -2,8 +2,11 @@ class Api::V1::Openjarvis::ConversationsController < Api::V1::Openjarvis::BaseCo
   def index
     require_scope!('conversations:read')
     records = filtered_conversations
-    records = paginate(records.includes(:inbox, :contact, :assignee, :team).order(updated_at: :desc))
-    render json: { data: records.map { |conversation| present(conversation) }, meta: pagination_meta(records) }
+    page = cursor_page(
+      records.includes(:inbox, :contact, :assignee, :team),
+      type: cursor_type('conversations', params.permit(:inbox_id, :contact_id, :status, :updated_after).to_h)
+    )
+    render json: { data: page.records.map { |conversation| present(conversation) }, meta: page.meta }
   end
 
   def show
@@ -28,6 +31,19 @@ class Api::V1::Openjarvis::ConversationsController < Api::V1::Openjarvis::BaseCo
     end
   end
 
+  def mark_read
+    require_scope!('conversations:write')
+    execute_idempotently('conversations.mark_read', { id: conversation.display_id }) do
+      seen_at = [conversation.messages.incoming.maximum(:created_at), Time.current].compact.max
+      conversation.update!(agent_last_seen_at: seen_at)
+      idempotent_result(
+        status: :ok,
+        body: { data: { conversation_id: conversation.display_id, read_at: seen_at.iso8601, provider_receipt_sent: false } },
+        resource: conversation
+      )
+    end
+  end
+
   private
 
   def conversation
@@ -35,21 +51,32 @@ class Api::V1::Openjarvis::ConversationsController < Api::V1::Openjarvis::BaseCo
   end
 
   def filtered_conversations
-    scope = openjarvis_access_scope.conversations
+    scope = filter_conversation_ids(openjarvis_access_scope.conversations)
+    scope = filter_conversation_status(scope)
+    filter_conversation_updated_at(scope)
+  end
+
+  def filter_conversation_ids(scope)
     scope = scope.where(inbox_id: params[:inbox_id]) if params[:inbox_id].present?
-    if params[:status].present?
-      validate_enum_value!(Conversation, :status, params[:status])
-      scope = scope.where(status: params[:status])
-    end
-    if params[:updated_after].present?
-      scope = scope.where('conversations.updated_at >= ?', parse_iso8601!(params[:updated_after], parameter: :updated_after))
-    end
-    scope
+    params[:contact_id].present? ? scope.where(contact_id: params[:contact_id]) : scope
+  end
+
+  def filter_conversation_status(scope)
+    return scope if params[:status].blank?
+
+    validate_enum_value!(Conversation, :status, params[:status])
+    scope.where(status: params[:status])
+  end
+
+  def filter_conversation_updated_at(scope)
+    return scope if params[:updated_after].blank?
+
+    scope.where('conversations.updated_at >= ?', parse_iso8601!(params[:updated_after], parameter: :updated_after))
   end
 
   def create_params
     params.require(:conversation).permit(
-      :inbox_id, :contact_id, :source_id, :status, :assignee_id, :team_id,
+      :inbox_id, :contact_id, :status, :assignee_id, :team_id,
       additional_attributes: {}, custom_attributes: {},
       message: [:content, :private, :content_type, :to_emails, :cc_emails, :bcc_emails, :email_html_content]
     )
@@ -75,15 +102,13 @@ class Api::V1::Openjarvis::ConversationsController < Api::V1::Openjarvis::BaseCo
   end
 
   def build_contact_inbox
-    ContactInboxBuilder.new(
-      contact: openjarvis_access_scope.contact!(create_params[:contact_id]),
-      inbox: openjarvis_access_scope.inbox!(create_params[:inbox_id]),
-      source_id: create_params[:source_id]
-    ).perform
+    contact = openjarvis_access_scope.contact!(create_params[:contact_id])
+    inbox = openjarvis_access_scope.inbox!(create_params[:inbox_id])
+    Openjarvis::ContactInboxResolver.new(contact: contact, inbox: inbox).resolve!
   end
 
   def conversation_builder_params
-    excluded = [:inbox_id, :contact_id, :source_id, :message, :assignee_id, :team_id]
+    excluded = [:inbox_id, :contact_id, :message, :assignee_id, :team_id]
     ActionController::Parameters.new(create_params.except(*excluded).to_h)
   end
 
@@ -95,11 +120,22 @@ class Api::V1::Openjarvis::ConversationsController < Api::V1::Openjarvis::BaseCo
   end
 
   def apply_conversation_updates
-    attributes = update_params.slice(:status, :priority, :snoozed_until)
-    conversation.update!(attributes) if attributes.present?
+    update_conversation_attributes
     update_team(conversation, update_params[:team_id]) if update_params.key?(:team_id)
     update_assignee(conversation, update_params[:assignee_id]) if update_params.key?(:assignee_id)
-    conversation.update_labels(update_params[:labels]) if update_params.key?(:labels)
+    update_conversation_labels
+  end
+
+  def update_conversation_attributes
+    attributes = update_params.slice(:status, :priority, :snoozed_until)
+    conversation.update!(attributes) if attributes.present?
+  end
+
+  def update_conversation_labels
+    return unless update_params.key?(:labels)
+
+    titles = Openjarvis::ResourceResolver.new(openjarvis_access_scope).label_titles!(update_params[:labels])
+    conversation.update_labels(titles)
   end
 
   def apply_initial_assignment(record)
@@ -108,6 +144,13 @@ class Api::V1::Openjarvis::ConversationsController < Api::V1::Openjarvis::BaseCo
   end
 
   def validate_create_params!
+    if params.dig(:conversation, :source_id).present?
+      raise Openjarvis::ApiError.new(
+        'source_id_not_accepted',
+        'source_id is resolved by AceleraChat and must not be supplied by the client',
+        status: :bad_request
+      )
+    end
     validate_enum_value!(Conversation, :status, create_params[:status])
   end
 
@@ -118,7 +161,7 @@ class Api::V1::Openjarvis::ConversationsController < Api::V1::Openjarvis::BaseCo
   end
 
   def update_assignee(record, assignee_id)
-    Current.account.users.find(assignee_id) if assignee_id.present?
+    Openjarvis::ResourceResolver.new(openjarvis_access_scope).agent!(assignee_id, inbox: record.inbox) if assignee_id.present?
     Conversations::AssignmentService.new(
       conversation: record,
       assignee_id: assignee_id
@@ -132,13 +175,7 @@ class Api::V1::Openjarvis::ConversationsController < Api::V1::Openjarvis::BaseCo
   end
 
   def update_team(record, team_id)
-    team = team_id.present? ? Current.account.teams.find_by(id: team_id) : nil
-    if team_id.present? && team.blank?
-      raise Openjarvis::ApiError.new('team_not_authorized', 'Team is outside the authorized account scope', status: :forbidden)
-    end
-    unless Current.account_user.administrator? || team.nil? || Current.user.teams.exists?(id: team.id)
-      raise Openjarvis::ApiError.new('team_not_authorized', 'Service user cannot assign this team', status: :forbidden)
-    end
+    team = team_id.present? ? Openjarvis::ResourceResolver.new(openjarvis_access_scope).team!(team_id) : nil
 
     record.update!(team: team)
   end

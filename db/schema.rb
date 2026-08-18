@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_08_18_120200) do
+ActiveRecord::Schema[7.1].define(version: 2026_08_18_120400) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1179,7 +1179,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_18_120200) do
     t.string "webhook_secret"
     t.datetime "access_token_rotated_at"
     t.datetime "webhook_secret_rotated_at"
+    t.string "previous_access_token"
+    t.datetime "previous_access_token_expires_at"
+    t.string "previous_webhook_secret"
+    t.datetime "previous_webhook_secret_expires_at"
     t.index ["access_token"], name: "idx_integration_hooks_openjarvis_token", unique: true, where: "((app_id)::text = 'openjarvis'::text)"
+    t.index ["previous_access_token"], name: "idx_openjarvis_hooks_previous_token", where: "(((app_id)::text = 'openjarvis'::text) AND (previous_access_token IS NOT NULL))"
   end
 
   create_table "instagram_comment_automations", force: :cascade do |t|
@@ -1413,10 +1418,23 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_18_120200) do
     t.datetime "completed_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "expires_at"
+    t.index ["expires_at"], name: "index_openjarvis_api_requests_on_expires_at"
     t.index ["integration_hook_id", "created_at"], name: "idx_openjarvis_requests_hook_created"
     t.index ["integration_hook_id", "idempotency_key"], name: "idx_openjarvis_requests_hook_key", unique: true
     t.index ["integration_hook_id"], name: "index_openjarvis_api_requests_on_integration_hook_id"
     t.index ["resource_type", "resource_id"], name: "idx_openjarvis_requests_resource"
+  end
+
+  create_table "openjarvis_resource_sequences", force: :cascade do |t|
+    t.bigint "integration_hook_id", null: false
+    t.string "resource_type", null: false
+    t.bigint "resource_id", null: false
+    t.bigint "sequence", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["integration_hook_id", "resource_type", "resource_id"], name: "idx_openjarvis_resource_sequences_unique", unique: true
+    t.index ["integration_hook_id"], name: "index_openjarvis_resource_sequences_on_integration_hook_id"
   end
 
   create_table "openjarvis_webhook_deliveries", force: :cascade do |t|
@@ -1434,8 +1452,18 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_18_120200) do
     t.datetime "delivered_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "event_id", null: false
+    t.string "schema_version", default: "1.0", null: false
+    t.string "resource_version"
+    t.bigint "resource_sequence"
+    t.string "failure_class"
+    t.datetime "next_attempt_at"
+    t.datetime "expires_at"
     t.index ["delivery_id"], name: "index_openjarvis_webhook_deliveries_on_delivery_id", unique: true
+    t.index ["event_id"], name: "index_openjarvis_webhook_deliveries_on_event_id", unique: true
+    t.index ["expires_at"], name: "index_openjarvis_webhook_deliveries_on_expires_at"
     t.index ["integration_hook_id", "created_at"], name: "idx_openjarvis_deliveries_hook_created"
+    t.index ["integration_hook_id", "resource_type", "resource_id", "resource_sequence"], name: "idx_openjarvis_deliveries_resource_sequence"
     t.index ["integration_hook_id", "status"], name: "idx_openjarvis_deliveries_hook_status"
     t.index ["integration_hook_id"], name: "index_openjarvis_webhook_deliveries_on_integration_hook_id"
   end
@@ -1821,6 +1849,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_18_120200) do
   add_foreign_key "instagram_comment_events", "inboxes", on_delete: :cascade
   add_foreign_key "instagram_comment_events", "instagram_comment_automations", on_delete: :nullify
   add_foreign_key "openjarvis_api_requests", "integrations_hooks", column: "integration_hook_id"
+  add_foreign_key "openjarvis_resource_sequences", "integrations_hooks", column: "integration_hook_id"
   add_foreign_key "openjarvis_webhook_deliveries", "integrations_hooks", column: "integration_hook_id"
   add_foreign_key "privacy_request_events", "privacy_requests"
   add_foreign_key "privacy_requests", "accounts"

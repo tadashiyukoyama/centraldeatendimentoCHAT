@@ -25,6 +25,8 @@ class Integrations::Hook < ApplicationRecord
   # TODO: Remove guard once encryption keys become mandatory (target 3-4 releases out).
   encrypts :access_token, deterministic: true if Chatwoot.encryption_configured?
   encrypts :webhook_secret if Chatwoot.encryption_configured?
+  encrypts :previous_access_token, deterministic: true if Chatwoot.encryption_configured?
+  encrypts :previous_webhook_secret if Chatwoot.encryption_configured?
 
   validates :account_id, presence: true
   validates :app_id, presence: true
@@ -49,6 +51,11 @@ class Integrations::Hook < ApplicationRecord
            inverse_of: :integration_hook
   has_many :openjarvis_webhook_deliveries,
            class_name: 'Openjarvis::WebhookDelivery',
+           foreign_key: :integration_hook_id,
+           dependent: :destroy_async,
+           inverse_of: :integration_hook
+  has_many :openjarvis_resource_sequences,
+           class_name: 'Openjarvis::ResourceSequence',
            foreign_key: :integration_hook_id,
            dependent: :destroy_async,
            inverse_of: :integration_hook
@@ -89,6 +96,25 @@ class Integrations::Hook < ApplicationRecord
 
   def openjarvis_configuration
     Openjarvis::Configuration.new(self)
+  end
+
+  def accepts_openjarvis_access_token?(token, at: Time.current)
+    return false unless openjarvis?
+    return true if ActiveSupport::SecurityUtils.secure_compare(access_token.to_s, token.to_s)
+    return false if previous_access_token.blank? || previous_access_token_expires_at.blank? || previous_access_token_expires_at <= at
+
+    ActiveSupport::SecurityUtils.secure_compare(previous_access_token.to_s, token.to_s)
+  end
+
+  def active_openjarvis_webhook_secrets(at: Time.current)
+    [webhook_secret, previous_openjarvis_webhook_secret(at: at)].compact
+  end
+
+  def previous_openjarvis_webhook_secret(at: Time.current)
+    return if previous_webhook_secret.blank?
+    return if previous_webhook_secret_expires_at.blank? || previous_webhook_secret_expires_at <= at
+
+    previous_webhook_secret
   end
 
   def disable

@@ -1,0 +1,48 @@
+Id:
+  name: id
+  in: path
+  required: true
+  schema:
+    type: integer
+    minimum: 1
+InboxId:
+  name: inbox_id
+  in: path
+  required: true
+  schema:
+    type: integer
+    minimum: 1
+ConversationId:
+  name: conversation_id
+  in: path
+  required: true
+  description: Account-visible conversation display ID.
+  schema:
+    type: integer
+    minimum: 1
+Cursor:
+  name: cursor
+  in: query
+  required: false
+  description: Opaque signed cursor bound to the operation and its filters.
+  schema:
+    type: string
+Limit:
+  name: limit
+  in: query
+  required: false
+  schema:
+    type: integer
+    minimum: 1
+    maximum: 100
+    default: 25
+IdempotencyKey:
+  name: Idempotency-Key
+  in: header
+  required: true
+  description: Stable operation identity retained for 30 days.
+  schema:
+    type: string
+    minLength: 8
+    maxLength: 128
+    pattern: '^[A-Za-z0-9][A-Za-z0-9_.:-]{7,127}$'

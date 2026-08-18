@@ -45,7 +45,7 @@ RSpec.describe 'OpenJarvis integration settings', type: :request do
     expect(response.parsed_body.dig('credential_metadata', 'access_token_last_four')).to be_present
   end
 
-  it 'rotates the Bearer token and revokes the previous value immediately' do
+  it 'rotates the Bearer token with a 24-hour overlap' do
     hook = create(:integrations_hook, :openjarvis, account: account, service_user: service_user, allowed_inboxes: [inbox])
     old_token = hook.access_token
 
@@ -53,7 +53,25 @@ RSpec.describe 'OpenJarvis integration settings', type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.parsed_body.dig('credential', 'value')).not_to eq(old_token)
-    expect(hook.reload.access_token).not_to eq(old_token)
+    hook.reload
+    expect(hook.access_token).not_to eq(old_token)
+    expect(hook.previous_access_token).to eq(old_token)
+    expect(hook.previous_access_token_expires_at).to be_within(5.seconds).of(24.hours.from_now)
+    expect(response.parsed_body.dig('credential', 'previous_valid_until')).to be_present
+  end
+
+  it 'rotates the HMAC secret with a 24-hour dual-signature overlap' do
+    hook = create(:integrations_hook, :openjarvis, account: account, service_user: service_user, allowed_inboxes: [inbox])
+    old_secret = hook.webhook_secret
+
+    post "#{path}/rotate_webhook_secret", headers: admin.create_new_auth_token
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body.dig('credential', 'value')).not_to eq(old_secret)
+    hook.reload
+    expect(hook.previous_webhook_secret).to eq(old_secret)
+    expect(hook.previous_webhook_secret_expires_at).to be_within(5.seconds).of(24.hours.from_now)
+    expect(hook.active_openjarvis_webhook_secrets).to eq([hook.webhook_secret, old_secret])
   end
 
   it 'tests the real configured endpoint through the signed client' do

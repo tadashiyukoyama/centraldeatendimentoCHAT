@@ -9,7 +9,9 @@ class Openjarvis::InboxPresenter
       name: inbox.name,
       channel_type: inbox.channel_type,
       inbox_type: inbox.inbox_type,
-      enabled: inbox.enable_auto_assignment,
+      auto_assignment_enabled: inbox.enable_auto_assignment,
+      connection: capability_resolver.connection,
+      capabilities: capability_resolver.capabilities,
       created_at: inbox.created_at.iso8601,
       updated_at: inbox.updated_at.iso8601
     }
@@ -18,4 +20,8 @@ class Openjarvis::InboxPresenter
   private
 
   attr_reader :inbox
+
+  def capability_resolver
+    @capability_resolver ||= Openjarvis::CapabilityResolver.new(inbox: inbox)
+  end
 end

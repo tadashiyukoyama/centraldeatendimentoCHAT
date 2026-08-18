@@ -1,8 +1,17 @@
 class Openjarvis::Configuration
   APP_ID = 'openjarvis'.freeze
+  CONTRACT_VERSION = '2026-08-18.2'.freeze
+  SCHEMA_VERSION = '1.0'.freeze
+  CREDENTIAL_GRACE_PERIOD = 24.hours
+  IDEMPOTENCY_RETENTION = 30.days
+  DELIVERY_RETENTION = 30.days
+  RATE_LIMITS = {
+    read: { limit: 120, window: 1.minute },
+    write: { limit: 30, window: 1.minute }
+  }.freeze
   DEFAULT_SCOPES = %w[
     inboxes:read conversations:read messages:read messages:write
-    contacts:read contacts:write conversations:write diagnostics:read
+    contacts:read contacts:write conversations:write resources:read diagnostics:read sync:read
   ].freeze
   SCOPES = DEFAULT_SCOPES.freeze
   DEFAULT_SUBSCRIPTIONS = %w[

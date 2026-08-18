@@ -1,0 +1,150 @@
+Unauthorized:
+  description: Missing, invalid, expired or revoked Bearer credential.
+  content:
+    application/json:
+      schema:
+        $ref: ./schemas.yaml#/ErrorResponse
+      examples:
+        invalidCredentials:
+          value:
+            error:
+              code: invalid_credentials
+              message: Invalid or revoked integration credentials
+              retryable: false
+              result_state: not_applied
+              request_id: sanitized-request-id
+Forbidden:
+  description: The credential lacks the scope or resource authorization.
+  content:
+    application/json:
+      schema:
+        $ref: ./schemas.yaml#/ErrorResponse
+      examples:
+        insufficientScope:
+          value:
+            error:
+              {
+                code: insufficient_scope,
+                message: 'Required scope: resources:read',
+                retryable: false,
+                result_state: not_applied,
+                request_id: sanitized-request-id,
+              }
+NotFound:
+  description: Resource is absent or outside the authorized inbox boundary.
+  content:
+    application/json:
+      schema:
+        $ref: ./schemas.yaml#/ErrorResponse
+      examples:
+        notFound:
+          value:
+            error:
+              {
+                code: resource_not_found,
+                message: Resource was not found,
+                retryable: false,
+                result_state: not_applied,
+                request_id: sanitized-request-id,
+              }
+ValidationError:
+  description: Request is invalid or the declared channel capability is not supported.
+  content:
+    application/json:
+      schema:
+        $ref: ./schemas.yaml#/ErrorResponse
+      examples:
+        unsupportedCapability:
+          value:
+            error:
+              code: capability_not_supported
+              message: Provider-native operation is not supported for this inbox
+              details: { capability: messages.reaction, inbox_id: 19 }
+              retryable: false
+              result_state: not_applied
+              request_id: sanitized-request-id
+Conflict:
+  description: Idempotency conflict or an operation whose result is still unknown.
+  content:
+    application/json:
+      schema:
+        $ref: ./schemas.yaml#/ErrorResponse
+      examples:
+        unknownResult:
+          value:
+            error:
+              {
+                code: request_in_progress,
+                message: A matching request is still processing,
+                retryable: true,
+                result_state: unknown,
+                request_id: sanitized-request-id,
+              }
+RateLimited:
+  description: Per-integration rate limit exceeded.
+  headers:
+    Retry-After:
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    X-RateLimit-Limit:
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      schema:
+        type: integer
+    X-RateLimit-Reset:
+      schema:
+        type: integer
+  content:
+    application/json:
+      schema:
+        $ref: ./schemas.yaml#/ErrorResponse
+      examples:
+        rateLimited:
+          value:
+            error:
+              code: rate_limited
+              message: Integration rate limit exceeded
+              details:
+                retry_after: 24
+                limit: 120
+                window_seconds: 60
+              retryable: true
+              result_state: not_applied
+              request_id: sanitized-request-id
+Unavailable:
+  description: Integration or a required dependency is temporarily unavailable.
+  content:
+    application/json:
+      schema:
+        $ref: ./schemas.yaml#/ErrorResponse
+      examples:
+        unavailable:
+          value:
+            error:
+              {
+                code: integration_unavailable,
+                message: The integration configuration is incomplete,
+                retryable: true,
+                result_state: not_applied,
+                request_id: sanitized-request-id,
+              }
+InternalError:
+  description: Sanitized unexpected failure. Mutation result may be unknown and must be reconciled.
+  content:
+    application/json:
+      schema:
+        $ref: ./schemas.yaml#/ErrorResponse
+      examples:
+        unknownMutationResult:
+          value:
+            error:
+              {
+                code: internal_error,
+                message: The operation could not be completed,
+                retryable: true,
+                result_state: unknown,
+                request_id: sanitized-request-id,
+              }

@@ -1,0 +1,141 @@
+openapi: 3.1.0
+info:
+  title: AceleraChat OpenJarvis API
+  version: 2026-08-18.2
+  summary: Native, account-scoped AceleraChat contract for OpenJarvis
+  description: |
+    Contract implemented from baseline SHA
+    `128d00a1743e198eb370f55fbaf7bffe7a2b01f1`. AceleraChat remains the
+    sole authority for its configured channels. Unsupported provider operations are
+    declared in the inbox capability document and must not be emulated through a
+    parallel provider connection.
+  license:
+    name: Proprietary
+    url: https://atendimento.meugerenciador.pro/legal/terms
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+servers:
+  - url: https://atendimento.meugerenciador.pro/api/v1/openjarvis
+    description: Production
+security:
+  - bearerAuth: []
+tags:
+  - name: Contract
+    description: Executable catalog and OpenAPI documents.
+  - name: Health
+    description: Integration, infrastructure and per-inbox capability health.
+  - name: Resources
+    description: Authorized inboxes, agents, teams and labels.
+  - name: Contacts
+    description: Account-scoped contact reads and idempotent writes.
+  - name: Conversations
+    description: Authorized conversation search, creation, routing and read state.
+  - name: Messages
+    description: Authorized message search, reads and capability-gated writes.
+  - name: Synchronization
+    description: Cursor-based snapshots for initial synchronization and reconciliation.
+paths:
+  /catalog:
+    $ref: ./openjarvis-openapi/paths.yaml#/CatalogPath
+  /openapi:
+    $ref: ./openjarvis-openapi/paths.yaml#/OpenapiPath
+  /health:
+    $ref: ./openjarvis-openapi/paths.yaml#/HealthPath
+  /diagnostics:
+    $ref: ./openjarvis-openapi/paths.yaml#/DiagnosticsPath
+  /operations:
+    $ref: ./openjarvis-openapi/paths.yaml#/OperationsPath
+  /inboxes:
+    $ref: ./openjarvis-openapi/paths.yaml#/InboxesPath
+  /inboxes/{inbox_id}/health:
+    $ref: ./openjarvis-openapi/paths.yaml#/InboxHealthPath
+  /agents:
+    $ref: ./openjarvis-openapi/paths.yaml#/AgentsPath
+  /teams:
+    $ref: ./openjarvis-openapi/paths.yaml#/TeamsPath
+  /labels:
+    $ref: ./openjarvis-openapi/paths.yaml#/LabelsPath
+  /contacts:
+    $ref: ./openjarvis-openapi/paths.yaml#/ContactsPath
+  /contacts/{id}:
+    $ref: ./openjarvis-openapi/paths.yaml#/ContactPath
+  /conversations:
+    $ref: ./openjarvis-openapi/paths.yaml#/ConversationsPath
+  /conversations/{id}:
+    $ref: ./openjarvis-openapi/paths.yaml#/ConversationPath
+  /conversations/{id}/read:
+    $ref: ./openjarvis-openapi/paths.yaml#/ConversationReadPath
+  /messages:
+    $ref: ./openjarvis-openapi/paths.yaml#/MessagesSearchPath
+  /conversations/{conversation_id}/messages:
+    $ref: ./openjarvis-openapi/paths.yaml#/ConversationMessagesPath
+  /backfill:
+    $ref: ./openjarvis-openapi/paths.yaml#/BackfillPath
+webhooks:
+  messageCreated:
+    $ref: ./openjarvis-openapi/webhooks.yaml#/MessageCreatedWebhook
+  messageUpdated:
+    $ref: ./openjarvis-openapi/webhooks.yaml#/MessageUpdatedWebhook
+  conversationCreated:
+    $ref: ./openjarvis-openapi/webhooks.yaml#/ConversationCreatedWebhook
+  conversationUpdated:
+    $ref: ./openjarvis-openapi/webhooks.yaml#/ConversationUpdatedWebhook
+  conversationStatusChanged:
+    $ref: ./openjarvis-openapi/webhooks.yaml#/ConversationStatusChangedWebhook
+  contactCreated:
+    $ref: ./openjarvis-openapi/webhooks.yaml#/ContactCreatedWebhook
+  contactUpdated:
+    $ref: ./openjarvis-openapi/webhooks.yaml#/ContactUpdatedWebhook
+  integrationTest:
+    $ref: ./openjarvis-openapi/webhooks.yaml#/IntegrationTestWebhook
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: Current or previous Bearer token during the documented 24-hour rotation overlap.
+  schemas:
+    ErrorResponse:
+      $ref: ./openjarvis-openapi/schemas.yaml#/ErrorResponse
+    CursorMeta:
+      $ref: ./openjarvis-openapi/schemas.yaml#/CursorMeta
+    Contact:
+      $ref: ./openjarvis-openapi/schemas.yaml#/Contact
+    Conversation:
+      $ref: ./openjarvis-openapi/schemas.yaml#/Conversation
+    Message:
+      $ref: ./openjarvis-openapi/schemas.yaml#/Message
+    Inbox:
+      $ref: ./openjarvis-openapi/schemas.yaml#/Inbox
+    WebhookEnvelope:
+      $ref: ./openjarvis-openapi/schemas.yaml#/WebhookEnvelope
+  parameters:
+    Id:
+      $ref: ./openjarvis-openapi/parameters.yaml#/Id
+    InboxId:
+      $ref: ./openjarvis-openapi/parameters.yaml#/InboxId
+    ConversationId:
+      $ref: ./openjarvis-openapi/parameters.yaml#/ConversationId
+    Cursor:
+      $ref: ./openjarvis-openapi/parameters.yaml#/Cursor
+    Limit:
+      $ref: ./openjarvis-openapi/parameters.yaml#/Limit
+    IdempotencyKey:
+      $ref: ./openjarvis-openapi/parameters.yaml#/IdempotencyKey
+  responses:
+    Unauthorized:
+      $ref: ./openjarvis-openapi/responses.yaml#/Unauthorized
+    Forbidden:
+      $ref: ./openjarvis-openapi/responses.yaml#/Forbidden
+    NotFound:
+      $ref: ./openjarvis-openapi/responses.yaml#/NotFound
+    ValidationError:
+      $ref: ./openjarvis-openapi/responses.yaml#/ValidationError
+    Conflict:
+      $ref: ./openjarvis-openapi/responses.yaml#/Conflict
+    RateLimited:
+      $ref: ./openjarvis-openapi/responses.yaml#/RateLimited
+    Unavailable:
+      $ref: ./openjarvis-openapi/responses.yaml#/Unavailable
+    InternalError:
+      $ref: ./openjarvis-openapi/responses.yaml#/InternalError

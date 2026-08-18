@@ -1,0 +1,1021 @@
+ErrorResponse:
+  type: object
+  required: [error]
+  additionalProperties: false
+  properties:
+    error:
+      type: object
+      required: [code, message, retryable, result_state]
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: [object, 'null']
+        retryable:
+          type: boolean
+        result_state:
+          type: string
+          enum: [not_applied, unknown, applied]
+        request_id:
+          type: [string, 'null']
+CursorMeta:
+  type: object
+  required: [limit, returned, has_more, next_cursor]
+  additionalProperties: false
+  properties:
+    limit:
+      type: integer
+      minimum: 1
+      maximum: 100
+    returned:
+      type: integer
+      minimum: 0
+      maximum: 100
+    has_more:
+      type: boolean
+    next_cursor:
+      type: [string, 'null']
+Connection:
+  type: object
+  required: [state, connected, source]
+  properties:
+    state:
+      type: string
+      enum:
+        [
+          active,
+          connected,
+          configured_not_probed,
+          authorization_required,
+          not_configured,
+          not_provisioned,
+          provisioning,
+          waiting_qr,
+          connecting,
+          disconnected,
+          failed,
+          deleting,
+          deleted,
+          inbox_required,
+        ]
+    connected:
+      type: boolean
+      description: Never derived from enable_auto_assignment.
+    operational:
+      type: boolean
+    source:
+      type: string
+    provider:
+      type: string
+    last_seen_at:
+      type: [string, 'null']
+      format: date-time
+    error_code:
+      type: [string, 'null']
+    inbound_configured:
+      type: boolean
+    outbound_configured:
+      type: boolean
+Capability:
+  type: object
+  required: [supported, mode]
+  additionalProperties: false
+  properties:
+    supported:
+      type: boolean
+    mode:
+      type: string
+      enum:
+        [
+          acelerachat,
+          acelerachat_metadata,
+          acelerachat_thread,
+          not_supported,
+          not_applicable,
+        ]
+    endpoint:
+      type: string
+    reason:
+      type: string
+CapabilityMap:
+  type: object
+  additionalProperties:
+    $ref: '#/Capability'
+JsonSchema:
+  type: object
+  description: JSON Schema 2020-12 fragment executable by the client.
+CatalogOperation:
+  type: object
+  required:
+    [
+      id,
+      method,
+      path,
+      description,
+      executable,
+      idempotency_required,
+      input_schema,
+      output_schema,
+    ]
+  additionalProperties: false
+  properties:
+    id: { type: string }
+    method: { type: string, enum: [GET, POST, PATCH] }
+    path: { type: string }
+    scope: { type: [string, 'null'] }
+    description: { type: string }
+    executable: { const: true }
+    idempotency_required: { type: boolean }
+    input_schema: { $ref: '#/JsonSchema' }
+    output_schema: { $ref: '#/JsonSchema' }
+CatalogEndpoint:
+  type: object
+  required: [method, path, description]
+  additionalProperties: false
+  properties:
+    method: { type: string, enum: [GET, POST, PATCH] }
+    path: { type: string }
+    scope: { type: [string, 'null'] }
+    description: { type: string }
+ErrorDefinition:
+  type: object
+  required: [status, retryable, result_state]
+  additionalProperties: false
+  properties:
+    status: { type: integer, minimum: 400, maximum: 599 }
+    retryable: { type: boolean }
+    result_state: { type: string, enum: [not_applied, unknown, applied] }
+Catalog:
+  type: object
+  required:
+    [
+      name,
+      version,
+      schema_version,
+      implementation_base_sha,
+      openapi,
+      authentication,
+      idempotency,
+      rate_limits,
+      retention,
+      scopes,
+      webhook_subscriptions,
+      webhook_delivery,
+      channel_capabilities,
+      errors,
+      operations,
+      endpoints,
+    ]
+  additionalProperties: false
+  properties:
+    name: { const: AceleraChat OpenJarvis API }
+    version: { type: string }
+    schema_version: { const: '1.0' }
+    implementation_base_sha: { type: string, pattern: '^[0-9a-f]{40}$' }
+    implementation_release: { type: [string, 'null'] }
+    granted_scopes: { type: array, items: { type: string } }
+    openapi: { type: string }
+    authentication:
+      type: object
+      required: [type, header, rotation_grace_seconds, simultaneous_credentials]
+      properties:
+        type: { const: bearer }
+        header: { const: Authorization }
+        rotation_grace_seconds: { type: integer }
+        simultaneous_credentials: { const: 2 }
+    idempotency:
+      type: object
+      required:
+        [required_for, header, minimum_length, replay_header, retention_seconds]
+      properties:
+        required_for:
+          { type: array, items: { type: string, enum: [POST, PATCH] } }
+        header: { const: Idempotency-Key }
+        minimum_length: { type: integer }
+        replay_header: { const: Idempotency-Replayed }
+        retention_seconds: { type: integer }
+    rate_limits:
+      type: object
+      additionalProperties:
+        type: object
+        required: [limit, window_seconds, retry_after_header]
+        properties:
+          limit: { type: integer }
+          window_seconds: { type: integer }
+          retry_after_header: { type: boolean }
+    retention:
+      type: object
+      required:
+        [
+          idempotency_seconds,
+          webhook_delivery_metadata_seconds,
+          webhook_payload_persisted,
+        ]
+      properties:
+        idempotency_seconds: { type: integer }
+        webhook_delivery_metadata_seconds: { type: integer }
+        webhook_payload_persisted: { const: false }
+    scopes: { type: array, items: { type: string } }
+    webhook_subscriptions: { type: array, items: { type: string } }
+    webhook_delivery:
+      type: object
+      required:
+        [
+          semantic,
+          duplicates_possible,
+          global_ordering,
+          per_resource_sequence,
+          retry_attempts,
+          temporary_failures,
+          permanent_failures,
+          reconciliation_endpoint,
+        ]
+      additionalProperties: false
+      properties:
+        semantic: { const: at_least_once }
+        duplicates_possible: { const: true }
+        global_ordering: { const: false }
+        per_resource_sequence: { const: true }
+        retry_attempts: { type: integer }
+        temporary_failures: { type: array, items: { type: [string, integer] } }
+        permanent_failures: { type: array, items: { type: string } }
+        reconciliation_endpoint: { type: string }
+    channel_capabilities:
+      type: object
+      additionalProperties: { $ref: '#/CapabilityMap' }
+    errors:
+      type: object
+      additionalProperties: { $ref: '#/ErrorDefinition' }
+    operations: { type: array, items: { $ref: '#/CatalogOperation' } }
+    endpoints: { type: array, items: { $ref: '#/CatalogEndpoint' } }
+AccountSummary:
+  type: object
+  required: [id, name]
+  additionalProperties: false
+  properties:
+    id: { type: integer }
+    name: { type: string }
+IntegrationSummary:
+  type: object
+  required:
+    [
+      status,
+      webhooks_enabled,
+      allowed_inbox_count,
+      service_user_id,
+      pending_deliveries,
+      failed_deliveries,
+    ]
+  additionalProperties: false
+  properties:
+    status: { type: string, enum: [enabled, disabled] }
+    webhooks_enabled: { type: boolean }
+    allowed_inbox_count: { type: integer, minimum: 0 }
+    service_user_id: { type: integer }
+    pending_deliveries: { type: integer, minimum: 0 }
+    failed_deliveries: { type: integer, minimum: 0 }
+HealthInbox:
+  type: object
+  required: [id, channel_type, connection]
+  additionalProperties: false
+  properties:
+    id: { type: integer }
+    channel_type: { type: string }
+    connection: { $ref: '#/Connection' }
+Health:
+  type: object
+  required: [status, checked_at, version, account, integration, inboxes]
+  additionalProperties: false
+  properties:
+    status: { type: string, enum: [ok, degraded] }
+    checked_at: { type: string, format: date-time }
+    release: { type: [string, 'null'] }
+    version: { type: string }
+    account: { $ref: '#/AccountSummary' }
+    integration: { $ref: '#/IntegrationSummary' }
+    inboxes: { type: array, items: { $ref: '#/HealthInbox' } }
+DiagnosticCheck:
+  type: object
+  required: [status]
+  additionalProperties: false
+  properties:
+    status: { type: string, enum: [ok, failing] }
+    latency_ms: { type: number, minimum: 0 }
+    error: { type: string }
+    migrations: { type: string, enum: [current, pending] }
+    processes: { type: integer, minimum: 0 }
+    enqueued: { type: integer, minimum: 0 }
+    scheduled: { type: integer, minimum: 0 }
+    retries: { type: integer, minimum: 0 }
+    dead: { type: integer, minimum: 0 }
+Diagnostics:
+  type: object
+  required: [status, checked_at, version, account, integration, checks]
+  additionalProperties: false
+  properties:
+    status: { type: string, enum: [ok, degraded] }
+    checked_at: { type: string, format: date-time }
+    release: { type: [string, 'null'] }
+    version: { type: string }
+    account: { $ref: '#/AccountSummary' }
+    integration: { $ref: '#/IntegrationSummary' }
+    checks:
+      type: object
+      required: [postgres, redis, sidekiq]
+      additionalProperties: false
+      properties:
+        postgres: { $ref: '#/DiagnosticCheck' }
+        redis: { $ref: '#/DiagnosticCheck' }
+        sidekiq: { $ref: '#/DiagnosticCheck' }
+ApiRequestOperation:
+  type: object
+  required: [id, operation, status, created_at, expires_at]
+  additionalProperties: false
+  properties:
+    id: { type: integer }
+    operation: { type: string }
+    status: { type: string, enum: [processing, completed] }
+    response_status: { type: [integer, 'null'] }
+    resource_type: { type: [string, 'null'] }
+    resource_id: { type: [integer, 'null'] }
+    created_at: { type: string, format: date-time }
+    completed_at: { type: [string, 'null'], format: date-time }
+    expires_at: { type: string, format: date-time }
+WebhookDeliveryOperation:
+  type: object
+  required:
+    [
+      delivery_id,
+      event_id,
+      schema_version,
+      event_name,
+      status,
+      attempts,
+      created_at,
+      expires_at,
+    ]
+  additionalProperties: false
+  properties:
+    delivery_id: { type: string, format: uuid }
+    event_id: { type: string, format: uuid }
+    schema_version: { const: '1.0' }
+    event_name: { type: string }
+    resource_type: { type: [string, 'null'] }
+    resource_id: { type: [integer, 'null'] }
+    resource_version: { type: [string, 'null'] }
+    resource_sequence: { type: [integer, 'null'] }
+    status: { type: string, enum: [queued, delivering, delivered, failed] }
+    attempts: { type: integer, minimum: 0 }
+    response_status: { type: [integer, 'null'] }
+    failure_class:
+      { type: [string, 'null'], enum: [temporary, permanent, null] }
+    error_code: { type: [string, 'null'] }
+    error_message: { type: [string, 'null'] }
+    next_attempt_at: { type: [string, 'null'], format: date-time }
+    created_at: { type: string, format: date-time }
+    delivered_at: { type: [string, 'null'], format: date-time }
+    expires_at: { type: string, format: date-time }
+Operations:
+  type: object
+  required: [api_requests, webhook_deliveries]
+  additionalProperties: false
+  properties:
+    api_requests: { type: array, items: { $ref: '#/ApiRequestOperation' } }
+    webhook_deliveries:
+      { type: array, items: { $ref: '#/WebhookDeliveryOperation' } }
+Inbox:
+  type: object
+  required:
+    [
+      id,
+      name,
+      channel_type,
+      inbox_type,
+      auto_assignment_enabled,
+      connection,
+      capabilities,
+      created_at,
+      updated_at,
+    ]
+  additionalProperties: false
+  properties:
+    id:
+      type: integer
+    name:
+      type: string
+    channel_type:
+      type: string
+    inbox_type:
+      type: string
+    auto_assignment_enabled:
+      type: boolean
+    connection:
+      $ref: '#/Connection'
+    capabilities:
+      $ref: '#/CapabilityMap'
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+InboxHealth:
+  type: object
+  required: [inbox_id, channel_type, checked_at, connection, capabilities]
+  additionalProperties: false
+  properties:
+    inbox_id:
+      type: integer
+    channel_type:
+      type: string
+    checked_at:
+      type: string
+      format: date-time
+    connection:
+      $ref: '#/Connection'
+    capabilities:
+      $ref: '#/CapabilityMap'
+Contact:
+  type: object
+  required:
+    [
+      id,
+      contact_type,
+      blocked,
+      additional_attributes,
+      custom_attributes,
+      created_at,
+      updated_at,
+    ]
+  properties:
+    id:
+      type: integer
+    name:
+      type: [string, 'null']
+    email:
+      type: [string, 'null']
+      format: email
+    phone_number:
+      type: [string, 'null']
+    identifier:
+      type: [string, 'null']
+    contact_type:
+      type: string
+      enum: [visitor, lead, customer]
+    blocked:
+      type: boolean
+    additional_attributes:
+      type: object
+    custom_attributes:
+      type: object
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+Agent:
+  type: object
+  required: [id, name, email, role]
+  properties:
+    id:
+      type: integer
+    name:
+      type: string
+    email:
+      type: string
+      format: email
+    role:
+      type: string
+      enum: [agent, administrator]
+    inbox_id:
+      type: [integer, 'null']
+Team:
+  type: object
+  required: [id, name, allow_auto_assign]
+  properties:
+    id:
+      type: integer
+    name:
+      type: string
+    description:
+      type: [string, 'null']
+    allow_auto_assign:
+      type: boolean
+Label:
+  type: object
+  required: [id, title, color]
+  properties:
+    id:
+      type: integer
+    title:
+      type: string
+    description:
+      type: [string, 'null']
+    color:
+      type: string
+    show_on_sidebar:
+      type: boolean
+AssigneeSummary:
+  type: object
+  required: [id, name, email]
+  additionalProperties: false
+  properties:
+    id: { type: integer }
+    name: { type: string }
+    email: { type: string, format: email }
+TeamSummary:
+  type: object
+  required: [id, name]
+  additionalProperties: false
+  properties:
+    id: { type: integer }
+    name: { type: string }
+MessageSender:
+  type: [object, 'null']
+  properties:
+    id:
+      type: integer
+    type:
+      type: string
+    name:
+      type: [string, 'null']
+    email:
+      type: [string, 'null']
+      format: email
+Attachment:
+  type: object
+  description: Sanitized AceleraChat attachment metadata. This contract does not upload new binaries.
+  properties:
+    id:
+      type: integer
+    file_type:
+      type: string
+    data_url:
+      type: string
+      format: uri
+    file_size:
+      type: integer
+    extension:
+      type: [string, 'null']
+Delivery:
+  type: object
+  required: [status, result_state]
+  properties:
+    status:
+      type: string
+      enum: [sent, delivered, read, failed]
+    result_state:
+      type: string
+      enum: [received, unknown, submitted, confirmed, failed]
+    provider_message_id:
+      type: [string, 'null']
+    error:
+      type: [string, 'null']
+EmailMessage:
+  type: [object, 'null']
+  properties:
+    thread_id:
+      type: string
+      format: uuid
+    subject:
+      type: [string, 'null']
+    to:
+      type: array
+      items:
+        type: string
+        format: email
+    cc:
+      type: array
+      items:
+        type: string
+        format: email
+    bcc:
+      type: array
+      items:
+        type: string
+        format: email
+    provider_archive_supported:
+      const: false
+    provider_trash_supported:
+      const: false
+Message:
+  type: object
+  required:
+    [
+      id,
+      conversation_id,
+      message_type,
+      content_type,
+      private,
+      status,
+      delivery,
+      attachments,
+      unread,
+      created_at,
+      updated_at,
+    ]
+  properties:
+    id:
+      type: integer
+    conversation_id:
+      type: integer
+      description: Account-visible conversation display ID.
+    message_type:
+      type: string
+      enum: [incoming, outgoing, activity, template]
+    content_type:
+      type: string
+    content:
+      type: [string, 'null']
+    private:
+      type: boolean
+    status:
+      type: string
+      enum: [sent, delivered, read, failed]
+    delivery:
+      $ref: '#/Delivery'
+    reply_to_message_id:
+      type: [integer, 'null']
+    sender:
+      $ref: '#/MessageSender'
+    attachments:
+      type: array
+      items:
+        $ref: '#/Attachment'
+    email:
+      $ref: '#/EmailMessage'
+    unread:
+      type: boolean
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+Conversation:
+  type: object
+  required:
+    [
+      id,
+      internal_id,
+      status,
+      inbox,
+      contact,
+      labels,
+      additional_attributes,
+      custom_attributes,
+      created_at,
+      updated_at,
+    ]
+  properties:
+    id:
+      type: integer
+      description: Account-visible display ID.
+    internal_id:
+      type: integer
+    status:
+      type: string
+      enum: [open, resolved, pending, snoozed]
+    priority:
+      type: [string, 'null']
+      enum: [low, medium, high, urgent, null]
+    inbox:
+      $ref: '#/Inbox'
+    contact:
+      oneOf:
+        - $ref: '#/Contact'
+        - type: 'null'
+    assignee:
+      oneOf:
+        - $ref: '#/AssigneeSummary'
+        - type: 'null'
+    team:
+      oneOf:
+        - $ref: '#/TeamSummary'
+        - type: 'null'
+    labels:
+      type: array
+      items:
+        type: string
+    additional_attributes:
+      type: object
+    custom_attributes:
+      type: object
+    last_message:
+      oneOf:
+        - $ref: '#/Message'
+        - type: 'null'
+    last_activity_at:
+      type: [string, 'null']
+      format: date-time
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+InboxListResponse:
+  type: object
+  required: [data]
+  additionalProperties: false
+  properties:
+    data: { type: array, items: { $ref: '#/Inbox' } }
+InboxHealthResponse:
+  type: object
+  required: [data]
+  additionalProperties: false
+  properties:
+    data: { $ref: '#/InboxHealth' }
+AgentListResponse:
+  type: object
+  required: [data]
+  additionalProperties: false
+  properties:
+    data: { type: array, items: { $ref: '#/Agent' } }
+TeamListResponse:
+  type: object
+  required: [data]
+  additionalProperties: false
+  properties:
+    data: { type: array, items: { $ref: '#/Team' } }
+LabelListResponse:
+  type: object
+  required: [data]
+  additionalProperties: false
+  properties:
+    data: { type: array, items: { $ref: '#/Label' } }
+ContactResponse:
+  type: object
+  required: [data]
+  additionalProperties: false
+  properties:
+    data: { $ref: '#/Contact' }
+ContactListResponse:
+  type: object
+  required: [data, meta]
+  additionalProperties: false
+  properties:
+    data: { type: array, items: { $ref: '#/Contact' } }
+    meta: { $ref: '#/CursorMeta' }
+ConversationResponse:
+  type: object
+  required: [data]
+  additionalProperties: false
+  properties:
+    data: { $ref: '#/Conversation' }
+ConversationListResponse:
+  type: object
+  required: [data, meta]
+  additionalProperties: false
+  properties:
+    data: { type: array, items: { $ref: '#/Conversation' } }
+    meta: { $ref: '#/CursorMeta' }
+MessageListResponse:
+  type: object
+  required: [data, meta]
+  additionalProperties: false
+  properties:
+    data: { type: array, items: { $ref: '#/Message' } }
+    meta: { $ref: '#/CursorMeta' }
+ConversationReadResponse:
+  type: object
+  required: [data]
+  additionalProperties: false
+  properties:
+    data:
+      type: object
+      required: [conversation_id, read_at, provider_receipt_sent]
+      additionalProperties: false
+      properties:
+        conversation_id: { type: integer }
+        read_at: { type: string, format: date-time }
+        provider_receipt_sent: { const: false }
+ContactWriteRequest:
+  type: object
+  required: [contact]
+  additionalProperties: false
+  properties:
+    contact:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone_number:
+          type: string
+        identifier:
+          type: string
+        contact_type:
+          type: string
+          enum: [visitor, lead, customer]
+        additional_attributes:
+          type: object
+        custom_attributes:
+          type: object
+ConversationCreateRequest:
+  type: object
+  required: [conversation]
+  additionalProperties: false
+  properties:
+    conversation:
+      type: object
+      required: [inbox_id, contact_id]
+      additionalProperties: false
+      properties:
+        inbox_id:
+          type: integer
+          minimum: 1
+        contact_id:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum: [open, resolved, pending, snoozed]
+        assignee_id:
+          type: integer
+        team_id:
+          type: integer
+        additional_attributes:
+          type: object
+        custom_attributes:
+          type: object
+        message:
+          $ref: '#/MessageWrite'
+ConversationUpdateRequest:
+  type: object
+  required: [conversation]
+  additionalProperties: false
+  properties:
+    conversation:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [open, resolved, pending, snoozed]
+        priority:
+          type: [string, 'null']
+          enum: [low, medium, high, urgent, null]
+        assignee_id:
+          type: [integer, 'null']
+        team_id:
+          type: [integer, 'null']
+        snoozed_until:
+          type: string
+          format: date-time
+        labels:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+MessageWrite:
+  type: object
+  required: [content]
+  additionalProperties: false
+  properties:
+    content:
+      type: string
+      minLength: 1
+      maxLength: 150000
+    private:
+      type: boolean
+      default: false
+    content_type:
+      type: string
+      enum: [text]
+    reply_to_message_id:
+      type: integer
+      minimum: 1
+    to_emails:
+      type: string
+      description: Comma-separated recipients; email inbox only.
+    cc_emails:
+      type: string
+    bcc_emails:
+      type: string
+    email_html_content:
+      type: string
+    content_attributes:
+      type: object
+MessageWriteRequest:
+  type: object
+  required: [message]
+  additionalProperties: false
+  properties:
+    message:
+      $ref: '#/MessageWrite'
+MessageOperationResult:
+  type: object
+  required: [state, delivery_confirmation, result_state]
+  properties:
+    state:
+      type: string
+      enum: [accepted, failed]
+    delivery_confirmation:
+      const: asynchronous
+    result_state:
+      type: string
+      enum: [unknown_until_message_updated, failed]
+MessageCreateResponse:
+  type: object
+  required: [data, result]
+  additionalProperties: false
+  properties:
+    data: { $ref: '#/Message' }
+    result: { $ref: '#/MessageOperationResult' }
+ResourceIdentity:
+  type: object
+  required: [type, id, internal_id, version, sequence]
+  additionalProperties: false
+  properties:
+    type:
+      type: string
+      enum: [Contact, Conversation, Message, Integration]
+    id:
+      type: integer
+    internal_id:
+      type: integer
+    version:
+      type: string
+    sequence:
+      type: integer
+      minimum: 0
+WebhookEnvelope:
+  type: object
+  required: [schema_version, event_id, event, occurred_at, resource, data]
+  additionalProperties: false
+  allOf:
+    - if:
+        properties: { event: { const: resource.snapshot } }
+        required: [event]
+      then:
+        properties: { event_id: { type: string, pattern: '^backfill:' } }
+      else:
+        properties: { event_id: { type: string, format: uuid } }
+  properties:
+    schema_version:
+      const: '1.0'
+    event_id:
+      type: string
+    event:
+      type: string
+      enum:
+        [
+          message.created,
+          message.updated,
+          conversation.created,
+          conversation.updated,
+          conversation.status_changed,
+          contact.created,
+          contact.updated,
+          integration.test,
+          resource.snapshot,
+        ]
+    occurred_at:
+      type: string
+      format: date-time
+    resource:
+      $ref: '#/ResourceIdentity'
+    data:
+      type: object
+    changed_attributes:
+      type: object
+BackfillItem:
+  allOf:
+    - $ref: '#/WebhookEnvelope'
+    - type: object
+      properties:
+        event_id:
+          type: string
+          pattern: '^backfill:'
+        event:
+          const: resource.snapshot
+        data:
+          oneOf:
+            - $ref: '#/Contact'
+            - $ref: '#/Conversation'
+            - $ref: '#/Message'
+      required: [event_id, event]
+BackfillMeta:
+  type: object
+  required: [resource, limit, returned, has_more, next_cursor]
+  additionalProperties: false
+  properties:
+    resource: { type: string, enum: [contacts, conversations, messages] }
+    limit: { type: integer, minimum: 1, maximum: 100 }
+    returned: { type: integer, minimum: 0, maximum: 100 }
+    has_more: { type: boolean }
+    next_cursor: { type: [string, 'null'] }
+BackfillResponse:
+  type: object
+  required: [data, meta]
+  additionalProperties: false
+  properties:
+    data: { type: array, items: { $ref: '#/BackfillItem' } }
+    meta: { $ref: '#/BackfillMeta' }

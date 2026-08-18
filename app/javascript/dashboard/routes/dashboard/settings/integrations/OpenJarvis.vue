@@ -20,6 +20,8 @@ const SCOPES = [
   'contacts:read',
   'contacts:write',
   'conversations:write',
+  'resources:read',
+  'sync:read',
   'diagnostics:read',
 ];
 

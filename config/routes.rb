@@ -58,12 +58,22 @@ Rails.application.routes.draw do
     namespace :v1 do
       namespace :openjarvis do
         get :catalog, to: 'catalog#index'
+        get :openapi, to: 'openapi#show'
+        get 'openjarvis-openapi/*path', to: 'openapi#component', format: false
         get :health, to: 'health#show'
         get :diagnostics, to: 'diagnostics#show'
         get :operations, to: 'operations#index'
-        resources :inboxes, only: [:index]
+        get :messages, to: 'messages#search'
+        get :agents, to: 'agents#index'
+        get :teams, to: 'teams#index'
+        get :labels, to: 'labels#index'
+        get :backfill, to: 'backfill#index'
+        resources :inboxes, only: [:index] do
+          get :health, to: 'inbox_health#show'
+        end
         resources :contacts, only: [:index, :show, :create, :update]
         resources :conversations, only: [:index, :show, :create, :update] do
+          post :read, on: :member, action: :mark_read
           resources :messages, only: [:index, :create]
         end
       end

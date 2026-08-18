@@ -1,14 +1,19 @@
 class Openjarvis::WebhookPayloadBuilder
-  def initialize(event_name:, resource:, changed_attributes: nil)
+  def initialize(event_name:, resource:, event_id:, resource_sequence:, changed_attributes: nil)
     @event_name = event_name
     @resource = resource
+    @event_id = event_id
+    @resource_sequence = resource_sequence
     @changed_attributes = changed_attributes
   end
 
   def as_json
     {
+      schema_version: Openjarvis::Configuration::SCHEMA_VERSION,
+      event_id: event_id,
       event: event_name,
-      occurred_at: Time.current.iso8601,
+      occurred_at: Time.current.utc.iso8601(6),
+      resource: Openjarvis::ResourceIdentity.new(resource, sequence: resource_sequence).as_json,
       data: presented_resource,
       changed_attributes: changed_attributes
     }.compact
@@ -16,7 +21,7 @@ class Openjarvis::WebhookPayloadBuilder
 
   private
 
-  attr_reader :event_name, :resource, :changed_attributes
+  attr_reader :event_name, :resource, :event_id, :resource_sequence, :changed_attributes
 
   def presented_resource
     case resource

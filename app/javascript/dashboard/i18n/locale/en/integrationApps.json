@@ -101,7 +101,7 @@
         "COPY": "Copy",
         "ROTATE": "Rotate",
         "ROTATE_TITLE": "Rotate credential?",
-        "ROTATE_DESCRIPTION": "The current credential will stop working immediately. Update OpenJarvis before resuming traffic.",
+        "ROTATE_DESCRIPTION": "The previous credential remains valid for 24 hours. Copy the new value and update OpenJarvis within that overlap.",
         "DISCONNECT_HELP": "Disconnecting disables the API, stops webhooks and immediately revokes both credentials.",
         "DISCONNECT_TITLE": "Disconnect and revoke credentials?",
         "DISCONNECT_DESCRIPTION": "OpenJarvis will lose access immediately. Reconnecting requires generating and installing new credentials."

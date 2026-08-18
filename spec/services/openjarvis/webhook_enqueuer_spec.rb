@@ -17,6 +17,24 @@ RSpec.describe Openjarvis::WebhookEnqueuer do
       described_class.new(account: account, event_name: 'conversation.created', resource: conversation).perform
     end.to have_enqueued_job(Openjarvis::WebhookDeliveryJob)
       .and change(Openjarvis::WebhookDelivery, :count).by(1)
+
+    delivery = Openjarvis::WebhookDelivery.last
+    expect(delivery).to have_attributes(
+      event_id: be_present,
+      schema_version: '1.0',
+      resource_version: be_present,
+      resource_sequence: 1
+    )
+  end
+
+  it 'increments a monotonic sequence for duplicate or out-of-order delivery handling' do
+    conversation = create(:conversation, account: account, inbox: inbox)
+
+    2.times do
+      described_class.new(account: account, event_name: 'conversation.updated', resource: conversation).perform
+    end
+
+    expect(hook.openjarvis_webhook_deliveries.order(:created_at).pluck(:resource_sequence)).to eq([1, 2])
   end
 
   it 'does not queue resources from an inbox outside the connection' do

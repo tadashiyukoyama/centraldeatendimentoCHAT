@@ -1,0 +1,239 @@
+MessageCreatedWebhook:
+  post:
+    operationId: webhook.message.created
+    summary: Message created
+    parameters: &signedHeaders
+      - {
+          name: X-AceleraChat-Delivery,
+          in: header,
+          required: true,
+          schema: { type: string, format: uuid },
+        }
+      - {
+          name: X-AceleraChat-Timestamp,
+          in: header,
+          required: true,
+          schema: { type: integer },
+        }
+      - {
+          name: X-AceleraChat-Signature,
+          in: header,
+          required: true,
+          schema: { type: string, pattern: '^sha256=[0-9a-f]{64}$' },
+        }
+      - {
+          name: X-AceleraChat-Signature-Previous,
+          in: header,
+          required: false,
+          schema: { type: string, pattern: '^sha256=[0-9a-f]{64}$' },
+        }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ./schemas.yaml#/WebhookEnvelope
+              - type: object
+                properties:
+                  event: { const: message.created }
+                  resource:
+                    allOf:
+                      - $ref: ./schemas.yaml#/ResourceIdentity
+                      - type: object
+                        properties: { type: { const: Message } }
+                  data: { $ref: ./schemas.yaml#/Message }
+          examples:
+            event: { $ref: ./webhook-examples.yaml#/MessageCreated }
+    responses: &receiverResponses
+      '202': { description: Durably accepted }
+      '400': { description: Permanent invalid payload }
+      '401': { description: Permanent invalid signature }
+      '409': { description: Temporary receiver conflict; AceleraChat retries }
+      '429': { description: Temporary receiver rate limit; AceleraChat retries }
+      '500': { description: Temporary receiver failure; AceleraChat retries }
+MessageUpdatedWebhook:
+  post:
+    operationId: webhook.message.updated
+    summary: Message updated, including delivery status changes
+    parameters: *signedHeaders
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ./schemas.yaml#/WebhookEnvelope
+              - type: object
+                properties:
+                  event: { const: message.updated }
+                  resource:
+                    allOf:
+                      - $ref: ./schemas.yaml#/ResourceIdentity
+                      - type: object
+                        properties: { type: { const: Message } }
+                  data: { $ref: ./schemas.yaml#/Message }
+          examples:
+            event: { $ref: ./webhook-examples.yaml#/MessageUpdated }
+    responses: *receiverResponses
+ConversationCreatedWebhook:
+  post:
+    operationId: webhook.conversation.created
+    summary: Conversation created
+    parameters: *signedHeaders
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ./schemas.yaml#/WebhookEnvelope
+              - type: object
+                properties:
+                  event: { const: conversation.created }
+                  resource:
+                    allOf:
+                      - $ref: ./schemas.yaml#/ResourceIdentity
+                      - type: object
+                        properties: { type: { const: Conversation } }
+                  data: { $ref: ./schemas.yaml#/Conversation }
+          examples:
+            event: { $ref: ./webhook-examples.yaml#/ConversationCreated }
+    responses: *receiverResponses
+ConversationUpdatedWebhook:
+  post:
+    operationId: webhook.conversation.updated
+    summary: Conversation updated
+    parameters: *signedHeaders
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ./schemas.yaml#/WebhookEnvelope
+              - type: object
+                properties:
+                  event: { const: conversation.updated }
+                  resource:
+                    allOf:
+                      - $ref: ./schemas.yaml#/ResourceIdentity
+                      - type: object
+                        properties: { type: { const: Conversation } }
+                  data: { $ref: ./schemas.yaml#/Conversation }
+          examples:
+            event: { $ref: ./webhook-examples.yaml#/ConversationUpdated }
+    responses: *receiverResponses
+ConversationStatusChangedWebhook:
+  post:
+    operationId: webhook.conversation.status_changed
+    summary: Conversation status changed
+    parameters: *signedHeaders
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ./schemas.yaml#/WebhookEnvelope
+              - type: object
+                required: [changed_attributes]
+                properties:
+                  event: { const: conversation.status_changed }
+                  resource:
+                    allOf:
+                      - $ref: ./schemas.yaml#/ResourceIdentity
+                      - type: object
+                        properties: { type: { const: Conversation } }
+                  data: { $ref: ./schemas.yaml#/Conversation }
+                  changed_attributes:
+                    type: object
+                    required: [status]
+                    properties:
+                      status:
+                        type: array
+                        prefixItems:
+                          - { type: [string, 'null'] }
+                          - { type: string }
+                        minItems: 2
+                        maxItems: 2
+          examples:
+            event: { $ref: ./webhook-examples.yaml#/ConversationStatusChanged }
+    responses: *receiverResponses
+ContactCreatedWebhook:
+  post:
+    operationId: webhook.contact.created
+    summary: Contact created
+    parameters: *signedHeaders
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ./schemas.yaml#/WebhookEnvelope
+              - type: object
+                properties:
+                  event: { const: contact.created }
+                  resource:
+                    allOf:
+                      - $ref: ./schemas.yaml#/ResourceIdentity
+                      - type: object
+                        properties: { type: { const: Contact } }
+                  data: { $ref: ./schemas.yaml#/Contact }
+          examples:
+            event: { $ref: ./webhook-examples.yaml#/ContactCreated }
+    responses: *receiverResponses
+ContactUpdatedWebhook:
+  post:
+    operationId: webhook.contact.updated
+    summary: Contact updated
+    parameters: *signedHeaders
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ./schemas.yaml#/WebhookEnvelope
+              - type: object
+                properties:
+                  event: { const: contact.updated }
+                  resource:
+                    allOf:
+                      - $ref: ./schemas.yaml#/ResourceIdentity
+                      - type: object
+                        properties: { type: { const: Contact } }
+                  data: { $ref: ./schemas.yaml#/Contact }
+          examples:
+            event: { $ref: ./webhook-examples.yaml#/ContactUpdated }
+    responses: *receiverResponses
+IntegrationTestWebhook:
+  post:
+    operationId: webhook.integration.test
+    summary: Signed connectivity test initiated by an AceleraChat administrator
+    parameters: *signedHeaders
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ./schemas.yaml#/WebhookEnvelope
+              - type: object
+                properties:
+                  event: { const: integration.test }
+                  resource:
+                    allOf:
+                      - $ref: ./schemas.yaml#/ResourceIdentity
+                      - type: object
+                        properties: { type: { const: Integration } }
+                  data:
+                    type: object
+                    required: [account_id]
+                    properties:
+                      account_id: { type: integer }
+                      release: { type: [string, 'null'] }
+          examples:
+            event: { $ref: ./webhook-examples.yaml#/IntegrationTest }
+    responses: *receiverResponses

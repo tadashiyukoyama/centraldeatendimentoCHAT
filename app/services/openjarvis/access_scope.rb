@@ -33,6 +33,10 @@ class Openjarvis::AccessScope
     end
   end
 
+  def messages
+    Message.where(account_id: account.id, conversation_id: conversations.select(:id))
+  end
+
   def conversation!(display_id)
     conversations.find_by!(display_id: display_id)
   rescue ActiveRecord::RecordNotFound

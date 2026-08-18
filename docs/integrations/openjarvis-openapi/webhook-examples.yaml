@@ -1,0 +1,220 @@
+MessageCreated:
+  value:
+    schema_version: '1.0'
+    event_id: 3e229b03-c866-42c8-b58e-0203c5452810
+    event: message.created
+    occurred_at: '2026-08-18T12:00:00.000000Z'
+    resource:
+      {
+        type: Message,
+        id: 900,
+        internal_id: 900,
+        version: '2026-08-18T12:00:00.000000Z:900',
+        sequence: 1,
+      }
+    data:
+      {
+        id: 900,
+        conversation_id: 104,
+        message_type: incoming,
+        content_type: text,
+        content: Hello,
+        private: false,
+        status: sent,
+        delivery: { status: sent, result_state: received },
+        attachments: [],
+        unread: true,
+        created_at: '2026-08-18T12:00:00Z',
+        updated_at: '2026-08-18T12:00:00Z',
+      }
+MessageUpdated:
+  value:
+    schema_version: '1.0'
+    event_id: 4fb30a33-78a8-4b62-a4d4-7c6e82e1b71f
+    event: message.updated
+    occurred_at: '2026-08-18T12:01:00.000000Z'
+    resource:
+      {
+        type: Message,
+        id: 901,
+        internal_id: 901,
+        version: '2026-08-18T12:01:00.000000Z:901',
+        sequence: 2,
+      }
+    data:
+      {
+        id: 901,
+        conversation_id: 104,
+        message_type: outgoing,
+        content_type: text,
+        content: Reply,
+        private: false,
+        status: delivered,
+        delivery: { status: delivered, result_state: confirmed },
+        attachments: [],
+        unread: false,
+        created_at: '2026-08-18T12:00:30Z',
+        updated_at: '2026-08-18T12:01:00Z',
+      }
+    changed_attributes: { status: [sent, delivered] }
+ConversationCreated:
+  value:
+    schema_version: '1.0'
+    event_id: 5cba7834-5f99-4617-af1c-ce70eeb50938
+    event: conversation.created
+    occurred_at: '2026-08-18T12:00:00.000000Z'
+    resource:
+      {
+        type: Conversation,
+        id: 104,
+        internal_id: 550,
+        version: '2026-08-18T12:00:00.000000Z:550',
+        sequence: 1,
+      }
+    data: &conversationData
+      id: 104
+      internal_id: 550
+      status: open
+      priority: null
+      inbox:
+        id: 15
+        name: Example Website
+        channel_type: Channel::WebWidget
+        inbox_type: Website
+        auto_assignment_enabled: true
+        connection:
+          {
+            state: active,
+            connected: true,
+            operational: true,
+            source: web_widget_configuration,
+          }
+        capabilities: {}
+        created_at: '2026-08-18T10:00:00Z'
+        updated_at: '2026-08-18T10:00:00Z'
+      contact:
+        id: 41
+        name: Example Customer
+        email: customer@example.test
+        phone_number: '+5511999990000'
+        identifier: example-customer-41
+        contact_type: lead
+        blocked: false
+        additional_attributes: {}
+        custom_attributes: {}
+        created_at: '2026-08-18T10:00:00Z'
+        updated_at: '2026-08-18T12:00:00Z'
+      assignee: null
+      team: null
+      labels: []
+      additional_attributes: {}
+      custom_attributes: {}
+      last_activity_at: '2026-08-18T12:00:00Z'
+      created_at: '2026-08-18T12:00:00Z'
+      updated_at: '2026-08-18T12:00:00Z'
+ConversationUpdated:
+  value:
+    schema_version: '1.0'
+    event_id: 63d72160-67f4-4b27-9a18-6cdb7aa5ffac
+    event: conversation.updated
+    occurred_at: '2026-08-18T12:02:00.000000Z'
+    resource:
+      {
+        type: Conversation,
+        id: 104,
+        internal_id: 550,
+        version: '2026-08-18T12:02:00.000000Z:550',
+        sequence: 2,
+      }
+    data:
+      <<: *conversationData
+      priority: high
+      updated_at: '2026-08-18T12:02:00Z'
+    changed_attributes: { priority: [null, high] }
+ConversationStatusChanged:
+  value:
+    schema_version: '1.0'
+    event_id: 9b778e26-8f89-478b-a4ce-9bacb45d342c
+    event: conversation.status_changed
+    occurred_at: '2026-08-18T12:03:00.000000Z'
+    resource:
+      {
+        type: Conversation,
+        id: 104,
+        internal_id: 550,
+        version: '2026-08-18T12:03:00.000000Z:550',
+        sequence: 3,
+      }
+    data:
+      <<: *conversationData
+      status: resolved
+      updated_at: '2026-08-18T12:03:00Z'
+    changed_attributes: { status: [open, resolved] }
+ContactCreated:
+  value:
+    schema_version: '1.0'
+    event_id: 023b2fc5-f7ef-48eb-8429-d8caa98e5850
+    event: contact.created
+    occurred_at: '2026-08-18T11:50:00.000000Z'
+    resource:
+      {
+        type: Contact,
+        id: 41,
+        internal_id: 41,
+        version: '2026-08-18T11:50:00.000000Z:41',
+        sequence: 1,
+      }
+    data:
+      {
+        id: 41,
+        name: Example Customer,
+        email: customer@example.test,
+        contact_type: lead,
+        blocked: false,
+        additional_attributes: {},
+        custom_attributes: {},
+        created_at: '2026-08-18T11:50:00Z',
+        updated_at: '2026-08-18T11:50:00Z',
+      }
+ContactUpdated:
+  value:
+    schema_version: '1.0'
+    event_id: 14b7e58d-01d3-4e2b-8f86-71a541968d4a
+    event: contact.updated
+    occurred_at: '2026-08-18T12:04:00.000000Z'
+    resource:
+      {
+        type: Contact,
+        id: 41,
+        internal_id: 41,
+        version: '2026-08-18T12:04:00.000000Z:41',
+        sequence: 2,
+      }
+    data:
+      {
+        id: 41,
+        name: Example Customer,
+        email: customer@example.test,
+        contact_type: customer,
+        blocked: false,
+        additional_attributes: {},
+        custom_attributes: {},
+        created_at: '2026-08-18T11:50:00Z',
+        updated_at: '2026-08-18T12:04:00Z',
+      }
+    changed_attributes: { contact_type: [lead, customer] }
+IntegrationTest:
+  value:
+    schema_version: '1.0'
+    event_id: d990ff44-1ecf-47ac-ac39-e710a1fbf479
+    event: integration.test
+    occurred_at: '2026-08-18T12:05:00.000000Z'
+    resource:
+      {
+        type: Integration,
+        id: 2,
+        internal_id: 2,
+        version: '2026-08-18T12:05:00.000000Z:2',
+        sequence: 0,
+      }
+    data: { account_id: 1, release: sanitized-release-sha }
