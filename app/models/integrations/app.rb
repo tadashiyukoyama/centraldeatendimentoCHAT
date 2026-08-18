@@ -88,6 +88,8 @@ class Integrations::App
       account.webhooks.exists?
     when 'dashboard_apps'
       account.dashboard_apps.exists?
+    when 'openjarvis'
+      account.hooks.enabled.exists?(app_id: id)
     else
       account.hooks.exists?(app_id: id)
     end

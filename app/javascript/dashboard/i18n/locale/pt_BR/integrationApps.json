@@ -62,6 +62,72 @@
     },
     "SIDEBAR_DESCRIPTION": {
       "DIALOGFLOW": "Dialogflow é uma plataforma de processamento de linguagem natural para a construção de interfaces conversais. Integrá-lo com {installationName} permite que os bots lidem primeiro com consultas e transfiram para os agentes quando necessário. Ele ajuda a qualificar leads e reduzir a carga de trabalho dos agentes respondendo às FAQ. Para adicionar um fluxo de diálogo (Dialogflow), crie uma Conta de Serviço no Google Console e compartilhe as credenciais. Consulte sua documentação para obter detalhes"
+    },
+    "OPENJARVIS": {
+      "HEADER": "OpenJarvis",
+      "DESCRIPTION": "Conceda ao OpenJarvis acesso controlado às caixas selecionadas e às operações do AceleraChat.",
+      "STATUS": {
+        "TITLE": "Estado da conexão",
+        "not_configured": "Não configurado",
+        "awaiting_openjarvis": "Aguardando OpenJarvis",
+        "not_tested": "Ainda não testado",
+        "connected": "Conectado",
+        "unreachable": "Inacessível",
+        "disabled": "Desativado",
+        "LAST_TEST": "Último teste: {date}"
+      },
+      "FORM": {
+        "TITLE": "Política de acesso",
+        "ENABLED": "Ativar acesso à API",
+        "ENABLED_HELP": "Ao desativar, as chamadas de API são revogadas e a entrega de eventos é interrompida.",
+        "ENDPOINT": "Endpoint de webhook do OpenJarvis",
+        "ENDPOINT_HELP": "URL HTTPS exata que receberá os eventos assinados do AceleraChat.",
+        "SERVICE_USER": "Usuário de serviço",
+        "SERVICE_USER_HELP": "As permissões e a privacidade rígida entre setores serão avaliadas como este usuário.",
+        "INBOXES": "Caixas autorizadas",
+        "SCOPES": "Escopos da API",
+        "WEBHOOKS": "Enviar eventos em tempo real",
+        "SUBSCRIPTIONS": "Eventos do webhook",
+        "SAVE": "Salvar configuração",
+        "VALIDATION": "Selecione um usuário, ao menos uma caixa e um escopo. O webhook deve usar HTTPS e não pode conter credenciais, parâmetros ou fragmentos."
+      },
+      "CREDENTIALS": {
+        "TITLE": "Credenciais",
+        "API_BASE": "URL base da API AceleraChat",
+        "BEARER": "Token Bearer",
+        "SIGNING_SECRET": "Segredo de assinatura do webhook",
+        "ONE_TIME": "Copie as credenciais agora. Os valores completos só aparecem na criação ou rotação.",
+        "MASKED": "Armazenado com segurança. Quatro últimos caracteres: {suffix}",
+        "COPY": "Copiar",
+        "ROTATE": "Rotacionar",
+        "ROTATE_TITLE": "Rotacionar a credencial?",
+        "ROTATE_DESCRIPTION": "A credencial atual deixará de funcionar imediatamente. Atualize o OpenJarvis antes de retomar o tráfego.",
+        "DISCONNECT_HELP": "Desconectar desativa a API, interrompe webhooks e revoga imediatamente as duas credenciais.",
+        "DISCONNECT_TITLE": "Desconectar e revogar credenciais?",
+        "DISCONNECT_DESCRIPTION": "O OpenJarvis perderá o acesso imediatamente. Para reconectar, será necessário gerar e instalar novas credenciais."
+      },
+      "ACTIONS": {
+        "TEST": "Testar conexão",
+        "REFRESH": "Atualizar atividade",
+        "DISCONNECT": "Desconectar e revogar"
+      },
+      "DELIVERIES": {
+        "TITLE": "Entregas recentes de webhook",
+        "EMPTY": "Nenhuma entrega de webhook foi tentada até agora.",
+        "EVENT": "Evento",
+        "STATUS": "Estado",
+        "ATTEMPTS": "Tentativas",
+        "TIME": "Horário"
+      },
+      "ALERTS": {
+        "SAVED": "Configuração do OpenJarvis salva.",
+        "SAVE_FAILED": "Não foi possível salvar a configuração do OpenJarvis.",
+        "CONNECTED": "O OpenJarvis confirmou o evento de teste assinado.",
+        "UNREACHABLE": "O OpenJarvis não confirmou o evento de teste.",
+        "COPIED": "Credencial copiada.",
+        "ROTATED": "Credencial rotacionada. Copie o novo valor agora.",
+        "DISCONNECTED": "OpenJarvis desconectado e credenciais revogadas."
+      }
     }
   }
 }

@@ -56,6 +56,18 @@ Rails.application.routes.draw do
 
   namespace :api, defaults: { format: 'json' } do
     namespace :v1 do
+      namespace :openjarvis do
+        get :catalog, to: 'catalog#index'
+        get :health, to: 'health#show'
+        get :diagnostics, to: 'diagnostics#show'
+        get :operations, to: 'operations#index'
+        resources :inboxes, only: [:index]
+        resources :contacts, only: [:index, :show, :create, :update]
+        resources :conversations, only: [:index, :show, :create, :update] do
+          resources :messages, only: [:index, :create]
+        end
+      end
+
       # ----------------------------------
       # start of account scoped api routes
       resources :accounts, only: [:create, :show, :update] do
@@ -425,6 +437,12 @@ Rails.application.routes.draw do
               collection do
                 delete :destroy
               end
+            end
+            resource :openjarvis, controller: 'openjarvis', only: [:show, :update, :destroy] do
+              post :rotate_access_token
+              post :rotate_webhook_secret
+              post :test_connection
+              get :deliveries
             end
           end
           resources :portals do

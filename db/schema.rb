@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_08_12_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_08_18_120200) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1176,6 +1176,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_12_120000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.jsonb "settings", default: {}
+    t.string "webhook_secret"
+    t.datetime "access_token_rotated_at"
+    t.datetime "webhook_secret_rotated_at"
+    t.index ["access_token"], name: "idx_integration_hooks_openjarvis_token", unique: true, where: "((app_id)::text = 'openjarvis'::text)"
   end
 
   create_table "instagram_comment_automations", force: :cascade do |t|
@@ -1394,6 +1398,46 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_12_120000) do
     t.index ["secondary_actor_type", "secondary_actor_id"], name: "uniq_secondary_actor_per_account_notifications"
     t.index ["user_id", "account_id", "snoozed_until", "read_at"], name: "idx_notifications_performance"
     t.index ["user_id"], name: "index_notifications_on_user_id"
+  end
+
+  create_table "openjarvis_api_requests", force: :cascade do |t|
+    t.bigint "integration_hook_id", null: false
+    t.string "idempotency_key", null: false
+    t.string "operation", null: false
+    t.string "request_digest", null: false
+    t.integer "status", default: 0, null: false
+    t.integer "response_status"
+    t.text "response_body"
+    t.string "resource_type"
+    t.bigint "resource_id"
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["integration_hook_id", "created_at"], name: "idx_openjarvis_requests_hook_created"
+    t.index ["integration_hook_id", "idempotency_key"], name: "idx_openjarvis_requests_hook_key", unique: true
+    t.index ["integration_hook_id"], name: "index_openjarvis_api_requests_on_integration_hook_id"
+    t.index ["resource_type", "resource_id"], name: "idx_openjarvis_requests_resource"
+  end
+
+  create_table "openjarvis_webhook_deliveries", force: :cascade do |t|
+    t.bigint "integration_hook_id", null: false
+    t.string "delivery_id", null: false
+    t.string "event_name", null: false
+    t.string "resource_type"
+    t.bigint "resource_id"
+    t.string "payload_digest", null: false
+    t.integer "status", default: 0, null: false
+    t.integer "attempts", default: 0, null: false
+    t.integer "response_status"
+    t.string "error_code"
+    t.string "error_message"
+    t.datetime "delivered_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["delivery_id"], name: "index_openjarvis_webhook_deliveries_on_delivery_id", unique: true
+    t.index ["integration_hook_id", "created_at"], name: "idx_openjarvis_deliveries_hook_created"
+    t.index ["integration_hook_id", "status"], name: "idx_openjarvis_deliveries_hook_status"
+    t.index ["integration_hook_id"], name: "index_openjarvis_webhook_deliveries_on_integration_hook_id"
   end
 
   create_table "platform_app_permissibles", force: :cascade do |t|
@@ -1776,6 +1820,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_12_120000) do
   add_foreign_key "instagram_comment_events", "conversations", on_delete: :nullify
   add_foreign_key "instagram_comment_events", "inboxes", on_delete: :cascade
   add_foreign_key "instagram_comment_events", "instagram_comment_automations", on_delete: :nullify
+  add_foreign_key "openjarvis_api_requests", "integrations_hooks", column: "integration_hook_id"
+  add_foreign_key "openjarvis_webhook_deliveries", "integrations_hooks", column: "integration_hook_id"
   add_foreign_key "privacy_request_events", "privacy_requests"
   add_foreign_key "privacy_requests", "accounts"
   add_foreign_key "user_sessions", "users"

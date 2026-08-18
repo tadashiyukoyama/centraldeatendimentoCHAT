@@ -23,6 +23,53 @@ dashboard_apps:
   i18n_key: dashboard_apps
   hook_type: account
   allow_multiple_hooks: true
+openjarvis:
+  id: openjarvis
+  logo: openjarvis.svg
+  i18n_key: openjarvis
+  hook_type: account
+  allow_multiple_hooks: false
+  settings_json_schema:
+    {
+      'type': 'object',
+      'properties':
+        {
+          'endpoint_url': { 'type': 'string' },
+          'service_user_id': { 'type': 'integer' },
+          'allowed_inbox_ids':
+            { 'type': 'array', 'items': { 'type': 'integer' }, 'uniqueItems': true },
+          'scopes':
+            { 'type': 'array', 'items': { 'type': 'string' }, 'uniqueItems': true },
+          'subscriptions':
+            { 'type': 'array', 'items': { 'type': 'string' }, 'uniqueItems': true },
+          'webhooks_enabled': { 'type': 'boolean' },
+          'last_test_at': { 'type': ['string', 'null'] },
+          'last_test_status': { 'type': ['string', 'null'] },
+          'last_test_error': { 'type': ['string', 'null'] },
+        },
+      'required':
+        [
+          'endpoint_url',
+          'service_user_id',
+          'allowed_inbox_ids',
+          'scopes',
+          'subscriptions',
+          'webhooks_enabled',
+        ],
+      'additionalProperties': false,
+    }
+  visible_properties:
+    [
+      'endpoint_url',
+      'service_user_id',
+      'allowed_inbox_ids',
+      'scopes',
+      'subscriptions',
+      'webhooks_enabled',
+      'last_test_at',
+      'last_test_status',
+      'last_test_error',
+    ]
 openai:
   id: openai
   logo: openai.png

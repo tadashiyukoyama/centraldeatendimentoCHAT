@@ -332,6 +332,10 @@ pt_BR:
     online:
       delete: '%{contact_name} está Online, por favor, tente novamente mais tarde'
   integration_apps:
+    openjarvis:
+      name: "OpenJarvis"
+      description: "Conecte o OpenJarvis às caixas, conversas, contatos e diagnósticos operacionais autorizados do AceleraChat."
+      short_description: "Gateway controlado para operações de IA"
     #Note: webhooks and dashboard_apps don't need short_description as they use different modal components
     dashboard_apps:
       name: 'Painel de Aplicativos'

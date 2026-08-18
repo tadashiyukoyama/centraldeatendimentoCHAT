@@ -9,6 +9,7 @@ import Slack from './Slack.vue';
 import Linear from './Linear.vue';
 import Notion from './Notion.vue';
 import Shopify from './Shopify.vue';
+import OpenJarvis from './OpenJarvis.vue';
 
 export default {
   routes: [
@@ -87,6 +88,15 @@ export default {
             permissions: ['administrator'],
           },
           props: route => ({ error: route.query.error }),
+        },
+        {
+          path: 'openjarvis',
+          name: 'settings_integrations_openjarvis',
+          component: OpenJarvis,
+          meta: {
+            featureFlag: FEATURE_FLAGS.INTEGRATIONS,
+            permissions: ['administrator'],
+          },
         },
         {
           path: ':integration_id',

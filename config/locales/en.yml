@@ -391,6 +391,10 @@ en:
     online:
       delete: '%{contact_name} is Online, please try again later'
   integration_apps:
+    openjarvis:
+      name: "OpenJarvis"
+      description: "Connect OpenJarvis to authorized AceleraChat inboxes, conversations, contacts and operational diagnostics."
+      short_description: "Controlled AI operations gateway"
     # Note: webhooks and dashboard_apps don't need short_description as they use different modal components
     dashboard_apps:
       name: 'Dashboard Apps'

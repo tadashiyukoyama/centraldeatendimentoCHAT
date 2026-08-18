@@ -48,5 +48,25 @@ FactoryBot.define do
         }
       end
     end
+
+    trait :openjarvis do
+      app_id { 'openjarvis' }
+
+      transient do
+        service_user { create(:user, account: account, role: :administrator) }
+        allowed_inboxes { [create(:inbox, account: account)] }
+      end
+
+      settings do
+        {
+          'endpoint_url' => 'https://openjarvis.example.com/webhooks/acelerachat',
+          'service_user_id' => service_user.id,
+          'allowed_inbox_ids' => allowed_inboxes.map(&:id),
+          'scopes' => Openjarvis::Configuration::DEFAULT_SCOPES,
+          'subscriptions' => Openjarvis::Configuration::DEFAULT_SUBSCRIPTIONS,
+          'webhooks_enabled' => true
+        }
+      end
+    end
   end
 end

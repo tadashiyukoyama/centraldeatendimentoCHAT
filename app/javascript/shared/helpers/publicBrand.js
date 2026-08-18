@@ -19,6 +19,13 @@ export const integrationAssetId = integrationId => {
   return integrationId;
 };
 
+export const integrationAssetPath = (integrationId, dark = false) => {
+  const assetId = integrationAssetId(integrationId);
+  const extension = assetId === 'openjarvis' ? 'svg' : 'png';
+  const colorScheme = dark ? '-dark' : '';
+  return `/dashboard/images/integrations/${assetId}${colorScheme}.${extension}`;
+};
+
 export const publicHelpCenterURL = () =>
   window.chatwootConfig?.helpCenterURL || '/hc/acelerachat';
 

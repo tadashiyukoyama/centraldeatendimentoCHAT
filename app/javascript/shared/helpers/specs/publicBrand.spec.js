@@ -3,6 +3,7 @@ import {
   assistantAvatar,
   contextualHelpURL,
   integrationAssetId,
+  integrationAssetPath,
   publicHelpCenterURL,
 } from '../publicBrand';
 
@@ -47,5 +48,17 @@ describe('publicBrand helpers', () => {
     );
     expect(assistantAvatar()).toBe('/assets/images/nemmo_bot.png');
     expect(integrationAssetId('captain')).toBe('nemmo');
+  });
+
+  it('uses SVG assets for the native OpenJarvis integration', () => {
+    expect(integrationAssetPath('openjarvis')).toBe(
+      '/dashboard/images/integrations/openjarvis.svg'
+    );
+    expect(integrationAssetPath('openjarvis', true)).toBe(
+      '/dashboard/images/integrations/openjarvis-dark.svg'
+    );
+    expect(integrationAssetPath('slack')).toBe(
+      '/dashboard/images/integrations/slack.png'
+    );
   });
 });

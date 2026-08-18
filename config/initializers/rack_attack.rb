@@ -300,6 +300,19 @@ class Rack::Attack
     "#{user_identifier}:#{match_data[:account_id]}" if user_identifier.present?
   end
 
+  ## OpenJarvis uses a dedicated Bearer credential. Hashing the credential for
+  ## the throttle key prevents the secret from appearing in Redis or logs.
+  throttle('openjarvis/token', limit: ENV.fetch('RATE_LIMIT_OPENJARVIS_TOKEN', '600').to_i, period: 1.minute) do |req|
+    next unless req.path_without_extensions.start_with?('/api/v1/openjarvis/')
+
+    token = req.get_header('HTTP_AUTHORIZATION').to_s.match(/\ABearer\s+([^\s]+)\z/i)&.captures&.first
+    Digest::SHA256.hexdigest(token) if token.present?
+  end
+
+  throttle('openjarvis/ip', limit: ENV.fetch('RATE_LIMIT_OPENJARVIS_IP', '1200').to_i, period: 1.minute) do |req|
+    req.ip if req.path_without_extensions.start_with?('/api/v1/openjarvis/')
+  end
+
   ## ----------------------------------------------- ##
 end
 

@@ -19,10 +19,12 @@ class Integrations::Hook < ApplicationRecord
 
   attr_readonly :app_id, :account_id, :inbox_id, :hook_type
   before_validation :ensure_hook_type
+  before_create :ensure_openjarvis_webhook_secret, if: :openjarvis?
   after_create :trigger_setup_if_crm
 
   # TODO: Remove guard once encryption keys become mandatory (target 3-4 releases out).
   encrypts :access_token, deterministic: true if Chatwoot.encryption_configured?
+  encrypts :webhook_secret if Chatwoot.encryption_configured?
 
   validates :account_id, presence: true
   validates :app_id, presence: true
@@ -31,6 +33,7 @@ class Integrations::Hook < ApplicationRecord
   validate :ensure_feature_enabled
   validate :validate_openai_api_key, if: :validate_openai_api_key?
   validate :validate_cloudflare_realtimekit_credentials, if: :validate_cloudflare_realtimekit_credentials?
+  validate :validate_openjarvis_configuration, if: :openjarvis?
   validates :app_id, uniqueness: { scope: [:account_id], unless: -> { app.present? && app.params[:allow_multiple_hooks].present? } }
 
   # TODO: This seems to be only used for slack at the moment
@@ -39,6 +42,16 @@ class Integrations::Hook < ApplicationRecord
 
   belongs_to :account
   belongs_to :inbox, optional: true
+  has_many :openjarvis_api_requests,
+           class_name: 'Openjarvis::ApiRequest',
+           foreign_key: :integration_hook_id,
+           dependent: :destroy_async,
+           inverse_of: :integration_hook
+  has_many :openjarvis_webhook_deliveries,
+           class_name: 'Openjarvis::WebhookDelivery',
+           foreign_key: :integration_hook_id,
+           dependent: :destroy_async,
+           inverse_of: :integration_hook
   has_secure_token :access_token
 
   enum hook_type: { account: 0, inbox: 1 }
@@ -68,6 +81,14 @@ class Integrations::Hook < ApplicationRecord
 
   def notion?
     app_id == 'notion'
+  end
+
+  def openjarvis?
+    app_id == Openjarvis::Configuration::APP_ID
+  end
+
+  def openjarvis_configuration
+    Openjarvis::Configuration.new(self)
   end
 
   def disable
@@ -147,6 +168,14 @@ class Integrations::Hook < ApplicationRecord
     return if result.success?
 
     errors.add(:base, I18n.t("errors.cloudflare.realtimekit.#{result.error}"))
+  end
+
+  def validate_openjarvis_configuration
+    openjarvis_configuration.errors.each { |message| errors.add(:settings, message) }
+  end
+
+  def ensure_openjarvis_webhook_secret
+    self.webhook_secret ||= SecureRandom.urlsafe_base64(48)
   end
 
   def settings_api_key(value)

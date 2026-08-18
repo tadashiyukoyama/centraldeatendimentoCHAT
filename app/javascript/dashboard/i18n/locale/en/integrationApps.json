@@ -62,6 +62,72 @@
     },
     "SIDEBAR_DESCRIPTION": {
       "DIALOGFLOW": "Dialogflow is a natural language processing platform for building conversational interfaces. Integrating it with {installationName} lets bots handle queries first and transfer them to agents when needed. It helps qualify leads and reduce agent workload by answering FAQs. To add Dialogflow, create a Service Account in Google Console and share the credentials. Refer to the docs for details"
+    },
+    "OPENJARVIS": {
+      "HEADER": "OpenJarvis",
+      "DESCRIPTION": "Grant OpenJarvis controlled access to selected inboxes and AceleraChat operations.",
+      "STATUS": {
+        "TITLE": "Connection status",
+        "not_configured": "Not configured",
+        "awaiting_openjarvis": "Awaiting OpenJarvis",
+        "not_tested": "Not tested",
+        "connected": "Connected",
+        "unreachable": "Unreachable",
+        "disabled": "Disabled",
+        "LAST_TEST": "Last test: {date}"
+      },
+      "FORM": {
+        "TITLE": "Access policy",
+        "ENABLED": "Enable API access",
+        "ENABLED_HELP": "Revoking access immediately invalidates API calls and stops webhook delivery.",
+        "ENDPOINT": "OpenJarvis webhook endpoint",
+        "ENDPOINT_HELP": "Exact HTTPS URL that will receive signed AceleraChat events.",
+        "SERVICE_USER": "Service user",
+        "SERVICE_USER_HELP": "Permissions and strict team visibility are evaluated as this user.",
+        "INBOXES": "Authorized inboxes",
+        "SCOPES": "API scopes",
+        "WEBHOOKS": "Send real-time events",
+        "SUBSCRIPTIONS": "Webhook events",
+        "SAVE": "Save configuration",
+        "VALIDATION": "Select a service user, at least one inbox and one API scope. The webhook must use HTTPS and cannot contain credentials, query parameters or fragments."
+      },
+      "CREDENTIALS": {
+        "TITLE": "Credentials",
+        "API_BASE": "AceleraChat API base URL",
+        "BEARER": "Bearer token",
+        "SIGNING_SECRET": "Webhook signing secret",
+        "ONE_TIME": "Copy these credentials now. Full values are only shown after creation or rotation.",
+        "MASKED": "Stored securely. Last four characters: {suffix}",
+        "COPY": "Copy",
+        "ROTATE": "Rotate",
+        "ROTATE_TITLE": "Rotate credential?",
+        "ROTATE_DESCRIPTION": "The current credential will stop working immediately. Update OpenJarvis before resuming traffic.",
+        "DISCONNECT_HELP": "Disconnecting disables the API, stops webhooks and immediately revokes both credentials.",
+        "DISCONNECT_TITLE": "Disconnect and revoke credentials?",
+        "DISCONNECT_DESCRIPTION": "OpenJarvis will lose access immediately. Reconnecting requires generating and installing new credentials."
+      },
+      "ACTIONS": {
+        "TEST": "Test connection",
+        "REFRESH": "Refresh activity",
+        "DISCONNECT": "Disconnect and revoke"
+      },
+      "DELIVERIES": {
+        "TITLE": "Recent webhook deliveries",
+        "EMPTY": "No webhook delivery has been attempted yet.",
+        "EVENT": "Event",
+        "STATUS": "Status",
+        "ATTEMPTS": "Attempts",
+        "TIME": "Time"
+      },
+      "ALERTS": {
+        "SAVED": "OpenJarvis configuration saved.",
+        "SAVE_FAILED": "Could not save the OpenJarvis configuration.",
+        "CONNECTED": "OpenJarvis acknowledged the signed test event.",
+        "UNREACHABLE": "OpenJarvis did not acknowledge the test event.",
+        "COPIED": "Credential copied.",
+        "ROTATED": "Credential rotated. Copy the new value now.",
+        "DISCONNECTED": "OpenJarvis disconnected and credentials revoked."
+      }
     }
   }
 }
