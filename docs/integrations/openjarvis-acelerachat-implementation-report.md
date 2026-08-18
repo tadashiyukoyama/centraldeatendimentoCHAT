@@ -23,6 +23,17 @@ repositório e concluir seus próprios testes contratuais e de reconciliação.
 Nenhuma capacidade não implementada é anunciada como disponível. O catálogo e o
 health por caixa são a fonte executável de verdade para cada operação.
 
+## Handoff operacional posterior
+
+Os runbooks abaixo foram adicionados depois do SHA de implementação para orientar
+o agente OpenJarvis e o futuro release, sem afirmar que houve deploy:
+
+- `docs/integrations/openjarvis-edge-worker-mcp-handoff.md`;
+- `docs/integrations/openjarvis-vps-release-runbook.md`.
+
+O manifesto com referências privadas permanece fora do repositório em
+`D:\dev\workspaces\centraldeatendimentoCHAT\credenciais\openjarvis\OPENJARVIS_VPS_EDGE_MCP_PRIVATE.md`.
+
 ## Contrato entregue
 
 O OpenAPI 3.1 modular está em
