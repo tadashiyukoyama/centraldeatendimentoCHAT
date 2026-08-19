@@ -7,7 +7,7 @@ Data de referência: 18 de agosto de 2026
 ## 1. Resultado esperado
 
 Finalizar o lado OpenJarvis da arquitetura híbrida sem alterar o contrato público
-AceleraChat `2026-08-18.2` e sem executar envios reais.
+AceleraChat `2026-08-19.2` e sem executar envios reais.
 
 O resultado deve permitir simultaneamente:
 
@@ -26,9 +26,9 @@ O resultado deve permitir simultaneamente:
 ### AceleraChat
 
 - API base: `https://atendimento.meugerenciador.pro/api/v1/openjarvis`.
-- Contrato: `2026-08-18.2`.
+- Contrato: `2026-08-19.2`.
 - Schema de eventos: `1.0`.
-- 23 operações executáveis.
+- 25 operações executáveis.
 - Bearer para chamadas e HMAC para webhooks.
 - Cursores assinados, idempotência, backfill e retenção implementados.
 - AceleraChat ainda não implantado com este contrato no momento do handoff.
@@ -98,41 +98,52 @@ MCP -> ToolExecutor legado -> execução direta
 
 ## 4. Catálogo canônico
 
-O catálogo atual possui 16 ferramentas:
+O catálogo atual possui 24 ferramentas:
 
 ### Operação local
 
 1. `jarvis.operational_audit` / `jarvis_read_operational_audit`.
 
+### Todas as caixas AceleraChat
+
+2. `acelerachat.list_inboxes` / `acelerachat_list_inboxes`.
+3. `acelerachat.list_conversations` / `acelerachat_list_conversations`.
+4. `acelerachat.read_conversation` / `acelerachat_read_conversation`.
+5. `acelerachat.send_message` / `acelerachat_send_message`.
+
 ### E-mail AceleraChat
 
-2. `email.search` / `email_search_messages`.
-3. `email.list_unread` / `email_list_unread`.
-4. `email.read_message` / `email_read_message`.
-5. `email.read_conversation` / `email_read_conversation`.
-6. `email.reply` / `email_reply_conversation`.
+6. `email.search` / `email_search_messages`.
+7. `email.list_unread` / `email_list_unread`.
+8. `email.read_message` / `email_read_message`.
+9. `email.read_conversation` / `email_read_conversation`.
+10. `email.reply` / `email_reply_conversation`.
 
 ### WhatsApp AceleraChat
 
-7. `whatsapp.status` / `whatsapp_get_status`.
-8. `whatsapp.search_contacts` / `whatsapp_search_contacts`.
-9. `whatsapp.search_chats` / `whatsapp_search_chats`.
-10. `whatsapp.read_conversation` / `whatsapp_read_conversation`.
-11. `whatsapp.summarize_conversation` /
+11. `whatsapp.status` / `whatsapp_get_status`.
+12. `whatsapp.search_contacts` / `whatsapp_search_contacts`.
+13. `whatsapp.search_chats` / `whatsapp_search_chats`.
+14. `whatsapp.read_conversation` / `whatsapp_read_conversation`.
+15. `whatsapp.summarize_conversation` /
     `whatsapp_summarize_conversation`.
-12. `whatsapp.send_text` / `whatsapp_send_text`.
-13. `whatsapp.mark_read_internal` / `whatsapp_mark_acelerachat_read`.
+16. `whatsapp.send_text` / `whatsapp_send_text`.
+17. `whatsapp.reply` / `whatsapp_reply_message`.
+18. `whatsapp.react` / `whatsapp_react_message`.
+19. `whatsapp.mark_read_provider` / `whatsapp_mark_provider_read`.
+20. `whatsapp.send_media` / `whatsapp_send_media`.
+21. `whatsapp.mark_read_internal` / `whatsapp_mark_acelerachat_read`.
 
 ### Codex
 
-14. `codex.status` / `codex_get_status`.
-15. `codex.history` / `codex_read_recent_history`.
-16. `codex.delegate` / `codex_delegate_task`.
+22. `codex.status` / `codex_get_status`.
+23. `codex.history` / `codex_read_recent_history`.
+24. `codex.delegate` / `codex_delegate_task`.
 
 O MCP apresentado ao Codex local deve filtrar todas as ferramentas cujo
-`source/provider` seja Codex. Portanto, o máximo inicial elegível é 13
-ferramentas, ainda sujeito a capacidades reais e permissões. O catálogo global
-continua com 16.
+`source/provider` seja Codex. Portanto, o máximo inicial elegível é 21
+ferramentas, ainda sujeito a capacidades reais, conexão e permissões. O catálogo
+global possui 24.
 
 O MCP remoto opcional pode oferecer delegação ao Codex somente depois que Edge
 Worker, aprovação, identidade e auditoria estiverem ativos. Essa ferramenta deve
@@ -394,8 +405,9 @@ Semântica obrigatória:
 
 Capacidades formalmente não suportadas não podem aparecer no MCP ou UI:
 
-- WhatsApp: reação, reply contextual nativo, mídia, provider mark-read,
-  broadcast e voz;
+- WhatsApp: broadcast, grupos, status, chamadas, perfil e configurações de
+  privacidade. Mídia local sem URL HTTPS gerenciada também permanece fora deste
+  contrato;
 - e-mail: composição nova, upload de anexos, archive e trash.
 
 ## 11. Autenticação e rotação

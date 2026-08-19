@@ -1,7 +1,7 @@
 Catalog:
   value:
     name: AceleraChat OpenJarvis API
-    version: 2026-08-18.2
+    version: 2026-08-19.2
     schema_version: '1.0'
     implementation_base_sha: 128d00a1743e198eb370f55fbaf7bffe7a2b01f1
     implementation_release: sanitized-release-sha
@@ -174,7 +174,7 @@ Inboxes:
 InboxHealth:
   value:
     data:
-      inbox_id: 19
+      inbox_id: 20
       channel_type: Channel::Whatsapp
       checked_at: '2026-08-18T12:00:00Z'
       connection:
@@ -192,15 +192,27 @@ InboxHealth:
           }
         messages.reply:
           {
-            supported: false,
-            mode: not_supported,
-            reason: The current channel adapter does not execute provider-native contextual replies,
+            supported: true,
+            mode: evolution,
+            endpoint: '/api/v1/openjarvis/conversations/{conversation_id}/messages',
           }
         messages.mark_read_provider:
           {
-            supported: false,
-            mode: not_supported,
-            reason: AceleraChat does not send provider read receipts through this API,
+            supported: true,
+            mode: evolution,
+            endpoint: '/api/v1/openjarvis/conversations/{conversation_id}/provider_read',
+          }
+        messages.reaction:
+          {
+            supported: true,
+            mode: evolution,
+            endpoint: '/api/v1/openjarvis/conversations/{conversation_id}/messages/{message_id}/reaction',
+          }
+        messages.media_send:
+          {
+            supported: true,
+            mode: evolution,
+            endpoint: '/api/v1/openjarvis/conversations/{conversation_id}/messages',
           }
 Agents:
   value:
@@ -325,6 +337,15 @@ ConversationRead:
       conversation_id: 104
       read_at: '2026-08-18T12:00:00Z'
       provider_receipt_sent: false
+ProviderRead:
+  value:
+    data:
+      conversation_id: 104
+      read_at: '2026-08-19T12:00:00Z'
+      provider_receipt_sent: true
+      provider: evolution
+      message_count: 2
+      result_state: applied
 Messages:
   value:
     data:
@@ -355,6 +376,23 @@ MessageWriteRequest:
     message:
       content: Sanitized example response
       private: true
+MessageMediaRequest:
+  value:
+    message:
+      content: Sanitized media caption
+      remote_attachment:
+        url: https://media.example.test/example.jpg
+MessageReactionRequest:
+  value:
+    reaction: "👍"
+MessageReaction:
+  value:
+    data:
+      conversation_id: 104
+      message_id: 900
+      reaction: "👍"
+      provider: evolution
+      result_state: applied
 EmailWriteRequest:
   value:
     message:

@@ -62,12 +62,73 @@ RSpec.describe Whatsapp::Providers::EvolutionService do
       account: account
     )
     allow(client).to receive(:send_text)
-      .with(number: contact_inbox.source_id, text: 'Hello from support')
+      .with(number: contact_inbox.source_id, text: 'Hello from support', quoted: nil)
       .and_return('key' => { 'id' => 'evolution-message-id' })
 
     Whatsapp::SendOnWhatsappService.new(message: message).perform
 
     expect(message.reload.source_id).to eq('evolution-message-id')
+  end
+
+  it 'sends a provider-native contextual reply' do
+    original = create(
+      :message,
+      message_type: :incoming,
+      content: 'Original question',
+      source_id: 'incoming-message-id',
+      conversation: conversation,
+      account: account
+    )
+    reply = create(
+      :message,
+      message_type: :outgoing,
+      content: 'Contextual answer',
+      content_attributes: { in_reply_to: original.id },
+      conversation: conversation,
+      account: account
+    )
+    allow(client).to receive(:send_text)
+      .with(
+        number: contact_inbox.source_id,
+        text: 'Contextual answer',
+        quoted: {
+          key: {
+            remoteJid: '5511999999999@s.whatsapp.net',
+            fromMe: false,
+            id: 'incoming-message-id'
+          },
+          message: { conversation: 'Original question' }
+        }
+      )
+      .and_return('key' => { 'id' => 'reply-id' })
+
+    Whatsapp::SendOnWhatsappService.new(message: reply).perform
+
+    expect(reply.reload.source_id).to eq('reply-id')
+  end
+
+  it 'executes reactions and provider read receipts with provider message keys' do
+    incoming = create(
+      :message,
+      message_type: :incoming,
+      source_id: 'incoming-message-id',
+      conversation: conversation,
+      account: account
+    )
+    key = {
+      remoteJid: '5511999999999@s.whatsapp.net',
+      fromMe: false,
+      id: 'incoming-message-id'
+    }
+    allow(client).to receive(:send_reaction).with(message_key: key, reaction: '👍').and_return({})
+    allow(client).to receive(:mark_messages_read).with(message_keys: [key]).and_return({})
+    service = described_class.new(whatsapp_channel: channel)
+
+    service.send_reaction(phone_number: contact_inbox.source_id, message: incoming, reaction: '👍')
+    service.mark_messages_read(phone_number: contact_inbox.source_id, messages: [incoming])
+
+    expect(client).to have_received(:send_reaction).once
+    expect(client).to have_received(:mark_messages_read).once
   end
 
   it 'fails explicit Meta template attempts without calling Evolution' do

@@ -92,7 +92,14 @@ class Openjarvis::CatalogOperations
                   schemas.reference('MessageListResponse'), scope: 'messages:read'),
         operation('messages.create', 'POST', '/api/v1/openjarvis/conversations/{conversation_id}/messages', 'Create a message or reply',
                   schemas.with_identifier(schemas.message_write, 'conversation_id'), schemas.reference('MessageCreateResponse'),
-                  scope: 'messages:write', idempotent: true)
+                  scope: 'messages:write', idempotent: true),
+        operation('messages.reaction', 'POST',
+                  '/api/v1/openjarvis/conversations/{conversation_id}/messages/{message_id}/reaction',
+                  'Set or remove an Evolution WhatsApp reaction', schemas.message_reaction,
+                  schemas.reference('MessageReactionResponse'), scope: 'messages:react', idempotent: true),
+        operation('messages.provider_read', 'POST', '/api/v1/openjarvis/conversations/{conversation_id}/provider_read',
+                  'Send Evolution WhatsApp read receipts and update AceleraChat', schemas.provider_read,
+                  schemas.reference('ProviderReadResponse'), scope: 'messages:read_receipts', idempotent: true)
       ]
     end
     # rubocop:enable Metrics/AbcSize

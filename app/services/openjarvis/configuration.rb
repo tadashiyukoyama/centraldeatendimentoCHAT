@@ -1,6 +1,6 @@
 class Openjarvis::Configuration
   APP_ID = 'openjarvis'.freeze
-  CONTRACT_VERSION = '2026-08-18.2'.freeze
+  CONTRACT_VERSION = '2026-08-19.2'.freeze
   SCHEMA_VERSION = '1.0'.freeze
   CREDENTIAL_GRACE_PERIOD = 24.hours
   IDEMPOTENCY_RETENTION = 30.days
@@ -11,6 +11,7 @@ class Openjarvis::Configuration
   }.freeze
   DEFAULT_SCOPES = %w[
     inboxes:read conversations:read messages:read messages:write
+    messages:react messages:read_receipts
     contacts:read contacts:write conversations:write resources:read diagnostics:read sync:read
   ].freeze
   SCOPES = DEFAULT_SCOPES.freeze
@@ -19,6 +20,7 @@ class Openjarvis::Configuration
     conversation.status_changed contact.created contact.updated
   ].freeze
   SUBSCRIPTIONS = DEFAULT_SUBSCRIPTIONS.freeze
+  INBOX_ACCESS_MODES = %w[selected all_account].freeze
   BLOCKED_HOSTS = %w[chatwoot.com chatwoot.help chwt.app].freeze
 
   attr_reader :hook
@@ -45,6 +47,32 @@ class Openjarvis::Configuration
 
   def allowed_inbox_ids
     Array(settings['allowed_inbox_ids']).filter_map { |value| Integer(value, exception: false) }.uniq
+  end
+
+  def inbox_access_mode
+    settings['inbox_access_mode'].presence || 'selected'
+  end
+
+  def all_account_inboxes?
+    inbox_access_mode == 'all_account'
+  end
+
+  def existing_allowed_inbox_ids
+    return [] if all_account_inboxes?
+
+    allowed_inbox_ids - stale_allowed_inbox_ids
+  end
+
+  def stale_allowed_inbox_ids
+    return [] if all_account_inboxes?
+
+    @stale_allowed_inbox_ids ||= allowed_inbox_ids - account_inbox_ids
+  end
+
+  def effective_inbox_count
+    return hook.account.inboxes.count if all_account_inboxes?
+
+    existing_allowed_inbox_ids.size
   end
 
   def scopes
@@ -91,6 +119,7 @@ class Openjarvis::Configuration
   end
 
   def validate_inboxes(result)
+    return validate_all_account_inboxes(result) if all_account_inboxes?
     return result << 'Select at least one inbox' if allowed_inbox_ids.empty?
 
     result << 'One or more inboxes do not belong to this account' if missing_inbox_ids.any?
@@ -99,15 +128,26 @@ class Openjarvis::Configuration
     result << 'Service user cannot access one or more selected inboxes' if inaccessible_inbox_ids.any?
   end
 
+  def validate_all_account_inboxes(result)
+    return if account_user&.administrator?
+
+    result << 'All current and future inbox access requires an administrator service user'
+  end
+
   def missing_inbox_ids
-    allowed_inbox_ids - hook.account.inboxes.where(id: allowed_inbox_ids).pluck(:id)
+    stale_allowed_inbox_ids
   end
 
   def inaccessible_inbox_ids
     allowed_inbox_ids - service_user.inboxes.where(account_id: hook.account_id).pluck(:id)
   end
 
+  def account_inbox_ids
+    @account_inbox_ids ||= hook.account.inboxes.where(id: allowed_inbox_ids).pluck(:id)
+  end
+
   def validate_values(result)
+    result << 'Unsupported inbox access mode' unless INBOX_ACCESS_MODES.include?(inbox_access_mode)
     result << 'Select at least one API scope' if scopes.empty?
     result << 'Unsupported API scope' if (scopes - SCOPES).any?
     result << 'Unsupported webhook subscription' if (subscriptions - SUBSCRIPTIONS).any?

@@ -115,21 +115,31 @@ class Api::V1::Accounts::Integrations::OpenjarvisController < Api::V1::Accounts:
 
   def submitted_settings
     params.require(:openjarvis).permit(
-      :endpoint_url, :service_user_id, :webhooks_enabled,
+      :endpoint_url, :service_user_id, :webhooks_enabled, :inbox_access_mode,
       allowed_inbox_ids: [], scopes: [], subscriptions: []
     ).to_h
   end
 
   def merged_settings
     system_settings = @hook.settings.to_h.slice('last_test_at', 'last_test_status', 'last_test_error')
-    submitted_settings.merge(system_settings)
+    repair_stale_inbox_ids(submitted_settings).merge(system_settings)
+  end
+
+  def repair_stale_inbox_ids(values)
+    return values unless @hook.persisted?
+
+    stale_ids = @hook.openjarvis_configuration.stale_allowed_inbox_ids
+    return values if stale_ids.empty?
+
+    values.merge('allowed_inbox_ids' => Array(values['allowed_inbox_ids']).map(&:to_i) - stale_ids)
   end
 
   def defaults
     {
       endpoint_url: '',
       service_user_id: Current.user.id,
-      allowed_inbox_ids: Current.account.inboxes.pluck(:id),
+      inbox_access_mode: 'all_account',
+      allowed_inbox_ids: [],
       scopes: Openjarvis::Configuration::DEFAULT_SCOPES,
       subscriptions: Openjarvis::Configuration::DEFAULT_SUBSCRIPTIONS,
       webhooks_enabled: false
@@ -149,7 +159,8 @@ class Api::V1::Accounts::Integrations::OpenjarvisController < Api::V1::Accounts:
       configured: true,
       enabled: @hook.enabled?,
       status: connection_status(configuration),
-      settings: defaults.merge(@hook.settings.to_h.symbolize_keys),
+      settings: public_settings(configuration),
+      warnings: configuration_warnings(configuration),
       api_base_url: "#{public_base_url}/api/v1/openjarvis",
       credential_metadata: credential_metadata
     }
@@ -187,12 +198,26 @@ class Api::V1::Accounts::Integrations::OpenjarvisController < Api::V1::Accounts:
   end
 
   def record_test_result(status, error = nil)
+    configuration = @hook.openjarvis_configuration
     settings = @hook.settings.merge(
+      'allowed_inbox_ids' => configuration.existing_allowed_inbox_ids,
       'last_test_at' => Time.current.iso8601,
       'last_test_status' => status,
       'last_test_error' => error.to_s.squish.first(300).presence
     )
     @hook.update!(settings: settings)
+  end
+
+  def public_settings(configuration)
+    defaults.merge(@hook.settings.to_h.symbolize_keys).merge(
+      allowed_inbox_ids: configuration.existing_allowed_inbox_ids
+    )
+  end
+
+  def configuration_warnings(configuration)
+    return {} if configuration.stale_allowed_inbox_ids.empty?
+
+    { removed_inbox_ids: configuration.stale_allowed_inbox_ids }
   end
 
   def webhook_client(configuration)

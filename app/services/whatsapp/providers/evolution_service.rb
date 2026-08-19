@@ -12,7 +12,11 @@ class Whatsapp::Providers::EvolutionService < Whatsapp::Providers::BaseService
       if message.attachments.present?
         send_attachment(phone_number, message)
       else
-        client.send_text(number: phone_number, text: message.outgoing_content.to_s)
+        client.send_text(
+          number: phone_number,
+          text: message.outgoing_content.to_s,
+          quoted: quoted_payload(phone_number, message)
+        )
       end
 
     response.dig('key', 'id') || response['id'] || response.dig('message', 'key', 'id')
@@ -50,6 +54,18 @@ class Whatsapp::Providers::EvolutionService < Whatsapp::Providers::BaseService
     {}
   end
 
+  def send_reaction(phone_number:, message:, reaction:)
+    client.send_reaction(
+      message_key: provider_message_key(phone_number, message),
+      reaction: reaction
+    )
+  end
+
+  def mark_messages_read(phone_number:, messages:)
+    keys = messages.map { |message| provider_message_key(phone_number, message) }
+    client.mark_messages_read(message_keys: keys)
+  end
+
   private
 
   def provisioning
@@ -77,7 +93,43 @@ class Whatsapp::Providers::EvolutionService < Whatsapp::Providers::BaseService
       media_type: media_type,
       mime_type: attachment.file.blob.content_type,
       caption: %w[audio sticker].include?(media_type) ? nil : message.outgoing_content,
-      file_name: media_type == 'document' ? attachment.file.filename.to_s : nil
+      file_name: media_type == 'document' ? attachment.file.filename.to_s : nil,
+      quoted: quoted_payload(phone_number, message)
     )
+  end
+
+  def quoted_payload(phone_number, message)
+    external_id = message.content_attributes['in_reply_to_external_id']
+    return if external_id.blank?
+
+    target = message.conversation.messages.find_by(source_id: external_id)
+    return if target.blank?
+
+    {
+      key: provider_message_key(phone_number, target),
+      message: { conversation: target.content.presence || quoted_attachment_label(target) }
+    }
+  end
+
+  def provider_message_key(phone_number, message)
+    raise Whatsapp::Evolution::ApiClient::Error.new(
+      'WhatsApp message does not have a provider identifier',
+      code: 'missing_provider_message_id'
+    ) if message.source_id.blank?
+
+    {
+      remoteJid: "#{normalized_number(phone_number)}@s.whatsapp.net",
+      fromMe: message.outgoing?,
+      id: message.source_id
+    }
+  end
+
+  def normalized_number(number)
+    number.to_s.gsub(/\D/, '')
+  end
+
+  def quoted_attachment_label(message)
+    attachment = message.attachments.first
+    attachment ? "[#{attachment.file_type}]" : '[mensagem]'
   end
 end

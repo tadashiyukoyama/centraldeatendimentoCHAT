@@ -23,6 +23,19 @@ RSpec.describe Openjarvis::CapabilityResolver do
     expect(connection).to include(state: 'connected', connected: true, source: 'whatsapp_evolution_provisioning')
   end
 
+  it 'exposes provider-native replies, reactions, read receipts and media only for Evolution inboxes' do
+    channel = create(:channel_whatsapp, provider: 'evolution', validate_provider_config: false, sync_templates: false)
+    inbox = channel.inbox
+    create(:whatsapp_evolution_provisioning, account: channel.account, whatsapp_channel: channel, status: :connected)
+
+    capabilities = described_class.new(inbox: inbox).capabilities
+
+    expect(capabilities.dig('messages.reply', :supported)).to be(true)
+    expect(capabilities.dig('messages.reaction', :supported)).to be(true)
+    expect(capabilities.dig('messages.mark_read_provider', :supported)).to be(true)
+    expect(capabilities.dig('messages.media_send', :supported)).to be(true)
+  end
+
   it 'formally limits email to AceleraChat customer-service operations' do
     capabilities = described_class.new(channel_type: 'Channel::Email').capabilities
 

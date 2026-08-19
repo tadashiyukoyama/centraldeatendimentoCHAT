@@ -49,11 +49,11 @@ class Whatsapp::Evolution::ApiClient
     request(:delete, "/instance/delete/#{escaped_instance_name}", global_key: true)
   end
 
-  def send_text(number:, text:)
+  def send_text(number:, text:, quoted: nil)
     request(
       :post,
       "/message/sendText/#{escaped_instance_name}",
-      body: { number: normalized_number(number), text: text }
+      body: { number: normalized_number(number), text: text, quoted: quoted }.compact
     )
   end
 
@@ -67,8 +67,25 @@ class Whatsapp::Evolution::ApiClient
         mimetype: metadata.fetch(:mime_type),
         caption: metadata[:caption],
         fileName: metadata[:file_name],
-        media: media
+        media: media,
+        quoted: metadata[:quoted]
       }.compact
+    )
+  end
+
+  def send_reaction(message_key:, reaction:)
+    request(
+      :post,
+      "/message/sendReaction/#{escaped_instance_name}",
+      body: { key: message_key, reaction: reaction }
+    )
+  end
+
+  def mark_messages_read(message_keys:)
+    request(
+      :post,
+      "/chat/markMessageAsRead/#{escaped_instance_name}",
+      body: { readMessages: message_keys }
     )
   end
 

@@ -21,7 +21,7 @@ class Api::V1::Openjarvis::MessagesController < Api::V1::Openjarvis::BaseControl
     require_scope!('messages:write')
     validate_message_capabilities!
     execute_idempotently('messages.create', message_params.merge(conversation_id: conversation.display_id)) do
-      message = Messages::MessageBuilder.new(Current.user, conversation, ActionController::Parameters.new(builder_params)).perform
+      message = build_message
       idempotent_result(status: :created, body: { data: present(message), result: operation_result(message) }, resource: message)
     end
   end
@@ -35,8 +35,24 @@ class Api::V1::Openjarvis::MessagesController < Api::V1::Openjarvis::BaseControl
   def message_params
     params.require(:message).permit(
       :content, :private, :content_type, :to_emails, :cc_emails, :bcc_emails,
-      :email_html_content, :reply_to_message_id, content_attributes: {}
+      :email_html_content, :reply_to_message_id, content_attributes: {}, remote_attachment: [:url]
     )
+  end
+
+  def build_message
+    blobs = remote_attachment_blobs
+    values = builder_params.merge('attachments' => blobs)
+    Messages::MessageBuilder.new(Current.user, conversation, ActionController::Parameters.new(values)).perform
+  rescue StandardError
+    blobs&.each(&:purge_later)
+    raise
+  end
+
+  def remote_attachment_blobs
+    attachment = message_params[:remote_attachment]
+    return [] if attachment.blank?
+
+    [Openjarvis::RemoteAttachmentFetcher.new(attachment[:url]).fetch!]
   end
 
   def builder_params
@@ -54,6 +70,14 @@ class Api::V1::Openjarvis::MessagesController < Api::V1::Openjarvis::BaseControl
 
   def validate_message_capabilities!
     resolver = Openjarvis::CapabilityResolver.new(inbox: conversation.inbox)
+    if message_params[:remote_attachment].present? && !resolver.supported?('messages.media_send')
+      raise Openjarvis::ApiError.new(
+        'capability_not_supported',
+        'Outbound media is not supported for this inbox',
+        status: :unprocessable_entity,
+        details: { capability: 'messages.media_send', inbox_id: conversation.inbox_id }
+      )
+    end
     if message_params[:reply_to_message_id].present? && !resolver.supported?('messages.reply')
       raise Openjarvis::ApiError.new(
         'capability_not_supported',
@@ -62,7 +86,7 @@ class Api::V1::Openjarvis::MessagesController < Api::V1::Openjarvis::BaseControl
         details: { capability: 'messages.reply', inbox_id: conversation.inbox_id }
       )
     end
-    return if message_params[:content].present?
+    return if message_params[:content].present? || message_params[:remote_attachment].present?
 
     raise Openjarvis::ApiError.new('message_content_required', 'Message content is required', status: :bad_request)
   end

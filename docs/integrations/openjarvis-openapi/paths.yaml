@@ -404,6 +404,31 @@ ConversationReadPath:
       '404': { $ref: ./responses.yaml#/NotFound }
       '409': { $ref: ./responses.yaml#/Conflict }
       '429': { $ref: ./responses.yaml#/RateLimited }
+ProviderReadPath:
+  parameters:
+    - $ref: ./parameters.yaml#/ConversationId
+  post:
+    operationId: messages.provider_read
+    tags: [Messages]
+    summary: Send provider read receipts for an authorized Evolution WhatsApp conversation
+    description: Idempotently marks up to the 100 newest provider-backed incoming messages as read and updates AceleraChat.
+    parameters:
+      - $ref: ./parameters.yaml#/IdempotencyKey
+    responses:
+      '200':
+        description: Evolution read receipts confirmed
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/ProviderReadResponse }
+            examples:
+              result: { $ref: ./examples.yaml#/ProviderRead }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '404': { $ref: ./responses.yaml#/NotFound }
+      '409': { $ref: ./responses.yaml#/Conflict }
+      '422': { $ref: ./responses.yaml#/ValidationError }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+      '502': { $ref: ./responses.yaml#/Unavailable }
 MessagesSearchPath:
   get:
     operationId: messages.search
@@ -478,6 +503,7 @@ ConversationMessagesPath:
           examples:
             text: { $ref: ./examples.yaml#/MessageWriteRequest }
             email: { $ref: ./examples.yaml#/EmailWriteRequest }
+            media: { $ref: ./examples.yaml#/MessageMediaRequest }
     responses:
       '201':
         description: Message accepted by AceleraChat; delivery status remains asynchronous
@@ -496,6 +522,42 @@ ConversationMessagesPath:
       '422': { $ref: ./responses.yaml#/ValidationError }
       '429': { $ref: ./responses.yaml#/RateLimited }
       '500': { $ref: ./responses.yaml#/InternalError }
+MessageReactionPath:
+  parameters:
+    - $ref: ./parameters.yaml#/ConversationId
+    - name: message_id
+      in: path
+      required: true
+      schema: { type: integer, minimum: 1 }
+  post:
+    operationId: messages.reaction
+    tags: [Messages]
+    summary: Set or remove a reaction on an Evolution WhatsApp message
+    parameters:
+      - $ref: ./parameters.yaml#/IdempotencyKey
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ./schemas.yaml#/MessageReactionRequest }
+          examples:
+            reaction: { $ref: ./examples.yaml#/MessageReactionRequest }
+    responses:
+      '200':
+        description: Evolution confirmed the reaction
+        content:
+          application/json:
+            schema: { $ref: ./schemas.yaml#/MessageReactionResponse }
+            examples:
+              result: { $ref: ./examples.yaml#/MessageReaction }
+      '400': { $ref: ./responses.yaml#/ValidationError }
+      '401': { $ref: ./responses.yaml#/Unauthorized }
+      '403': { $ref: ./responses.yaml#/Forbidden }
+      '404': { $ref: ./responses.yaml#/NotFound }
+      '409': { $ref: ./responses.yaml#/Conflict }
+      '422': { $ref: ./responses.yaml#/ValidationError }
+      '429': { $ref: ./responses.yaml#/RateLimited }
+      '502': { $ref: ./responses.yaml#/Unavailable }
 BackfillPath:
   get:
     operationId: sync.backfill

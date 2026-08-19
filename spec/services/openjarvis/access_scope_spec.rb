@@ -37,4 +37,21 @@ RSpec.describe Openjarvis::AccessScope do
 
     expect(described_class.new(hook).conversations).to contain_exactly(visible)
   end
+
+  it 'dynamically includes future inboxes in all-account mode without crossing accounts' do
+    administrator = create(:user, account: account, role: :administrator)
+    hook.update!(
+      settings: hook.settings.merge(
+        'service_user_id' => administrator.id,
+        'inbox_access_mode' => 'all_account',
+        'allowed_inbox_ids' => []
+      )
+    )
+    future_inbox = create(:inbox, account: account)
+    create(:inbox)
+
+    expect(described_class.new(hook).inboxes).to match_array(
+      [allowed_inbox, other_inbox, future_inbox]
+    )
+  end
 end

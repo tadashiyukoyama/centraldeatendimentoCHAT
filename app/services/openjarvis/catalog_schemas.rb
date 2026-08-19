@@ -85,6 +85,21 @@ class Openjarvis::CatalogSchemas
       { type: 'object', required: ['message'], additionalProperties: false, properties: { message: message_properties } }
     end
 
+    def message_reaction
+      filters(
+        {
+          conversation_id: integer,
+          message_id: integer,
+          reaction: { type: 'string', maxLength: 64 }
+        },
+        required: %w[conversation_id message_id reaction]
+      )
+    end
+
+    def provider_read
+      identifier('conversation_id')
+    end
+
     private
 
     def contact_properties
@@ -123,12 +138,17 @@ class Openjarvis::CatalogSchemas
 
     def message_properties
       {
-        type: 'object', required: ['content'], additionalProperties: false,
+        type: 'object', additionalProperties: false,
+        anyOf: [{ required: ['content'] }, { required: ['remote_attachment'] }],
         properties: {
           content: { type: 'string', minLength: 1, maxLength: 150_000 }, private: boolean,
           content_type: { type: 'string', enum: ['text'] }, reply_to_message_id: integer,
           to_emails: string, cc_emails: string, bcc_emails: string, email_html_content: string,
-          content_attributes: object
+          content_attributes: object,
+          remote_attachment: {
+            type: 'object', required: ['url'], additionalProperties: false,
+            properties: { url: { type: 'string', format: 'uri', maxLength: 2_048 } }
+          }
         }
       }
     end

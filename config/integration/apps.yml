@@ -36,6 +36,8 @@ openjarvis:
         {
           'endpoint_url': { 'type': 'string' },
           'service_user_id': { 'type': 'integer' },
+          'inbox_access_mode':
+            { 'type': 'string', 'enum': ['selected', 'all_account'] },
           'allowed_inbox_ids':
             { 'type': 'array', 'items': { 'type': 'integer' }, 'uniqueItems': true },
           'scopes':
@@ -51,6 +53,7 @@ openjarvis:
         [
           'endpoint_url',
           'service_user_id',
+          'inbox_access_mode',
           'allowed_inbox_ids',
           'scopes',
           'subscriptions',
@@ -62,6 +65,7 @@ openjarvis:
     [
       'endpoint_url',
       'service_user_id',
+      'inbox_access_mode',
       'allowed_inbox_ids',
       'scopes',
       'subscriptions',

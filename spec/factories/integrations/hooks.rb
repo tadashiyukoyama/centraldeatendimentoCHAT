@@ -61,6 +61,7 @@ FactoryBot.define do
         {
           'endpoint_url' => 'https://openjarvis.example.com/webhooks/acelerachat',
           'service_user_id' => service_user.id,
+          'inbox_access_mode' => 'selected',
           'allowed_inbox_ids' => allowed_inboxes.map(&:id),
           'scopes' => Openjarvis::Configuration::DEFAULT_SCOPES,
           'subscriptions' => Openjarvis::Configuration::DEFAULT_SUBSCRIPTIONS,

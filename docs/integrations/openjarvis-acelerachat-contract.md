@@ -1,6 +1,6 @@
 # AceleraChat native OpenJarvis contract
 
-- Contract version: `2026-08-18.2`.
+- Contract version: `2026-08-19.2`.
 - Schema version: `1.0`.
 - Audited implementation base SHA: `128d00a1743e198eb370f55fbaf7bffe7a2b01f1`.
 - The final implementation SHA is recorded in the release report because changing
@@ -18,6 +18,17 @@ AceleraChat is the sole authority for its configured inboxes. Every API request
 is evaluated as the configured service user, then restricted by the integration
 inbox allowlist and the existing strict-team permission filter. A resource that
 exists outside that boundary is returned as not found.
+
+The inbox boundary has two explicit modes:
+
+- `selected`: only the persisted inbox IDs are authorized;
+- `all_account`: all current and future inboxes belonging to the same account
+  are resolved dynamically. This mode requires an administrator service user
+  and never grants access to another account.
+
+Connection and per-inbox capability checks still apply in both modes. Dynamic
+authorization does not turn a disconnected or unsupported channel into an
+executable capability.
 
 The service user is not a permission bypass. Agents, teams and labels used by a
 mutation must first be returned by `/agents`, `/teams` or `/labels`. Conversation
@@ -90,19 +101,26 @@ an explicit reason when unsupported. The complete machine-readable matrix is in
 ### WhatsApp
 
 - Read/search conversations and messages: supported.
-- Send text through an existing conversation: supported; delivery is
-  asynchronous.
-- Provider-native contextual reply: not supported. AceleraChat does not pretend
-  that internal `in_reply_to` metadata was transmitted by Evolution/Meta.
-- Reactions: not supported by the current AceleraChat WhatsApp adapters.
+- Send text through an existing conversation: supported; delivery is asynchronous.
+- Create or reuse a WhatsApp association from an exact E.164 contact number:
+  supported by the server-side contact and conversation builders. OpenJarvis never
+  supplies `source_id`.
+- Evolution provider-native contextual reply: supported by `reply_to_message_id`.
+- Evolution reactions: supported by the dedicated reaction endpoint; an empty
+  reaction removes the current reaction.
 - Mark read inside AceleraChat: supported by `/conversations/:id/read`.
-- Provider read receipt: not supported by this API.
+- Evolution provider read receipt: supported by the dedicated provider-read
+  endpoint for up to 100 provider-backed incoming messages.
 - Read attachment metadata: supported.
-- Upload/send new binary media: not supported by this integration.
+- Evolution media from a public HTTPS URL: supported through SSRF-protected fetch,
+  an allowlist of content types and a 20 MB limit. Direct local-file transfer is
+  not part of this HTTP contract.
 - Delivery status: supported from `Message.status`, `source_id` and
   `message.updated` events. A successful create response is not delivery proof.
 - Evolution session-window templates: not applicable; the existing Evolution
   adapter sends session text without the official-template gate.
+- Group administration, profile changes, status/broadcast and provider privacy
+  settings are deliberately not exposed by this integration token.
 
 ### Email
 

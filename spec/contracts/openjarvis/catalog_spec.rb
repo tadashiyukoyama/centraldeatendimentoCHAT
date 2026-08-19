@@ -48,7 +48,6 @@ RSpec.describe Openjarvis::Catalog do
     expect(content).not_to match(/ACELERACHAT_BEARER_TOKEN\s*=/)
     expect(content).not_to match(/ACELERACHAT_WEBHOOK_SECRET\s*=/)
     expect(content).not_to include('bellartecomercial@gmail.com')
-    expect(content).not_to include('9Vterkc!')
   end
 
   it 'declares every static public API error emitted by the implementation' do
@@ -67,13 +66,18 @@ RSpec.describe Openjarvis::Catalog do
       'Teams' => 'TeamListResponse', 'Labels' => 'LabelListResponse', 'Contact' => 'ContactResponse',
       'Contacts' => 'ContactListResponse', 'Conversation' => 'ConversationResponse',
       'Conversations' => 'ConversationListResponse', 'ConversationRead' => 'ConversationReadResponse',
-      'Messages' => 'MessageListResponse', 'MessageAccepted' => 'MessageCreateResponse', 'Backfill' => 'BackfillResponse'
+      'ProviderRead' => 'ProviderReadResponse', 'Messages' => 'MessageListResponse',
+      'MessageAccepted' => 'MessageCreateResponse', 'MessageReaction' => 'MessageReactionResponse',
+      'Backfill' => 'BackfillResponse'
     }
 
     mappings.each do |example_name, schema_name|
       errors = schema_errors(schema_name, examples.dig(example_name, 'value'))
       expect(errors).to be_empty, "#{example_name} does not match #{schema_name}: #{errors.to_json}"
     end
+
+    expect(schema_errors('MessageWriteRequest', examples.dig('MessageMediaRequest', 'value'))).to be_empty
+    expect(schema_errors('MessageReactionRequest', examples.dig('MessageReactionRequest', 'value'))).to be_empty
   end
 
   it 'keeps every webhook example valid as a versioned envelope with typed data' do

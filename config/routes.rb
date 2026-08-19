@@ -74,7 +74,10 @@ Rails.application.routes.draw do
         resources :contacts, only: [:index, :show, :create, :update]
         resources :conversations, only: [:index, :show, :create, :update] do
           post :read, on: :member, action: :mark_read
-          resources :messages, only: [:index, :create]
+          post :provider_read, on: :member, controller: :whatsapp_actions, action: :mark_read
+          resources :messages, only: [:index, :create] do
+            post :reaction, on: :member, controller: :whatsapp_actions
+          end
         end
       end
 

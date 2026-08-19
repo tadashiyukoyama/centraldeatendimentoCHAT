@@ -220,6 +220,16 @@ RSpec.describe SafeFetch do
         end
       end
 
+      it 'allows callers to enforce public-network fetching' do
+        with_modified_env('SAFE_FETCH_ALLOW_PRIVATE_NETWORK' => 'true') do
+          expect do
+            described_class.fetch('http://127.0.0.1/secret', allow_private_network: false) { nil }
+          end.to raise_error do |error|
+            expect(error.class.name).to eq('SafeFetch::UnsafeUrlError')
+          end
+        end
+      end
+
       it 'allows private hostnames when private network access is enabled' do
         private_url = 'http://internal-webhook-service/image.png'
         allow(Resolv).to receive(:getaddresses).with('internal-webhook-service').and_return(['10.0.0.5'])

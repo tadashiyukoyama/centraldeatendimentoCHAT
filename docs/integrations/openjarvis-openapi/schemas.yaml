@@ -93,6 +93,7 @@ Capability:
           acelerachat,
           acelerachat_metadata,
           acelerachat_thread,
+          evolution,
           not_supported,
           not_applicable,
         ]
@@ -794,6 +795,46 @@ ConversationReadResponse:
         conversation_id: { type: integer }
         read_at: { type: string, format: date-time }
         provider_receipt_sent: { const: false }
+ProviderReadResponse:
+  type: object
+  required: [data]
+  additionalProperties: false
+  properties:
+    data:
+      type: object
+      required: [conversation_id, read_at, provider_receipt_sent, provider, message_count, result_state]
+      additionalProperties: false
+      properties:
+        conversation_id: { type: integer }
+        read_at: { type: string, format: date-time }
+        provider_receipt_sent: { const: true }
+        provider: { const: evolution }
+        message_count: { type: integer, minimum: 1, maximum: 100 }
+        result_state: { const: applied }
+MessageReactionRequest:
+  type: object
+  required: [reaction]
+  additionalProperties: false
+  properties:
+    reaction:
+      type: string
+      maxLength: 64
+      description: One emoji, or an empty string to remove the current reaction.
+MessageReactionResponse:
+  type: object
+  required: [data]
+  additionalProperties: false
+  properties:
+    data:
+      type: object
+      required: [conversation_id, message_id, reaction, provider, result_state]
+      additionalProperties: false
+      properties:
+        conversation_id: { type: integer }
+        message_id: { type: integer }
+        reaction: { type: string, maxLength: 64 }
+        provider: { const: evolution }
+        result_state: { const: applied }
 ContactWriteRequest:
   type: object
   required: [contact]
@@ -876,8 +917,10 @@ ConversationUpdateRequest:
             type: string
 MessageWrite:
   type: object
-  required: [content]
   additionalProperties: false
+  anyOf:
+    - required: [content]
+    - required: [remote_attachment]
   properties:
     content:
       type: string
@@ -903,6 +946,16 @@ MessageWrite:
       type: string
     content_attributes:
       type: object
+    remote_attachment:
+      type: object
+      required: [url]
+      additionalProperties: false
+      properties:
+        url:
+          type: string
+          format: uri
+          maxLength: 2048
+          description: Public HTTPS image, video, audio or allowlisted document URL, fetched with SSRF protection and a 20 MB limit.
 MessageWriteRequest:
   type: object
   required: [message]

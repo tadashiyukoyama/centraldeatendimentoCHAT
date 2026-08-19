@@ -78,7 +78,29 @@ const toggleArrayValue = (key, value) => {
         {{ $t('INTEGRATION_APPS.OPENJARVIS.FORM.INBOXES') }}
       </legend>
       <label
+        class="mb-2 flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 bg-n-alpha-1"
+      >
+        <Checkbox
+          :model-value="form.inbox_access_mode === 'all_account'"
+          @change="
+            form.inbox_access_mode =
+              form.inbox_access_mode === 'all_account'
+                ? 'selected'
+                : 'all_account'
+          "
+        />
+        <span class="flex flex-col">
+          <span class="text-body-main text-n-slate-12">
+            {{ $t('INTEGRATION_APPS.OPENJARVIS.FORM.ALL_INBOXES') }}
+          </span>
+          <span class="text-body-small text-n-slate-11">
+            {{ $t('INTEGRATION_APPS.OPENJARVIS.FORM.ALL_INBOXES_HELP') }}
+          </span>
+        </span>
+      </label>
+      <label
         v-for="inbox in inboxes"
+        v-show="form.inbox_access_mode !== 'all_account'"
         :key="inbox.id"
         class="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 hover:bg-n-alpha-2"
       >

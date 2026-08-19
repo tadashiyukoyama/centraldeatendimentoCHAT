@@ -8,6 +8,7 @@ class SafeFetch::RequestOptions
     headers: nil,
     sensitive_headers: [],
     http_basic_authentication: nil,
+    allow_private_network: nil,
     allowed_content_type_prefixes: SafeFetch::DEFAULT_ALLOWED_CONTENT_TYPE_PREFIXES,
     allowed_content_types: SafeFetch::DEFAULT_ALLOWED_CONTENT_TYPES,
     validate_content_type: true
@@ -28,6 +29,7 @@ class SafeFetch::RequestOptions
     @headers = normalize_headers(config[:headers])
     @sensitive_headers = normalize_sensitive_headers(config[:sensitive_headers])
     @http_basic_authentication = config[:http_basic_authentication]
+    @allow_private_network = config[:allow_private_network]
     @allowed_content_type_prefixes = Array(config[:allowed_content_type_prefixes])
     @allowed_content_types = Array(config[:allowed_content_types])
     @validate_content_type = config[:validate_content_type]
@@ -53,6 +55,12 @@ class SafeFetch::RequestOptions
 
   def validate_content_type?
     @validate_content_type
+  end
+
+  def allow_private_network?
+    return SafeFetch.allow_private_network? if @allow_private_network.nil?
+
+    ActiveModel::Type::Boolean.new.cast(@allow_private_network)
   end
 
   def resolver

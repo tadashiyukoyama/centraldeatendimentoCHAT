@@ -10,7 +10,7 @@ class Openjarvis::AccessScope
 
   def inboxes
     @inboxes ||= begin
-      scope = account.inboxes.where(id: configuration.allowed_inbox_ids)
+      scope = configuration.all_account_inboxes? ? account.inboxes : account.inboxes.where(id: configuration.allowed_inbox_ids)
       configuration.account_user&.administrator? ? scope : scope.where(id: user.inboxes.select(:id))
     end
   end

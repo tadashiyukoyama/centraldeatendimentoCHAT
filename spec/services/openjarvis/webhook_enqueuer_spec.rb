@@ -45,6 +45,21 @@ RSpec.describe Openjarvis::WebhookEnqueuer do
     end.not_to have_enqueued_job(Openjarvis::WebhookDeliveryJob)
   end
 
+  it 'queues events from an inbox created after all-account access was enabled' do
+    hook.update!(
+      settings: hook.settings.merge(
+        'inbox_access_mode' => 'all_account',
+        'allowed_inbox_ids' => []
+      )
+    )
+    future_inbox = create(:inbox, account: account)
+    conversation = create(:conversation, account: account, inbox: future_inbox)
+
+    expect do
+      described_class.new(account: account, event_name: 'conversation.created', resource: conversation).perform
+    end.to have_enqueued_job(Openjarvis::WebhookDeliveryJob)
+  end
+
   it 'does not queue events while webhooks are disabled' do
     hook.update!(settings: hook.settings.merge('webhooks_enabled' => false))
     conversation = create(:conversation, account: account, inbox: inbox)

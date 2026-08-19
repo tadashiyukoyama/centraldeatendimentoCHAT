@@ -64,7 +64,7 @@ class Openjarvis::Diagnostics
     {
       status: hook.status,
       webhooks_enabled: hook.openjarvis_configuration.webhooks_enabled?,
-      allowed_inbox_count: hook.openjarvis_configuration.allowed_inbox_ids.size,
+      allowed_inbox_count: hook.openjarvis_configuration.effective_inbox_count,
       service_user_id: hook.openjarvis_configuration.service_user_id,
       pending_deliveries: hook.openjarvis_webhook_deliveries.where(status: [:queued, :delivering]).count,
       failed_deliveries: hook.openjarvis_webhook_deliveries.failed.where('created_at >= ?', 24.hours.ago).count

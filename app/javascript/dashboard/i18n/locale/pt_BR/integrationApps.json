@@ -65,7 +65,7 @@
     },
     "OPENJARVIS": {
       "HEADER": "OpenJarvis",
-      "DESCRIPTION": "Conceda ao OpenJarvis acesso controlado às caixas selecionadas e às operações do AceleraChat.",
+      "DESCRIPTION": "Conceda ao OpenJarvis acesso controlado às caixas e às operações do AceleraChat.",
       "STATUS": {
         "TITLE": "Estado da conexão",
         "not_configured": "Não configurado",
@@ -85,11 +85,13 @@
         "SERVICE_USER": "Usuário de serviço",
         "SERVICE_USER_HELP": "As permissões e a privacidade rígida entre setores serão avaliadas como este usuário.",
         "INBOXES": "Caixas autorizadas",
+        "ALL_INBOXES": "Todas as caixas atuais e futuras desta conta",
+        "ALL_INBOXES_HELP": "Exige usuário de serviço administrador. Novas caixas entram automaticamente, sem liberar outras contas.",
         "SCOPES": "Escopos da API",
         "WEBHOOKS": "Enviar eventos em tempo real",
         "SUBSCRIPTIONS": "Eventos do webhook",
         "SAVE": "Salvar configuração",
-        "VALIDATION": "Selecione um usuário, ao menos uma caixa e um escopo. O webhook deve usar HTTPS e não pode conter credenciais, parâmetros ou fragmentos."
+        "VALIDATION": "Selecione um usuário, uma política de caixas válida e um escopo. O webhook deve usar HTTPS e não pode conter credenciais, parâmetros ou fragmentos."
       },
       "CREDENTIALS": {
         "TITLE": "Credenciais",

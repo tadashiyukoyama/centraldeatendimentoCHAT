@@ -42,7 +42,7 @@ Limites obrigatórios:
   `612244e1e9e2e2edb88e1bbd5ffeab071a7b9f43`.
 - SHA da primeira versão dos runbooks:
   `b0ca12a706f23c371cb39e98f8367ecd18793404`.
-- Contrato: `2026-08-18.2`.
+- Contrato: `2026-08-19.2`.
 - Schema de webhook: `1.0`.
 - Rollback lógico documentado: imagem correspondente ao SHA
   `128d00a1743e198eb370f55fbaf7bffe7a2b01f1`, sujeito à confirmação do ativo
@@ -165,10 +165,11 @@ TLS, autenticação e smoke real.
 - backup PostgreSQL novo e restaurável;
 - estado de Redis, Sidekiq, Rails e OpenResty saudável;
 - usuário de serviço ativo na conta `1`;
-- allowlist explícita de caixas de e-mail e WhatsApp;
+- política `inbox_access_mode=all_account` revisada, para autorizar
+  dinamicamente todas as caixas atuais e futuras somente da conta `1`;
 - endpoint HTTPS do receptor OpenJarvis ativo;
 - Bearer e HMAC criados fora do Git;
-- IDs das caixas obtidos do AceleraChat, nunca inferidos por nome.
+- IDs preferenciais opcionais obtidos do AceleraChat, nunca inferidos por nome.
 
 ## 6. Preflight somente leitura
 
@@ -289,7 +290,7 @@ nativa, não por SQL manual.
 Valores necessários:
 
 - usuário de serviço existente e ativo;
-- caixas autorizadas por ID;
+- `inbox_access_mode=all_account`, sem lista fixa de IDs;
 - URL HTTPS do callback;
 - Bearer atual;
 - segredo HMAC atual;
@@ -325,11 +326,13 @@ arquivo privado indicado pelo manifesto e nunca em issue, commit ou relatório.
 ### AceleraChat
 
 - chamada sem Bearer retorna `401` com envelope público;
-- `/catalog` retorna exatamente 23 operações;
-- `/openapi` publica contrato `2026-08-18.2`;
+- `/catalog` retorna exatamente 25 operações;
+- `/openapi` publica contrato `2026-08-19.2`;
 - `/health` retorna release e status coerentes;
 - `/diagnostics` não contém segredo, stack trace ou PII;
-- `/inboxes` retorna somente allowlist;
+- `/inboxes` retorna dinamicamente todas as caixas atuais da conta `1`, nunca
+  caixas de outra conta;
+- uma nova caixa criada após a configuração aparece sem editar a integração;
 - health por caixa diferencia configurado de conectado;
 - contato, conversa e mensagem podem ser consultados por cursor;
 - cursor adulterado é rejeitado;

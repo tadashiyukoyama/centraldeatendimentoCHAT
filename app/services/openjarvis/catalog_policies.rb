@@ -9,12 +9,17 @@ class Openjarvis::CatalogPolicies
     invalid_priority: [400, false, 'not_applied'], invalid_updated_after: [400, false, 'not_applied'],
     invalid_snoozed_until: [400, false, 'not_applied'], invalid_backfill_resource: [400, false, 'not_applied'],
     source_id_not_accepted: [400, false, 'not_applied'], message_content_required: [400, false, 'not_applied'],
+    invalid_reaction: [400, false, 'not_applied'], invalid_remote_attachment_url: [422, false, 'not_applied'],
     invalid_idempotency_key: [400, false, 'not_applied'], idempotency_conflict: [409, false, 'not_applied'],
     contact_conflict: [409, false, 'not_applied'], request_in_progress: [409, true, 'unknown'],
     assignee_not_authorized: [403, false, 'not_applied'], team_not_authorized: [403, false, 'not_applied'],
     validation_failed: [422, false, 'not_applied'], contact_inbox_missing: [422, false, 'not_applied'],
     contact_routing_attribute_missing: [422, false, 'not_applied'], label_not_found: [422, false, 'not_applied'],
     reply_target_not_found: [422, false, 'not_applied'], capability_not_supported: [422, false, 'not_applied'],
+    provider_message_id_missing: [422, false, 'not_applied'], provider_messages_not_found: [422, false, 'not_applied'],
+    remote_attachment_too_large: [422, false, 'not_applied'], remote_attachment_type_not_allowed: [422, false, 'not_applied'],
+    remote_attachment_unavailable: [422, true, 'not_applied'], source_disconnected: [409, true, 'not_applied'],
+    provider_rejected: [422, false, 'not_applied'], external_result_unknown: [502, true, 'unknown'],
     rate_limited: [429, true, 'not_applied'], integration_unavailable: [503, true, 'not_applied'],
     internal_error: [500, true, 'unknown']
   }.freeze

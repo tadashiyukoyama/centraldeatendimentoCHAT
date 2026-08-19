@@ -67,6 +67,34 @@ RSpec.describe Whatsapp::Evolution::ApiClient do
     expect(request).to have_been_requested.once
   end
 
+  it 'passes contextual replies, reactions and provider read receipts with the instance key' do
+    quoted = { key: { id: 'incoming-id' }, message: { conversation: 'Original' } }
+    reaction_key = { remoteJid: '5511999999999@s.whatsapp.net', fromMe: false, id: 'incoming-id' }
+    text_request = stub_request(:post, 'https://evolution.example.com/message/sendText/cw-a1-test')
+                   .with(headers: { 'apikey' => 'instance-key' }, body: hash_including('quoted' => quoted.deep_stringify_keys))
+                   .to_return(status: 201, body: { key: { id: 'reply-id' } }.to_json,
+                              headers: { 'Content-Type' => 'application/json' })
+    reaction_request = stub_request(:post, 'https://evolution.example.com/message/sendReaction/cw-a1-test')
+                       .with(headers: { 'apikey' => 'instance-key' },
+                             body: { key: reaction_key.deep_stringify_keys, reaction: '👍' })
+                       .to_return(status: 201, body: {}.to_json, headers: { 'Content-Type' => 'application/json' })
+    read_request = stub_request(:post, 'https://evolution.example.com/chat/markMessageAsRead/cw-a1-test')
+                   .with(headers: { 'apikey' => 'instance-key' },
+                         body: { readMessages: [reaction_key.deep_stringify_keys] })
+                   .to_return(status: 201, body: {}.to_json, headers: { 'Content-Type' => 'application/json' })
+
+    with_modified_env valid_env do
+      client = described_class.new(provisioning: provisioning)
+      client.send_text(number: '5511999999999', text: 'Reply', quoted: quoted)
+      client.send_reaction(message_key: reaction_key, reaction: '👍')
+      client.mark_messages_read(message_keys: [reaction_key])
+    end
+
+    expect(text_request).to have_been_requested.once
+    expect(reaction_request).to have_been_requested.once
+    expect(read_request).to have_been_requested.once
+  end
+
   it 'does not include a remote error body in raised errors' do
     stub_request(:get, 'https://evolution.example.com/instance/connectionState/cw-a1-test')
       .to_return(status: 401, body: { apikey: 'leaked-key', message: 'sensitive remote response' }.to_json)

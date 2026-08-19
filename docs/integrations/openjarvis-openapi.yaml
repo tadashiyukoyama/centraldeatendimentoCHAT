@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: AceleraChat OpenJarvis API
-  version: 2026-08-18.2
+  version: 2026-08-19.2
   summary: Native, account-scoped AceleraChat contract for OpenJarvis
   description: |
     Contract implemented from baseline SHA
@@ -64,10 +64,14 @@ paths:
     $ref: ./openjarvis-openapi/paths.yaml#/ConversationPath
   /conversations/{id}/read:
     $ref: ./openjarvis-openapi/paths.yaml#/ConversationReadPath
+  /conversations/{conversation_id}/provider_read:
+    $ref: ./openjarvis-openapi/paths.yaml#/ProviderReadPath
   /messages:
     $ref: ./openjarvis-openapi/paths.yaml#/MessagesSearchPath
   /conversations/{conversation_id}/messages:
     $ref: ./openjarvis-openapi/paths.yaml#/ConversationMessagesPath
+  /conversations/{conversation_id}/messages/{message_id}/reaction:
+    $ref: ./openjarvis-openapi/paths.yaml#/MessageReactionPath
   /backfill:
     $ref: ./openjarvis-openapi/paths.yaml#/BackfillPath
 webhooks:

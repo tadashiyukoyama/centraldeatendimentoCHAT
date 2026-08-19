@@ -11,6 +11,7 @@ RSpec.describe 'OpenJarvis integration settings', type: :request do
     {
       endpoint_url: 'https://openjarvis.example.com/webhooks/acelerachat',
       service_user_id: service_user.id,
+      inbox_access_mode: 'selected',
       allowed_inbox_ids: [inbox.id],
       scopes: Openjarvis::Configuration::DEFAULT_SCOPES,
       subscriptions: Openjarvis::Configuration::DEFAULT_SUBSCRIPTIONS,
@@ -23,6 +24,8 @@ RSpec.describe 'OpenJarvis integration settings', type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.parsed_body).to include('configured' => false, 'status' => 'not_configured')
+    expect(response.parsed_body.dig('settings', 'inbox_access_mode')).to eq('all_account')
+    expect(response.parsed_body.dig('settings', 'allowed_inbox_ids')).to eq([])
     expect(account.hooks.where(app_id: 'openjarvis')).to be_empty
   end
 
@@ -96,5 +99,35 @@ RSpec.describe 'OpenJarvis integration settings', type: :request do
     expect(hook).to be_disabled
     expect([hook.access_token, hook.webhook_secret]).not_to eq(old_credentials)
     expect(hook.settings['webhooks_enabled']).to be(false)
+  end
+
+  it 'recovers from an inbox removed after the integration was configured' do
+    hook = create(:integrations_hook, :openjarvis, account: account, service_user: service_user, allowed_inboxes: [inbox])
+    removed_inbox_id = inbox.id
+    inbox.destroy!
+    replacement = create(:inbox, account: account)
+
+    get path, headers: admin.create_new_auth_token
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body.dig('settings', 'allowed_inbox_ids')).to eq([])
+    expect(response.parsed_body.dig('warnings', 'removed_inbox_ids')).to eq([removed_inbox_id])
+
+    replacement_settings = settings.merge(allowed_inbox_ids: [removed_inbox_id, replacement.id])
+    put path, params: { enabled: true, openjarvis: replacement_settings }, headers: admin.create_new_auth_token, as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(hook.reload.settings['allowed_inbox_ids']).to eq([replacement.id])
+    expect(response.parsed_body.fetch('warnings')).to eq({})
+  end
+
+  it 'persists dynamic access to all current and future inboxes' do
+    dynamic_settings = settings.merge(inbox_access_mode: 'all_account', allowed_inbox_ids: [])
+
+    put path, params: { enabled: true, openjarvis: dynamic_settings }, headers: admin.create_new_auth_token, as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body.dig('settings', 'inbox_access_mode')).to eq('all_account')
+    expect(response.parsed_body.dig('settings', 'allowed_inbox_ids')).to eq([])
   end
 end

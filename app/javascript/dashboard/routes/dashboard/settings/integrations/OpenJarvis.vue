@@ -11,12 +11,15 @@ import OpenJarvisConnectionStatus from './OpenJarvis/OpenJarvisConnectionStatus.
 import OpenJarvisAccessForm from './OpenJarvis/OpenJarvisAccessForm.vue';
 import OpenJarvisCredentials from './OpenJarvis/OpenJarvisCredentials.vue';
 import OpenJarvisDeliveries from './OpenJarvis/OpenJarvisDeliveries.vue';
+import { sanitizeAllowedInboxIds } from './OpenJarvis/formSanitizer';
 
 const SCOPES = [
   'inboxes:read',
   'conversations:read',
   'messages:read',
   'messages:write',
+  'messages:react',
+  'messages:read_receipts',
   'contacts:read',
   'contacts:write',
   'conversations:write',
@@ -39,6 +42,7 @@ const BLOCKED_ENDPOINT_HOSTS = ['chatwoot.com', 'chatwoot.help', 'chwt.app'];
 const emptyForm = () => ({
   endpoint_url: '',
   service_user_id: '',
+  inbox_access_mode: 'all_account',
   allowed_inbox_ids: [],
   scopes: [...SCOPES],
   subscriptions: [...SUBSCRIPTIONS],
@@ -98,9 +102,12 @@ const endpointIsValid = value => {
 
 const isValid = computed(() => {
   const endpoint = form.value.endpoint_url.trim();
+  const inboxAccessIsValid =
+    form.value.inbox_access_mode === 'all_account' ||
+    form.value.allowed_inbox_ids.length > 0;
   return (
     form.value.service_user_id &&
-    form.value.allowed_inbox_ids.length > 0 &&
+    inboxAccessIsValid &&
     form.value.scopes.length > 0 &&
     endpointIsValid(endpoint) &&
     (!form.value.webhooks_enabled || endpoint)
@@ -110,7 +117,12 @@ const isValid = computed(() => {
 const applyConnection = payload => {
   connection.value = payload;
   enabled.value = payload.configured ? payload.enabled : true;
-  form.value = { ...emptyForm(), ...(payload.settings || {}) };
+  const settings = payload.settings || {};
+  form.value = {
+    ...emptyForm(),
+    ...settings,
+    allowed_inbox_ids: sanitizeAllowedInboxIds(settings, inboxes.value),
+  };
   if (payload.credentials) oneTimeCredentials.value = payload.credentials;
 };
 

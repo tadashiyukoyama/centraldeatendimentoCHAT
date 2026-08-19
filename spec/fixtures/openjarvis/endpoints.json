@@ -2,7 +2,7 @@
   "catalog.get": {
     "response": {
       "name": "AceleraChat OpenJarvis API",
-      "version": "2026-08-18.2"
+      "version": "2026-08-19.2"
     }
   },
   "openapi.get": {
@@ -48,7 +48,9 @@
           "source": "whatsapp_evolution_provisioning"
         },
         "capabilities": {
-          "messages.reaction": { "supported": false, "mode": "not_supported" }
+          "messages.reaction": { "supported": true, "mode": "evolution" },
+          "messages.mark_read_provider": { "supported": true, "mode": "evolution" },
+          "messages.media_send": { "supported": true, "mode": "evolution" }
         }
       }
     }
@@ -197,6 +199,30 @@
         "state": "accepted",
         "delivery_confirmation": "asynchronous",
         "result_state": "unknown_until_message_updated"
+      }
+    }
+  },
+  "messages.reaction": {
+    "request": { "reaction": "👍" },
+    "response": {
+      "data": {
+        "conversation_id": 104,
+        "message_id": 900,
+        "reaction": "👍",
+        "provider": "evolution",
+        "result_state": "applied"
+      }
+    }
+  },
+  "messages.provider_read": {
+    "response": {
+      "data": {
+        "conversation_id": 104,
+        "read_at": "2026-08-19T12:00:00Z",
+        "provider_receipt_sent": true,
+        "provider": "evolution",
+        "message_count": 2,
+        "result_state": "applied"
       }
     }
   },

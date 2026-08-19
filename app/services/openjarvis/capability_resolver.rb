@@ -45,7 +45,7 @@ class Openjarvis::CapabilityResolver
   attr_reader :inbox, :channel_type
 
   def capability(key)
-    supported, mode, reason = Openjarvis::CapabilityDefinition.new(channel_type).resolve(key)
+    supported, mode, reason = Openjarvis::CapabilityDefinition.new(channel_type, provider: provider).resolve(key)
     {
       supported: supported,
       mode: mode,

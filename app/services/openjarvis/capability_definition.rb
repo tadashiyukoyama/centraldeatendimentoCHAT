@@ -37,7 +37,10 @@ class Openjarvis::CapabilityDefinition
     'messages.search' => '/api/v1/openjarvis/messages',
     'messages.send' => '/api/v1/openjarvis/conversations/{conversation_id}/messages',
     'messages.reply' => '/api/v1/openjarvis/conversations/{conversation_id}/messages',
+    'messages.reaction' => '/api/v1/openjarvis/conversations/{conversation_id}/messages/{message_id}/reaction',
     'messages.mark_read_internal' => '/api/v1/openjarvis/conversations/{conversation_id}/read',
+    'messages.mark_read_provider' => '/api/v1/openjarvis/conversations/{conversation_id}/provider_read',
+    'messages.media_send' => '/api/v1/openjarvis/conversations/{conversation_id}/messages',
     'messages.delivery_status' => '/api/v1/openjarvis/conversations/{conversation_id}/messages',
     'messages.media_read' => '/api/v1/openjarvis/conversations/{conversation_id}/messages',
     'email.search' => '/api/v1/openjarvis/messages',
@@ -54,19 +57,29 @@ class Openjarvis::CapabilityDefinition
     'messages.media_send' => 'Binary upload and outbound attachment creation are not exposed by this integration'
   }.freeze
 
-  def initialize(channel_type)
+  EVOLUTION_CAPABILITIES = %w[
+    messages.reply messages.reaction messages.mark_read_provider messages.media_send
+  ].freeze
+
+  def initialize(channel_type, provider: nil)
     @channel_type = channel_type
+    @provider = provider
   end
 
   def resolve(key)
     return email(key) if key.start_with?('email.')
+    return supported('evolution') if evolution_whatsapp? && EVOLUTION_CAPABILITIES.include?(key)
 
     send(RESOLVERS.fetch(key, :unsupported_capability), key)
   end
 
   private
 
-  attr_reader :channel_type
+  attr_reader :channel_type, :provider
+
+  def evolution_whatsapp?
+    channel_type == 'Channel::Whatsapp' && provider == 'evolution'
+  end
 
   def read_capability(_key)
     supported('acelerachat')

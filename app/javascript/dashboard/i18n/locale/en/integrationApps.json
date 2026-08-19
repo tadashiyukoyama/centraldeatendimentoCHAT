@@ -65,7 +65,7 @@
     },
     "OPENJARVIS": {
       "HEADER": "OpenJarvis",
-      "DESCRIPTION": "Grant OpenJarvis controlled access to selected inboxes and AceleraChat operations.",
+      "DESCRIPTION": "Grant OpenJarvis controlled access to AceleraChat inboxes and operations.",
       "STATUS": {
         "TITLE": "Connection status",
         "not_configured": "Not configured",
@@ -85,11 +85,13 @@
         "SERVICE_USER": "Service user",
         "SERVICE_USER_HELP": "Permissions and strict team visibility are evaluated as this user.",
         "INBOXES": "Authorized inboxes",
+        "ALL_INBOXES": "All current and future inboxes in this account",
+        "ALL_INBOXES_HELP": "Requires an administrator service user. New inboxes are included automatically without granting access to other accounts.",
         "SCOPES": "API scopes",
         "WEBHOOKS": "Send real-time events",
         "SUBSCRIPTIONS": "Webhook events",
         "SAVE": "Save configuration",
-        "VALIDATION": "Select a service user, at least one inbox and one API scope. The webhook must use HTTPS and cannot contain credentials, query parameters or fragments."
+        "VALIDATION": "Select a service user, a valid inbox policy and one API scope. The webhook must use HTTPS and cannot contain credentials, query parameters or fragments."
       },
       "CREDENTIALS": {
         "TITLE": "Credentials",

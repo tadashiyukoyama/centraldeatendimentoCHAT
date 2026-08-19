@@ -7,6 +7,7 @@ describe('OpenJarvisAccessForm', () => {
     const form = {
       endpoint_url: '',
       service_user_id: 1,
+      inbox_access_mode: 'selected',
       allowed_inbox_ids: [],
       scopes: ['inboxes:read'],
       subscriptions: [],
@@ -24,7 +25,7 @@ describe('OpenJarvisAccessForm', () => {
       },
     });
 
-    await wrapper.findAllComponents(Checkbox)[0].vm.$emit('change');
+    await wrapper.findAllComponents(Checkbox)[1].vm.$emit('change');
 
     expect(form.allowed_inbox_ids).toEqual([10]);
   });
@@ -35,6 +36,7 @@ describe('OpenJarvisAccessForm', () => {
         modelValue: {
           endpoint_url: '',
           service_user_id: '',
+          inbox_access_mode: 'selected',
           allowed_inbox_ids: [],
           scopes: [],
           subscriptions: [],
@@ -46,5 +48,29 @@ describe('OpenJarvisAccessForm', () => {
     });
 
     expect(wrapper.find('button[disabled]').exists()).toBe(true);
+  });
+
+  it('enables dynamic access to current and future account inboxes', async () => {
+    const form = {
+      endpoint_url: '',
+      service_user_id: 1,
+      inbox_access_mode: 'selected',
+      allowed_inbox_ids: [10],
+      scopes: ['inboxes:read'],
+      subscriptions: [],
+      webhooks_enabled: false,
+    };
+    const wrapper = mount(OpenJarvisAccessForm, {
+      props: {
+        modelValue: form,
+        enabled: true,
+        inboxes: [{ id: 10, name: 'Suporte' }],
+        isValid: true,
+      },
+    });
+
+    await wrapper.findAllComponents(Checkbox)[0].vm.$emit('change');
+
+    expect(form.inbox_access_mode).toBe('all_account');
   });
 });
