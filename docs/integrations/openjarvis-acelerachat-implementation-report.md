@@ -2,6 +2,22 @@
 
 Data da validação: 18 de agosto de 2026
 
+## Atualização controlada — 19 de agosto de 2026
+
+- Base: `ce25513cb1ac59d59663974d150114d752bbe6d1`.
+- SHA funcional: `5ae823aca23427df49dd3c8d0c8526a1099e258a`.
+- Branch: `feat/openjarvis-whatsapp-control`.
+- Contrato atualizado: `2026-08-19.2`.
+- Política de caixas: `all_account`, dinâmica para todas as caixas atuais e
+  futuras da mesma conta, somente com usuário de serviço administrador.
+- Operações Evolution adicionadas: reply contextual, reação, recibo de leitura
+  e mídia HTTPS protegida contra SSRF.
+- Validação: 97 exemplos Rails sem falhas, 4 testes Vitest, ESLint direcionado,
+  sintaxe Ruby, YAML/JSON, scanner de segredos e `git diff --check` aprovados.
+- Sem migration, envio real, push, deploy ou mudança de credenciais nesta etapa.
+
+Esta atualização preserva o relatório original abaixo como evidência histórica.
+
 ## Rastreabilidade
 
 - Repositório alterado: somente AceleraChat.

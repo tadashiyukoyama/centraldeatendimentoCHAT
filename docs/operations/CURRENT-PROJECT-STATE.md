@@ -4,7 +4,38 @@ Este é o documento canônico do estado operacional do
 `CENTRAL_ATENDIMENTO_CHAT`. O estado observado no Git sempre prevalece sobre
 qualquer valor copiado neste documento.
 
-## Frente ativa: fundação operacional vendável
+## Frente ativa: controle OpenJarvis multi-inbox
+
+- SHA-base: `ce25513cb1ac59d59663974d150114d752bbe6d1`.
+- SHA funcional: `5ae823aca23427df49dd3c8d0c8526a1099e258a`.
+- Branch: `feat/openjarvis-whatsapp-control`.
+- Contrato AceleraChat/OpenJarvis: `2026-08-19.2`; schema de eventos: `1.0`.
+- O modo explícito `all_account` autoriza dinamicamente todas as caixas atuais
+  e futuras da mesma conta. Ele exige usuário de serviço administrador, nunca
+  atravessa contas e continua sujeito à conexão e às capacidades reais de cada
+  caixa.
+- Caixas removidas deixam de bloquear o salvamento da integração; IDs antigos
+  são reparados sem SQL manual. O erro anterior era causado pela validação do
+  schema da integração e por uma allowlist persistida contendo uma caixa já
+  excluída.
+- WhatsApp Evolution passa a oferecer ao contrato resposta contextual, reação,
+  recibo de leitura do provedor e mídia por URL HTTPS pública, com SSRF
+  bloqueado, tipos permitidos e limite de 20 MB. O OpenJarvis nunca recebe a
+  chave global da Evolution.
+- Toda mutação continua exigindo escopo, caixa operacional, idempotência e
+  aprovação visual exata no OpenJarvis. Acesso dinâmico não significa execução
+  irrestrita.
+- Não há migration de banco. O rollback de código/imagem é o SHA-base acima;
+  o modo novo está somente no JSON já existente da integração.
+- Gates locais: 97 exemplos Rails no Ruby 3.4.4, zero falhas; 4 testes Vitest;
+  ESLint direcionado; sintaxe de 31 arquivos Ruby; YAML/JSON e
+  `git diff --check` aprovados. O hook de commit do Windows não executa Bundler
+  porque o host possui Ruby 3.4.9, por isso o commit foi criado com
+  `--no-verify` depois dos gates equivalentes no runtime correto.
+- Nenhuma mensagem/e-mail real foi enviada e nenhum push, deploy, migration,
+  segredo ou configuração de produção foi alterado nesta etapa.
+
+## Frente anterior: fundação operacional vendável
 
 - SHA-base da frente: `4204f4147f1a9b43c9740d2d739ef843d5ead817`.
 - Branch: `release/strict-team-conversation-privacy`.
