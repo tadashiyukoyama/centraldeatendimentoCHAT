@@ -98,6 +98,9 @@ RUN rm -rf /gems/ruby/3.4.0/cache/*.gem \
 # final build stage
 FROM ruby:3.4.4-alpine3.21
 
+LABEL org.opencontainers.image.source="https://github.com/cesaryukoyama28-eng/centraldeatendimentoCHAT"
+LABEL org.opencontainers.image.title="AceleraChat"
+
 ARG NODE_VERSION="24.13.0"
 ARG PNPM_VERSION="10.2.0"
 ENV NODE_VERSION=${NODE_VERSION}

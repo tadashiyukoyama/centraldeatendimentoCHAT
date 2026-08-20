@@ -141,8 +141,9 @@ Critérios de aprovação:
 1. Consolidar o trabalho local em um único SHA final rastreável.
 2. Revisar `git diff --check`, `git status` e registrar o SHA.
 3. Fazer um único push para `main`.
-4. Aguardar o workflow existente `Build production image`, acionado pelo push.
-5. Registrar o digest imutável publicado em `ghcr.io/tadashiyukoyama/centraldeatendimentochat:<SHA>`.
+4. Acionar uma única vez o workflow manual `Build production image` para o SHA
+   aprovado.
+5. Registrar o digest imutável publicado em `ghcr.io/cesaryukoyama28-eng/centraldeatendimentochat:<SHA>`.
 6. Executar o preflight conectado com a imagem final.
 7. Acionar `Deploy production image through ICP` com o SHA completo.
 
