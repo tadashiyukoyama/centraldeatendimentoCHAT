@@ -27,7 +27,7 @@
     "privateRoot": { "const": "<absolute-local-workspace-root>/private" },
     "artifactsRoot": { "const": "<absolute-local-workspace-root>/artifacts" },
     "worktreesRoot": { "const": "<absolute-local-workspace-root>/worktrees" },
-    "origin": { "const": "https://github.com/tadashiyukoyama/centraldeatendimentoCHAT.git" },
+    "origin": { "const": "https://github.com/cesaryukoyama28-eng/centraldeatendimentoCHAT.git" },
     "upstream": { "const": "https://github.com/chatwoot/chatwoot.git" },
     "sha": {
       "type": "string",

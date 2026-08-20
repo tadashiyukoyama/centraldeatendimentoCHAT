@@ -1,6 +1,6 @@
 # Central de Atendimento CHAT — Contrato de trabalho do Codex
 
-Este bloco é a política específica do repositório `tadashiyukoyama/centraldeatendimentoCHAT` e complementa as diretrizes upstream do Chatwoot abaixo. O código foi originado de `chatwoot/chatwoot`; o remote `upstream` permanece apontando para a origem oficial e o remote `origin` aponta para o repositório deste projeto.
+Este bloco é a política específica do repositório `cesaryukoyama28-eng/centraldeatendimentoCHAT` e complementa as diretrizes upstream do Chatwoot abaixo. O código foi originado de `chatwoot/chatwoot`; o remote `upstream` permanece apontando para a origem oficial e o remote `origin` aponta para o repositório deste projeto.
 
 **Precedência:** quando houver conflito, as regras específicas de
 `CENTRAL_ATENDIMENTO_CHAT` prevalecem sobre instruções herdadas do upstream
@@ -10,7 +10,7 @@ ambas.
 ## 1. Escopo, identidade e fontes da verdade
 
 - Projeto: `CENTRAL_ATENDIMENTO_CHAT`.
-- Repositório canônico: `tadashiyukoyama/centraldeatendimentoCHAT`.
+- Repositório canônico: `cesaryukoyama28-eng/centraldeatendimentoCHAT`.
 - Origem upstream: `chatwoot/chatwoot`, branch `develop`.
 - Branch canônica deste projeto: `main`.
 - Stack preservada do Chatwoot: Rails, Vue/Vite, PostgreSQL com `pgvector`, Redis, Sidekiq e Active Storage.

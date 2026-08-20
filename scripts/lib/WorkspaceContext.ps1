@@ -159,7 +159,7 @@ function Get-WorkspaceContext {
 
   $origin = Invoke-WorkspaceGit @('config', '--get', 'remote.origin.url')
   $upstream = Invoke-WorkspaceGit @('config', '--get', 'remote.upstream.url')
-  if ((ConvertTo-WorkspaceRepositorySlug $origin) -ne 'tadashiyukoyama/centraldeatendimentochat') {
+  if ((ConvertTo-WorkspaceRepositorySlug $origin) -ne 'cesaryukoyama28-eng/centraldeatendimentochat') {
     throw "origin inesperado: $origin"
   }
   if ((ConvertTo-WorkspaceRepositorySlug $upstream) -ne 'chatwoot/chatwoot') {

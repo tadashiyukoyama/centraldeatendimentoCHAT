@@ -117,7 +117,7 @@ compatibilidade.
 
 ## Identidade e controle de versão
 
-- Repositório canônico: `tadashiyukoyama/centraldeatendimentoCHAT`.
+- Repositório canônico: `cesaryukoyama28-eng/centraldeatendimentoCHAT`.
 - Upstream: `chatwoot/chatwoot`.
 - Base operacional atual: `main`; imagem ativa de produção em
   `4204f4147f1a9b43c9740d2d739ef843d5ead817`.
@@ -181,7 +181,7 @@ do `git-common-dir`. Os scripts em `scripts/` usam o contexto centralizado em
 ## Mobile
 
 `mobile/` é somente uma reserva com marcador. O futuro repositório é
-`tadashiyukoyama/centraldeatendimentoCHAT-mobile`, com upstream
+`cesaryukoyama28-eng/centraldeatendimentoCHAT-mobile`, com upstream
 `chatwoot/chatwoot-mobile-app`. O mobile não foi baixado, não possui `.git`,
 dependências ou build nesta fase.
 

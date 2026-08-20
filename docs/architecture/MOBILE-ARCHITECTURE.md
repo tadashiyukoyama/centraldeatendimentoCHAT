@@ -3,7 +3,7 @@
 ## Estado atual
 
 O mobile ainda não foi baixado. A pasta `mobile/` está reservada para o futuro
-fork `tadashiyukoyama/centraldeatendimentoCHAT-mobile`, que terá como upstream
+fork `cesaryukoyama28-eng/centraldeatendimentoCHAT-mobile`, que terá como upstream
 `chatwoot/chatwoot-mobile-app`.
 
 O servidor e o mobile serão repositórios Git diferentes no mesmo workspace. O

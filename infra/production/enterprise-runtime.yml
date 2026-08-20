@@ -6,7 +6,7 @@ kind: production-runtime-state
 source_of_truth: vps
 observed_at_utc: '2026-07-24T17:15:04Z'
 
-repository: tadashiyukoyama/centraldeatendimentoCHAT
+repository: cesaryukoyama28-eng/centraldeatendimentoCHAT
 
 application:
   image_repository: ghcr.io/tadashiyukoyama/centraldeatendimentochat

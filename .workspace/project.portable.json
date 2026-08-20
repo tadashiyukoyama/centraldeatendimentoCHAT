@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "projectId": "CENTRAL_ATENDIMENTO_CHAT",
-  "repository": "tadashiyukoyama/centraldeatendimentoCHAT",
+  "repository": "cesaryukoyama28-eng/centraldeatendimentoCHAT",
   "upstreamRepository": "chatwoot/chatwoot",
   "defaultBranch": "main",
   "workspaceEnvironmentVariable": "CENTRAL_ATENDIMENTO_WORKSPACE_ROOT",
@@ -12,7 +12,7 @@
   "credentialsRelativePath": "credenciais",
   "artifactsRelativePath": "artifacts",
   "worktreesRelativePath": "worktrees",
-  "futureMobileRepository": "tadashiyukoyama/centraldeatendimentoCHAT-mobile",
+  "futureMobileRepository": "cesaryukoyama28-eng/centraldeatendimentoCHAT-mobile",
   "futureMobileUpstream": "chatwoot/chatwoot-mobile-app",
   "maxAdditionalWorktrees": 2
 }

@@ -3,7 +3,7 @@
 O projeto mantém duas origens Git:
 
 - `upstream`: `https://github.com/chatwoot/chatwoot.git`, branch `develop`;
-- `origin`: `https://github.com/tadashiyukoyama/centraldeatendimentoCHAT.git`, branch `main`.
+- `origin`: `https://github.com/cesaryukoyama28-eng/centraldeatendimentoCHAT.git`, branch `main`.
 
 ## Procedimento
 

@@ -150,7 +150,7 @@ foreach ($field in @('serverRelativePath', 'mobileRelativePath', 'runtimeRelativ
 
 $origin = (Invoke-WorkspaceGit @('config', '--get', 'remote.origin.url')).Trim()
 $upstream = (Invoke-WorkspaceGit @('config', '--get', 'remote.upstream.url')).Trim()
-if ((ConvertTo-WorkspaceRepositorySlug $origin) -ne 'tadashiyukoyama/centraldeatendimentochat') {
+if ((ConvertTo-WorkspaceRepositorySlug $origin) -ne 'cesaryukoyama28-eng/centraldeatendimentochat') {
   throw "origin inesperado: $origin"
 }
 if ((ConvertTo-WorkspaceRepositorySlug $upstream) -ne 'chatwoot/chatwoot') {

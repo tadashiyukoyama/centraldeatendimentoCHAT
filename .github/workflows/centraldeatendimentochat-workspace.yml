@@ -29,7 +29,7 @@ jobs:
       - name: Configure repository remotes
         shell: pwsh
         run: |
-          $origin = 'https://github.com/tadashiyukoyama/centraldeatendimentoCHAT.git'
+          $origin = 'https://github.com/cesaryukoyama28-eng/centraldeatendimentoCHAT.git'
           $upstream = 'https://github.com/chatwoot/chatwoot.git'
           if (git config --get remote.origin.url) {
             git remote set-url origin $origin
@@ -82,7 +82,7 @@ jobs:
           Set-Content -LiteralPath (Join-Path $mobileRoot 'README.md') -Value 'Reserved mobile root for CI.' -Encoding UTF8
 
           git clone --no-local $sourceRoot $serverRoot
-          git -C $serverRoot remote set-url origin 'https://github.com/tadashiyukoyama/centraldeatendimentoCHAT.git'
+          git -C $serverRoot remote set-url origin 'https://github.com/cesaryukoyama28-eng/centraldeatendimentoCHAT.git'
           if (git -C $serverRoot config --get remote.upstream.url) {
             git -C $serverRoot remote set-url upstream 'https://github.com/chatwoot/chatwoot.git'
           } else {

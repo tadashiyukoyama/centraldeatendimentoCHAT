@@ -7,7 +7,7 @@
   "privateRoot": "<absolute-local-workspace-root>/private",
   "artifactsRoot": "<absolute-local-workspace-root>/artifacts",
   "worktreesRoot": "<absolute-local-workspace-root>/worktrees",
-  "origin": "https://github.com/tadashiyukoyama/centraldeatendimentoCHAT.git",
+  "origin": "https://github.com/cesaryukoyama28-eng/centraldeatendimentoCHAT.git",
   "upstream": "https://github.com/chatwoot/chatwoot.git",
   "sha": "<observed-sha>",
   "maxAdditionalWorktrees": 2

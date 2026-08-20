@@ -13,7 +13,7 @@ limite de duas worktrees e runbook estão em [`docs/architecture/`](./docs/archi
 [`docs/operations/`](./docs/operations/) e [`AGENTS.md`](./AGENTS.md).
 
 O remote `upstream` aponta para `chatwoot/chatwoot`; o remote `origin` aponta
-para [`tadashiyukoyama/centraldeatendimentoCHAT`](https://github.com/tadashiyukoyama/centraldeatendimentoCHAT).
+para [`cesaryukoyama28-eng/centraldeatendimentoCHAT`](https://github.com/cesaryukoyama28-eng/centraldeatendimentoCHAT).
 
 The modern customer support platform, an open-source alternative to Intercom, Zendesk, Salesforce Service Cloud etc.
 

@@ -189,7 +189,7 @@ try {
   $null = Invoke-LocalGit $serverRoot @('config', 'user.email', 'workspace-foundation-tests@example.invalid')
   $null = Invoke-LocalGit $serverRoot @('add', '.')
   $null = Invoke-LocalGit $serverRoot @('commit', '-m', 'test fixture')
-  $null = Invoke-LocalGit $serverRoot @('remote', 'add', 'origin', 'https://github.com/tadashiyukoyama/centraldeatendimentoCHAT.git')
+  $null = Invoke-LocalGit $serverRoot @('remote', 'add', 'origin', 'https://github.com/cesaryukoyama28-eng/centraldeatendimentoCHAT.git')
   $null = Invoke-LocalGit $serverRoot @('remote', 'add', 'upstream', 'https://github.com/chatwoot/chatwoot.git')
 
   $env:CENTRAL_ATENDIMENTO_WORKSPACE_ROOT = $capsuleRoot

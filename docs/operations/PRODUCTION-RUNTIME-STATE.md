@@ -16,7 +16,7 @@ checkout posterior. A referência exata está em
 
 | Item                | Valor observado                                                           |
 | ------------------- | ------------------------------------------------------------------------- |
-| Repositório         | `tadashiyukoyama/centraldeatendimentoCHAT`                                |
+| Repositório         | `cesaryukoyama28-eng/centraldeatendimentoCHAT`                            |
 | Commit da aplicação | `882b6fb14f653b7b858a230bb41e96da2407b255`                                |
 | Tag da imagem       | `882b6fb14f653b7b858a230bb41e96da2407b255`                                |
 | Digest da imagem    | `sha256:476716699e6d61e1af5e3ae855d91dab8497cc2ffebea4e43dd7e200d3412857` |

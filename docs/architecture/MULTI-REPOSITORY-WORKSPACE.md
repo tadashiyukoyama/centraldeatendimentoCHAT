@@ -2,8 +2,8 @@
 
 ```text
 <workspace-root>/
-├── server/  -> tadashiyukoyama/centraldeatendimentoCHAT
-└── mobile/  -> reservado para tadashiyukoyama/centraldeatendimentoCHAT-mobile
+├── server/  -> cesaryukoyama28-eng/centraldeatendimentoCHAT
+└── mobile/  -> reservado para cesaryukoyama28-eng/centraldeatendimentoCHAT-mobile
 ```
 
 O upstream do servidor é `chatwoot/chatwoot`; o upstream futuro do mobile é
