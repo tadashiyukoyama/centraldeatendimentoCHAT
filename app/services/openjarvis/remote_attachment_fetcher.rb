@@ -14,6 +14,20 @@ class Openjarvis::RemoteAttachmentFetcher
 
   def fetch!
     validate_url!
+    fetch_blob
+  rescue SafeFetch::FileTooLargeError
+    raise api_error('remote_attachment_too_large', 'Remote attachment exceeds the 20 MB limit')
+  rescue SafeFetch::UnsupportedContentTypeError
+    raise api_error('remote_attachment_type_not_allowed', 'Remote attachment content type is not allowed')
+  rescue SafeFetch::Error
+    raise api_error('remote_attachment_unavailable', 'Remote attachment could not be fetched', retryable: true)
+  end
+
+  private
+
+  attr_reader :url
+
+  def fetch_blob
     blob = nil
     SafeFetch.fetch(
       url,
@@ -29,17 +43,7 @@ class Openjarvis::RemoteAttachmentFetcher
       )
     end
     blob
-  rescue SafeFetch::FileTooLargeError
-    raise api_error('remote_attachment_too_large', 'Remote attachment exceeds the 20 MB limit')
-  rescue SafeFetch::UnsupportedContentTypeError
-    raise api_error('remote_attachment_type_not_allowed', 'Remote attachment content type is not allowed')
-  rescue SafeFetch::Error
-    raise api_error('remote_attachment_unavailable', 'Remote attachment could not be fetched', retryable: true)
   end
-
-  private
-
-  attr_reader :url
 
   def validate_url!
     uri = URI.parse(url)

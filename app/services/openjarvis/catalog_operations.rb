@@ -80,13 +80,9 @@ class Openjarvis::CatalogOperations
     end
 
     def message_operations
-      search_filters = {
-        q: schemas.string, inbox_id: schemas.integer, contact_id: schemas.integer,
-        conversation_id: schemas.integer, unread: schemas.boolean
-      }
       [
         operation('messages.search', 'GET', '/api/v1/openjarvis/messages', 'Search authorized messages',
-                  schemas.cursor(search_filters), schemas.reference('MessageListResponse'), scope: 'messages:read'),
+                  schemas.cursor(message_search_filters), schemas.reference('MessageListResponse'), scope: 'messages:read'),
         operation('messages.list', 'GET', '/api/v1/openjarvis/conversations/{conversation_id}/messages', 'List conversation messages',
                   schemas.cursor({ conversation_id: schemas.integer }, required: ['conversation_id']),
                   schemas.reference('MessageListResponse'), scope: 'messages:read'),
@@ -101,6 +97,13 @@ class Openjarvis::CatalogOperations
                   'Send Evolution WhatsApp read receipts and update AceleraChat', schemas.provider_read,
                   schemas.reference('ProviderReadResponse'), scope: 'messages:read_receipts', idempotent: true)
       ]
+    end
+
+    def message_search_filters
+      {
+        q: schemas.string, inbox_id: schemas.integer, contact_id: schemas.integer,
+        conversation_id: schemas.integer, unread: schemas.boolean
+      }
     end
     # rubocop:enable Metrics/AbcSize
 

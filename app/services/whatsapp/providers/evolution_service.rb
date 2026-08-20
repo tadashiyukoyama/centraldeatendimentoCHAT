@@ -112,10 +112,12 @@ class Whatsapp::Providers::EvolutionService < Whatsapp::Providers::BaseService
   end
 
   def provider_message_key(phone_number, message)
-    raise Whatsapp::Evolution::ApiClient::Error.new(
-      'WhatsApp message does not have a provider identifier',
-      code: 'missing_provider_message_id'
-    ) if message.source_id.blank?
+    if message.source_id.blank?
+      raise Whatsapp::Evolution::ApiClient::Error.new(
+        'WhatsApp message does not have a provider identifier',
+        code: 'missing_provider_message_id'
+      )
+    end
 
     {
       remoteJid: "#{normalized_number(phone_number)}@s.whatsapp.net",

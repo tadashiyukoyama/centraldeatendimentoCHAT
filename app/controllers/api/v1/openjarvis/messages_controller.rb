@@ -70,25 +70,32 @@ class Api::V1::Openjarvis::MessagesController < Api::V1::Openjarvis::BaseControl
 
   def validate_message_capabilities!
     resolver = Openjarvis::CapabilityResolver.new(inbox: conversation.inbox)
-    if message_params[:remote_attachment].present? && !resolver.supported?('messages.media_send')
-      raise Openjarvis::ApiError.new(
-        'capability_not_supported',
-        'Outbound media is not supported for this inbox',
-        status: :unprocessable_entity,
-        details: { capability: 'messages.media_send', inbox_id: conversation.inbox_id }
-      )
-    end
-    if message_params[:reply_to_message_id].present? && !resolver.supported?('messages.reply')
-      raise Openjarvis::ApiError.new(
-        'capability_not_supported',
-        'Provider-native contextual reply is not supported for this inbox',
-        status: :unprocessable_entity,
-        details: { capability: 'messages.reply', inbox_id: conversation.inbox_id }
-      )
-    end
+    validate_remote_attachment_capability!(resolver)
+    validate_reply_capability!(resolver)
     return if message_params[:content].present? || message_params[:remote_attachment].present?
 
     raise Openjarvis::ApiError.new('message_content_required', 'Message content is required', status: :bad_request)
+  end
+
+  def validate_remote_attachment_capability!(resolver)
+    return if message_params[:remote_attachment].blank? || resolver.supported?('messages.media_send')
+
+    raise_capability_error('messages.media_send', 'Outbound media is not supported for this inbox')
+  end
+
+  def validate_reply_capability!(resolver)
+    return if message_params[:reply_to_message_id].blank? || resolver.supported?('messages.reply')
+
+    raise_capability_error('messages.reply', 'Provider-native contextual reply is not supported for this inbox')
+  end
+
+  def raise_capability_error(capability, message)
+    raise Openjarvis::ApiError.new(
+      'capability_not_supported',
+      message,
+      status: :unprocessable_entity,
+      details: { capability: capability, inbox_id: conversation.inbox_id }
+    )
   end
 
   def filtered_messages

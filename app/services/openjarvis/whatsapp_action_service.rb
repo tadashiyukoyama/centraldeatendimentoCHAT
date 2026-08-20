@@ -27,25 +27,11 @@ class Openjarvis::WhatsappActionService
   def mark_read
     validate_capability!('messages.mark_read_provider')
     messages = provider_read_messages
-    if messages.empty?
-      raise Openjarvis::ApiError.new(
-        'provider_messages_not_found',
-        'No provider messages are available to mark as read',
-        status: :unprocessable_entity
-      )
-    end
-
+    validate_provider_messages!(messages)
     provider_service.mark_messages_read(phone_number: contact_number, messages: messages)
     read_at = messages.map(&:created_at).max
     conversation.update!(agent_last_seen_at: [conversation.agent_last_seen_at, read_at].compact.max)
-    {
-      conversation_id: conversation.display_id,
-      read_at: read_at.iso8601,
-      provider_receipt_sent: true,
-      provider: 'evolution',
-      message_count: messages.size,
-      result_state: 'applied'
-    }
+    provider_read_result(messages, read_at)
   rescue Whatsapp::Evolution::ApiClient::Error => e
     raise provider_error(e)
   end
@@ -87,6 +73,27 @@ class Openjarvis::WhatsappActionService
 
   def provider_read_messages
     conversation.messages.incoming.where.not(source_id: nil).reorder(id: :desc).limit(MAX_READ_RECEIPTS).to_a
+  end
+
+  def validate_provider_messages!(messages)
+    return if messages.any?
+
+    raise Openjarvis::ApiError.new(
+      'provider_messages_not_found',
+      'No provider messages are available to mark as read',
+      status: :unprocessable_entity
+    )
+  end
+
+  def provider_read_result(messages, read_at)
+    {
+      conversation_id: conversation.display_id,
+      read_at: read_at.iso8601,
+      provider_receipt_sent: true,
+      provider: 'evolution',
+      message_count: messages.size,
+      result_state: 'applied'
+    }
   end
 
   def contact_number

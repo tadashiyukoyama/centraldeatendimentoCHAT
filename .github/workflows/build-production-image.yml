@@ -136,6 +136,7 @@ jobs:
           app/services/openjarvis/catalog_operations.rb
           app/services/openjarvis/catalog_policies.rb
           app/services/openjarvis/catalog_schemas.rb
+          app/services/openjarvis/connection_presenter.rb
           app/services/openjarvis/configuration.rb
           app/services/openjarvis/diagnostics.rb
           app/services/openjarvis/remote_attachment_fetcher.rb
