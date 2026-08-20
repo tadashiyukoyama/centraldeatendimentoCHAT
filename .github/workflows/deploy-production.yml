@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, acelerachat-ci]
     environment: production
     steps:
       - name: Validate explicit image tag
