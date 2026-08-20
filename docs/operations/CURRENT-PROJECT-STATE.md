@@ -8,6 +8,25 @@ qualquer valor copiado neste documento.
 
 - SHA-base: `ce25513cb1ac59d59663974d150114d752bbe6d1`.
 - SHA funcional: `5ae823aca23427df49dd3c8d0c8526a1099e258a`.
+- SHA funcional do executor dedicado:
+  `12d6fcd7bb9993b96bab07d827d83e2ca9b64395`.
+- Host nao produtivo: `vps10056.panel.icontainer.cloud`, Ubuntu 24.04, 4 vCPU,
+  5,8 GiB de RAM e Docker 29.6.2.
+- Runner `vps10056-acelerachat` confirmado pelo GitHub como `online` e `idle`,
+  com labels `acelerachat-ci`, `ubuntu-24.04`, `docker-rootless` e
+  `non-production`.
+- Isolamento: usuario `ghr-acelerachat` (UID 1003), diretorio
+  `/srv/ci/runners/acelerachat`, cache `/srv/ci/cache/acelerachat` e socket
+  privado `/run/user/1003/docker.sock`.
+- O provisionamento nao instalou pacote global, nao alterou SSH e nao tocou
+  nos runners 3V Tintas ou OZ3D; ambos permaneceram `online` e `idle`.
+- O host tinha 22 GiB livres apos o registro. A construcao exige pelo menos
+  18 GiB, a API Docker nao esta publicada em 2375/2376 e nenhum cache de outro
+  projeto e alvo de limpeza automatica.
+- O smoke manual ainda depende do GitHub Actions. Um bloqueio de conta/billing
+  continua sendo um gate externo, mesmo com o runner conectado. A execucao
+  agendada `32330694587`, em 2026-08-20, foi recusada pelo GitHub antes do job
+  com a anotacao `account is locked due to a billing issue`.
 - Branch: `feat/openjarvis-whatsapp-control`.
 - Contrato AceleraChat/OpenJarvis: `2026-08-19.2`; schema de eventos: `1.0`.
 - O modo explícito `all_account` autoriza dinamicamente todas as caixas atuais
@@ -32,7 +51,7 @@ qualquer valor copiado neste documento.
   `git diff --check` aprovados. O hook de commit do Windows não executa Bundler
   porque o host possui Ruby 3.4.9, por isso o commit foi criado com
   `--no-verify` depois dos gates equivalentes no runtime correto.
-- Nenhuma mensagem/e-mail real foi enviada e nenhum push, deploy, migration,
+- Nenhuma mensagem/e-mail real foi enviada e nenhum deploy ou migration,
   segredo ou configuração de produção foi alterado nesta etapa.
 
 ## Frente anterior: fundação operacional vendável

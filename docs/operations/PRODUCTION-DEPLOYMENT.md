@@ -31,7 +31,13 @@ The domain must be created through the ICP panel as a dedicated subdomain. TLS m
 
 ## Pipeline
 
-1. `build-production-image.yml` builds the exact commit on a GitHub-hosted runner.
+1. `build-production-image.yml` runs the Ruby quality gate on an ephemeral
+   GitHub-hosted runner. It builds the exact immutable image on the
+   repository-scoped self-hosted runner carrying the unique `acelerachat-ci`
+   label for trusted `main` pushes and explicit dispatches. Pull-request image
+   builds remain on `ubuntu-latest`, so untrusted fork code never executes on
+   the persistent runner. The runner is isolated on the dedicated Actions host
+   and is not one of the 3V Tintas or OZ3D runner services.
 2. The image is published to GHCR with the full commit SHA as tag.
 3. `deploy-production.yml` runs only through `workflow_dispatch` and requires an explicit full SHA.
 4. The workflow checks out `inputs.image_tag`, proves that commit is present, proves it is an ancestor of `origin/main`, and verifies the deployment scripts are the blobs from that same commit.
@@ -53,6 +59,53 @@ ed25519`. It requires exactly one unique fingerprint, places only the
 13. PostgreSQL and Redis start on the private network; `db:chatwoot_prepare` runs; Rails and Sidekiq start.
 14. The internal Rails health endpoint, public Chatwoot domain, ICP panel and ICP container are tested with strict TLS verification. Only after all healthchecks does the script atomically write `active-image` and mark the bootstrap `completed`.
 15. A first-deploy failure preserves PostgreSQL, Redis, storage and `bootstrap-attempt`, stops project services, and does not create `active-image`. A later failure also preserves the validated database backup; it does not restore schema or data automatically.
+
+## Self-hosted runner boundary
+
+The AceleraChat runner is repository-scoped and must be registered with the
+unique label `acelerachat-ci`. Its service account, runner directory, work
+directory and rootless Docker state are separate from every other runner on the
+host. It must not receive labels belonging to 3V Tintas, OZ3D or OpenJarvis.
+
+The versioned installation source is `infra/ci-runner/`. Run
+`provision-runner.sh` before requesting a repository-scoped ephemeral
+registration token, pass that token only through the process environment to
+`register-runner.sh`, and finish with `verify-runner.sh`. The scripts create
+only `ghr-acelerachat`, `/srv/ci/runners/acelerachat`,
+`/srv/ci/cache/acelerachat`, its rootless Docker daemon and its systemd units.
+They do not install host packages, modify SSH, or alter another runner.
+
+The image workflow refuses a runner name other than
+`vps10056-acelerachat`, refuses a Docker daemon that does not report rootless
+mode and requires at least 18 GiB free before BuildKit starts. Existing caches
+belonging to another repository are never an automatic cleanup target.
+
+Only trusted `push` events on `main`, explicit `workflow_dispatch` image builds,
+production deploys and rollbacks use this runner. Pull-request jobs continue to
+use GitHub-hosted infrastructure. The production environment remains the only
+source for deploy secrets and variables; no production credential is persisted
+in the runner installation or its service environment.
+
+Before enabling the workflow, verify through the GitHub API that exactly one
+online, idle runner matches `acelerachat-ci`, then verify rootless Docker from
+that runner's operating-system account. If the runner is offline or ambiguous,
+the workflow must remain queued rather than fall back to another host.
+
+Runner rollback is repository-scoped: remove `vps10056-acelerachat` from the
+GitHub repository, stop and disable only its generated service, and preserve
+its directories until diagnostics and artifact provenance have been recorded.
+Do not prune the 3V Tintas or OZ3D Docker daemons during this rollback.
+
+The installation verified on 2026-08-20 is derived from functional SHA
+`12d6fcd7bb9993b96bab07d827d83e2ca9b64395`. GitHub reported the exact runner
+`vps10056-acelerachat` online and idle; the host-side verifier confirmed runner
+2.336.0, rootless Docker 29.6.2, a closed public Docker API and 22 GiB free.
+The workflow smoke remains the first post-publication gate and performs no
+application or provider mutation.
+
+The GitHub Actions control plane is still required even when execution is
+self-hosted. An account-level Actions or billing lock prevents orchestration and
+must be resolved separately; the dedicated VPS is not a bypass for that lock.
 
 ## Production filesystem
 
