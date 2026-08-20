@@ -19,6 +19,8 @@ jobs:
   deploy:
     runs-on: [self-hosted, Linux, X64, acelerachat-ci]
     environment: production
+    env:
+      IMAGE_REPOSITORY: ghcr.io/cesaryukoyama28-eng/centraldeatendimentochat
     steps:
       - name: Validate explicit image tag
         env:
@@ -154,7 +156,6 @@ jobs:
 
       - name: Preflight immutable image and public ingress
         env:
-          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
           IMAGE_TAG: ${{ inputs.image_tag }}
           PROD_DOMAIN: ${{ vars.PROD_DOMAIN }}
           PROD_EXPECTED_IP: ${{ vars.PROD_EXPECTED_IP }}
@@ -197,7 +198,7 @@ jobs:
             echo "${label} status observed: ${http_status}"
           }
 
-          test -n "$GHCR_PULL_TOKEN"
+          test "$IMAGE_REPOSITORY" = 'ghcr.io/cesaryukoyama28-eng/centraldeatendimentochat'
           test -n "$IMAGE_TAG"
           test -n "$PROD_DOMAIN"
           test -n "$PROD_EXPECTED_IP"
@@ -207,9 +208,10 @@ jobs:
           [[ "$ICP_PANEL_DOMAIN" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$ ]]
           validate_ipv4 "$PROD_EXPECTED_IP"
 
-          trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
-          printf '%s' "$GHCR_PULL_TOKEN" | docker login ghcr.io --username tadashiyukoyama --password-stdin >/dev/null
-          docker buildx imagetools inspect "ghcr.io/tadashiyukoyama/centraldeatendimentochat:${IMAGE_TAG}" >/dev/null
+          anonymous_config=$(mktemp -d "$RUNNER_TEMP/ghcr-anonymous.XXXXXX")
+          trap 'rm -rf -- "$anonymous_config"' EXIT
+          chmod 700 "$anonymous_config"
+          DOCKER_CONFIG="$anonymous_config" docker buildx imagetools inspect "${IMAGE_REPOSITORY}:${IMAGE_TAG}" >/dev/null
 
           mapfile -t resolved_ips < <(getent ahostsv4 "$PROD_DOMAIN" | awk '{print $1}' | sort -u)
           if (( ${#resolved_ips[@]} != 1 )) || [[ "${resolved_ips[0]:-}" != "$PROD_EXPECTED_IP" ]]; then
@@ -259,7 +261,6 @@ jobs:
 
       - name: Deploy exact image and verify ICP
         env:
-          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
           IMAGE_TAG: ${{ inputs.image_tag }}
           PROD_DOMAIN: ${{ vars.PROD_DOMAIN }}
           ICP_PANEL_DOMAIN: ${{ vars.ICP_PANEL_DOMAIN }}
@@ -269,13 +270,13 @@ jobs:
           PROD_USER: ${{ vars.PROD_USER }}
         run: |
           set -euo pipefail
-          test -n "$GHCR_PULL_TOKEN"
+          test "$IMAGE_REPOSITORY" = 'ghcr.io/cesaryukoyama28-eng/centraldeatendimentochat'
           test -n "$PROD_DOMAIN"
           test -n "$PROD_EXPECTED_IP"
           test -n "$ICP_PANEL_DOMAIN"
           [[ "$PROD_DOMAIN" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$ ]]
           [[ "$ICP_PANEL_DOMAIN" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$ ]]
-          printf '%s' "$GHCR_PULL_TOKEN" | ssh -i "$RUNNER_TEMP/prod-key" -p "$PROD_PORT" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/prod-known-hosts" "$PROD_USER@$PROD_HOST" "deploy-production $IMAGE_TAG $PROD_DOMAIN $ICP_PANEL_DOMAIN $PROD_EXPECTED_IP"
+          ssh -i "$RUNNER_TEMP/prod-key" -p "$PROD_PORT" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/prod-known-hosts" "$PROD_USER@$PROD_HOST" "deploy-production $IMAGE_REPOSITORY $IMAGE_TAG $PROD_DOMAIN $ICP_PANEL_DOMAIN $PROD_EXPECTED_IP" </dev/null
 
       - name: Remove transient SSH material
         if: always()

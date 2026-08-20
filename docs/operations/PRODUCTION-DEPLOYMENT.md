@@ -9,7 +9,6 @@ The first-deploy exception is intentionally narrow: when `/opt/central-atendimen
 Secrets:
 
 - `PROD_SSH_KEY`: private key for the restricted `centraldeploy` account;
-- `GHCR_PULL_TOKEN`: least-privilege token that can pull the package;
 - `PROD_ENV_FILE`: complete production environment file, without committing its values.
 - `PROD_SMTP_PASSWORD`: password for the approved global SMTP account; it is
   merged in memory with the versioned non-secret email overlay and is never
@@ -31,29 +30,29 @@ The domain must be created through the ICP panel as a dedicated subdomain. TLS m
 
 ## Pipeline
 
-1. `build-production-image.yml` runs the Ruby quality gate on an ephemeral
-   GitHub-hosted runner. It builds the exact immutable image on the
+1. `build-production-image.yml` runs the Ruby quality gate and the reusable
+   production-contract gate on ephemeral GitHub-hosted runners. It builds the exact immutable image on the
    repository-scoped self-hosted runner carrying the unique `acelerachat-ci`
-   label for trusted `main` pushes and explicit dispatches. Pull-request image
+   label for explicit dispatches. Pull-request image
    builds remain on `ubuntu-latest`, so untrusted fork code never executes on
    the persistent runner. The runner is isolated on the dedicated Actions host
    and is not one of the 3V Tintas or OZ3D runner services.
 2. The image is published to GHCR with the full commit SHA as tag.
 3. `deploy-production.yml` runs only through `workflow_dispatch` and requires an explicit full SHA.
 4. The workflow checks out `inputs.image_tag`, proves that commit is present, proves it is an ancestor of `origin/main`, and verifies the deployment scripts are the blobs from that same commit.
-5. Before sending the environment file or token, the runner calculates the five contract hashes from the selected commit and calls the restricted `verify-contract` action. A mismatch aborts with `Production contract mismatch: remote root-owned files do not match the selected commit.` The workflow never updates root-owned files automatically.
+5. Before sending the environment file, the runner calculates the five contract hashes from the selected commit and calls the restricted `verify-contract` action. A mismatch aborts with `Production contract mismatch: remote root-owned files do not match the selected commit.` The workflow never updates root-owned files automatically.
 6. The runner pins the audited ED25519 SSH host key with `ssh-keyscan -t
 ed25519`. It requires exactly one unique fingerprint, places only the
    validated ED25519 line in `known_hosts`, and uses the restricted deploy key.
-7. Before any mutating SSH command, the runner validates the immutable image exists in GHCR, validates `PROD_EXPECTED_IP`, checks that `PROD_DOMAIN` resolves exclusively to it, and performs strict HTTPS checks for the Chatwoot and ICP panel domains. HTTP 200-599 is accepted because the application may not be active yet; status 000 or invalid TLS blocks the operation.
+7. Before any mutating SSH command, the runner validates the immutable image exists in the public GHCR package using an isolated empty Docker configuration, validates `PROD_EXPECTED_IP`, checks that `PROD_DOMAIN` resolves exclusively to it, and performs strict HTTPS checks for the Chatwoot and ICP panel domains. HTTP 200-599 is accepted because the application may not be active yet; status 000 or invalid TLS blocks the operation.
 8. The protected base environment is merged with
    `infra/env/acelerachat.production.public.env.example` and
    the protected `PROD_SMTP_PASSWORD` and `PROD_SENTRY_DSN` values in a
    runner-temporary file with mode 0600. The merged environment is sent over
    the authenticated SSH channel and stored with mode 0600; its values are
    never printed, and the runner copy is removed unconditionally.
-9. The deploy command receives exactly four arguments: image SHA, Chatwoot domain, ICP panel domain and expected IPv4. The gateway rejects missing or extra arguments.
-10. The deploy script repeats the DNS, strict TLS and ICP checks before changing application state, validates Compose, authenticates to GHCR, pulls the immutable image, and logs out before creating any bootstrap marker.
+9. The deploy command receives exactly five arguments: an allowlisted GHCR repository, image SHA, Chatwoot domain, ICP panel domain and expected IPv4. The gateway rejects missing or extra arguments, and the script accepts only the current AceleraChat namespace or the preserved legacy namespace.
+10. The deploy script repeats the DNS, strict TLS and ICP checks before changing application state, validates Compose and pulls the immutable public image with an isolated empty Docker configuration before creating any bootstrap marker. It never consumes a workstation, runner or production registry credential.
 11. When `shared/active-image` already exists, the script runs `pg_dump --format=custom --no-owner --no-acl` inside the existing PostgreSQL container. It rejects an empty dump, validates the archive with `pg_restore --list`, writes a SHA-256 checksum and metadata, and atomically updates the `latest` backup record. A failed or unverifiable backup aborts the deployment before the bootstrap marker or any stateful Compose operation.
 12. A successful image pull, and successful backup when required, are followed immediately by the atomic `shared/bootstrap-attempt` marker with the image, UTC start time, `state=started` and backup provenance when applicable.
 13. PostgreSQL and Redis start on the private network; `db:chatwoot_prepare` runs; Rails and Sidekiq start.
@@ -150,7 +149,7 @@ implemented before production data volume requires them.
 
 ## Remote contract pinning
 
-The restricted SSH gateway exposes only the fixed-path `verify-contract` read action for contract inspection. It hashes the deployed root-owned deploy, rollback, environment-install, Compose and gateway files and accepts no user-supplied path, glob or shell. The workflow compares all five values with the selected commit before it sends any environment file or registry token. Installing the exact root-owned blobs is a separate administrative gate after merge; this workflow never performs that installation.
+The restricted SSH gateway exposes only the fixed-path `verify-contract` read action for contract inspection. It hashes the deployed root-owned deploy, rollback, environment-install, Compose and gateway files and accepts no user-supplied path, glob or shell. The workflow compares all five values with the selected commit before it sends any environment file. Installing the exact root-owned blobs is a separate administrative gate after merge; this workflow never performs that installation. That gate must preserve the previous five files in a timestamped root-only directory, install only the fixed audited paths atomically and verify every SHA-256 before a deploy is dispatched.
 
 ## SSH host-key pinning
 
@@ -182,6 +181,8 @@ The first deploy has no previous application image for rollback. A failure after
 
 ## Preflight and secret handling
 
-The GHCR pull token is supplied only to the runner through the protected secret, used through `docker login --password-stdin` for `buildx imagetools inspect`, and cleaned up with `docker logout` on both success and failure. It is never sent to the VPS during preflight, stored in a file, placed in arguments, written to the bootstrap marker or printed in logs. The preflight must pass before `install-env` is allowed.
+The current and legacy GHCR packages are public. The runner and production scripts create isolated empty Docker configuration directories and perform anonymous manifest inspection and pull. No GHCR credential is read, sent to the VPS, persisted or placed in an argument. A package that stops being anonymously readable fails the preflight before `install-env` or any stateful operation.
+
+The active-image marker may reference either of the two allowlisted repositories during the namespace transition. New deployments use `ghcr.io/cesaryukoyama28-eng/centraldeatendimentochat`; rollback requires an explicit repository choice so the preserved production image can continue to come from `ghcr.io/tadashiyukoyama/centraldeatendimentochat` without ambiguity.
 
 `PROD_EXPECTED_IP` is an environment variable, not a secret and not a repository fallback. The repository contains only documentation placeholders; the production environment supplies the actual IPv4 value.

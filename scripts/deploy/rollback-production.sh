@@ -4,7 +4,8 @@ set -Eeuo pipefail
 readonly APP_ROOT=${APP_ROOT:-/opt/central-atendimento}
 readonly COMPOSE_FILE=${COMPOSE_FILE:-$APP_ROOT/compose/docker-compose.production.yaml}
 readonly ENV_FILE=${CHATWOOT_ENV_FILE:-$APP_ROOT/shared/env/chatwoot.production.env}
-readonly IMAGE_REPOSITORY=${IMAGE_REPOSITORY:-ghcr.io/tadashiyukoyama/centraldeatendimentochat}
+readonly PRIMARY_IMAGE_REPOSITORY=ghcr.io/cesaryukoyama28-eng/centraldeatendimentochat
+readonly LEGACY_IMAGE_REPOSITORY=ghcr.io/tadashiyukoyama/centraldeatendimentochat
 readonly ICP_CONTAINER=${ICP_CONTAINER:-ic-openresty-tATe}
 readonly ICP_IMAGE=${ICP_IMAGE:-icontainer/openresty:1.29.2.3}
 readonly ICP_NETWORK=${ICP_NETWORK:-icontainer-network}
@@ -28,15 +29,40 @@ validate_ipv4() {
   done
 }
 
-if [[ $# -ne 4 ]]; then
-  echo 'rollback-production requires image SHA, Chatwoot domain, ICP panel domain and expected IPv4' >&2
+validate_image_repository() {
+  case "$1" in
+    "$PRIMARY_IMAGE_REPOSITORY"|"$LEGACY_IMAGE_REPOSITORY") return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+pull_public_image() {
+  local anonymous_config
+
+  anonymous_config=$(mktemp -d "$APP_ROOT/shared/.ghcr-anonymous.XXXXXX")
+  chmod 700 "$anonymous_config"
+  if ! DOCKER_CONFIG="$anonymous_config" docker pull "$image" >/dev/null; then
+    rm -rf -- "$anonymous_config"
+    return 1
+  fi
+  rm -rf -- "$anonymous_config"
+}
+
+if [[ $# -ne 5 ]]; then
+  echo 'rollback-production requires an allowed GHCR repository, image SHA, Chatwoot domain, ICP panel domain and expected IPv4' >&2
   exit 64
 fi
 
-image_tag=$1
-chatwoot_domain=$2
-icp_panel_domain=$3
-expected_public_ip=$4
+image_repository=$1
+image_tag=$2
+chatwoot_domain=$3
+icp_panel_domain=$4
+expected_public_ip=$5
+if ! validate_image_repository "$image_repository"; then
+  echo 'image repository is not allowed' >&2
+  exit 64
+fi
+readonly image_repository
 if [[ ! "$image_tag" =~ ^[0-9a-f]{40}$ ]]; then
   echo 'image tag must be a full commit SHA' >&2
   exit 64
@@ -55,7 +81,7 @@ if ! validate_ipv4 "$expected_public_ip"; then
 fi
 readonly expected_public_ip
 
-readonly image="$IMAGE_REPOSITORY:$image_tag"
+readonly image="$image_repository:$image_tag"
 readonly active_image_file="$APP_ROOT/shared/active-image"
 readonly compose_args=(--env-file "$ENV_FILE" -f "$COMPOSE_FILE" -p centraldeatendimentochat-production)
 run_compose() { docker compose "${compose_args[@]}" "$@"; }
@@ -99,19 +125,7 @@ check_public_domain
 assert_icp
 run_compose config --quiet
 
-registry_token=$(cat)
-# The cleanup function is invoked indirectly by the EXIT trap.
-# shellcheck disable=SC2317
-cleanup_registry_auth() {
-  docker logout ghcr.io >/dev/null 2>&1 || true
-}
-trap cleanup_registry_auth EXIT
-if [[ -n "$registry_token" ]]; then
-  printf '%s' "$registry_token" | docker login ghcr.io --username tadashiyukoyama --password-stdin >/dev/null
-fi
-unset registry_token
-docker pull "$image" >/dev/null
-docker logout ghcr.io >/dev/null 2>&1 || true
+pull_public_image
 
 export CHATWOOT_IMAGE="$image"
 run_compose up -d rails sidekiq >/dev/null

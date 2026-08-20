@@ -27,10 +27,20 @@
 4. Preservar a visibilidade pública usada pelo pacote anterior.
 5. Validar manifesto e pull sem alterar o container ativo.
 
+Publicação concluída:
+
+- SHA: `392b78d65b103171c3e4b8d9a823e159af092376`.
+- Digest OCI: `sha256:672e739e6f621f833fff835a0af47d42d3b720590c8832bc91d45c737dc14140`.
+- Run: `32343503639`.
+- Pacote público, associado ao repositório novo, com manifesto e 15 blobs
+  validados anonimamente.
+
 ## Gate posterior de produção
 
-A troca do marcador ativo exige uma entrega separada. Ela deve adaptar os
-contratos de deploy e rollback para aceitar explicitamente os namespaces novo e
-legado, observar o marcador real da VPS, validar backup PostgreSQL e manter a
-imagem anterior como rollback. Falha em qualquer preflight encerra o corte sem
-alterar produção.
+A troca do marcador ativo usa um repositório GHCR explícito e limitado aos
+namespaces novo e legado. O marcador antigo continua válido durante o corte;
+deploys novos apontam para o namespace AceleraChat e o workflow de rollback
+exige a escolha explícita do namespace. Ambos os pulls são anonimamente
+validados antes de qualquer operação stateful. O gate também observa o marcador
+real da VPS, valida backup PostgreSQL e mantém a imagem anterior como rollback.
+Falha em qualquer preflight encerra o corte sem alterar produção.

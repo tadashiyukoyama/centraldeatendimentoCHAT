@@ -1,6 +1,7 @@
 name: Central de Atendimento CHAT infrastructure contract
 
 on:
+  workflow_call:
   push:
     branches: [main]
   pull_request:
@@ -33,6 +34,7 @@ jobs:
           local = yaml.safe_load(Path('infra/compose/docker-compose.local.yaml').read_text())
           production = yaml.safe_load(Path('infra/compose/docker-compose.production.yaml').read_text())
           deploy_workflow = Path('.github/workflows/deploy-production.yml').read_text()
+          rollback_workflow = Path('.github/workflows/rollback-production.yml').read_text()
           deploy_script = Path('scripts/deploy/deploy-production.sh').read_text()
           rollback_script = Path('scripts/deploy/rollback-production.sh').read_text()
           deployment_doc = Path('docs/operations/PRODUCTION-DEPLOYMENT.md').read_text()
@@ -67,7 +69,7 @@ jobs:
           tracked = '\n'.join(__import__('subprocess').check_output(['git', 'ls-files'], text=True).splitlines())
           assert not any(line.startswith(('credenciais/', 'private/', 'runtime/', 'worktrees/', 'artifacts/')) for line in tracked.splitlines())
           assert not any(line.endswith('/.env') or line == '.env' for line in tracked.splitlines())
-          assert 'ref: ${{ inputs.image_tag }}' in deploy_workflow
+          assert ('ref: $' + '{{ inputs.image_tag }}') in deploy_workflow
           assert 'git merge-base --is-ancestor "$IMAGE_TAG" origin/main' in deploy_workflow
           assert 'git hash-object scripts/deploy/deploy-production.sh' in deploy_workflow
           pinning_start = deploy_workflow.index('- name: Prepare pinned SSH host key')
@@ -118,20 +120,38 @@ jobs:
 
           assert known_hosts_only_ed25519([('ssh-ed25519', expected_fingerprint)])
           assert not known_hosts_only_ed25519(mixed_order)
-          assert 'PROD_EXPECTED_IP: ${{ vars.PROD_EXPECTED_IP }}' in deploy_workflow
+          assert ('PROD_EXPECTED_IP: $' + '{{ vars.PROD_EXPECTED_IP }}') in deploy_workflow
           assert 'docker buildx imagetools inspect' in deploy_workflow
           assert 'PROD_EXPECTED_IP' in deploy_workflow
-          assert 'deploy-production $IMAGE_TAG' in deploy_workflow
+          assert 'deploy-production $IMAGE_REPOSITORY $IMAGE_TAG' in deploy_workflow
           assert '$PROD_DOMAIN $ICP_PANEL_DOMAIN $PROD_EXPECTED_IP' in deploy_workflow
-          assert 'expected_public_ip=$4' in deploy_script
+          assert 'image_repository=$1' in deploy_script
+          assert 'expected_public_ip=$5' in deploy_script
           assert 'readonly EXPECTED_PUBLIC_IP' not in deploy_script
           assert 'PROD_EXPECTED_IP:-' not in deploy_script
           assert 'validate_ipv4' in deploy_script
           assert 'validate_ipv4' in rollback_script
-          assert 'requires image SHA, Chatwoot domain, ICP panel domain and expected IPv4' in deploy_script
-          assert 'requires image SHA, Chatwoot domain, ICP panel domain and expected IPv4' in rollback_script
-          legacy_vps_ip = '.'.join(('216', '22', '27', '48'))
-          assert __import__('subprocess').run(['git', 'grep', '-n', legacy_vps_ip], capture_output=True).returncode == 1
+          assert 'requires an allowed GHCR repository, image SHA, Chatwoot domain, ICP panel domain and expected IPv4' in deploy_script
+          assert 'requires an allowed GHCR repository, image SHA, Chatwoot domain, ICP panel domain and expected IPv4' in rollback_script
+          primary_repository = 'ghcr.io/cesaryukoyama28-eng/centraldeatendimentochat'
+          legacy_repository = 'ghcr.io/tadashiyukoyama/centraldeatendimentochat'
+          for script in (deploy_script, rollback_script):
+              assert primary_repository in script
+              assert legacy_repository in script
+              assert 'validate_image_repository' in script
+              assert 'DOCKER_CONFIG="$anonymous_config" docker pull "$image"' in script
+              assert 'docker login' not in script
+          assert primary_repository in deploy_workflow
+          assert 'GHCR_PULL_TOKEN' not in deploy_workflow
+          assert primary_repository in rollback_workflow
+          assert legacy_repository in rollback_workflow
+          assert 'GHCR_PULL_TOKEN' not in rollback_workflow
+          assert 'rollback-production $IMAGE_REPOSITORY $IMAGE_TAG' in rollback_workflow
+          assert 'DOCKER_CONFIG="$anonymous_config" docker buildx imagetools inspect "${IMAGE_REPOSITORY}:${IMAGE_TAG}"' in rollback_workflow
+          assert "test \"$CONFIRMATION\" = 'ROLLBACK'" in rollback_workflow
+          production_vps_ip = '.'.join(('216', '22', '27', '48'))
+          for contract in (deploy_workflow, rollback_workflow, deploy_script, rollback_script, gateway_script):
+              assert production_vps_ip not in contract
           assert 'verify-contract)' in gateway_script
           assert 'verify-contract' in deploy_workflow
           assert 'PROD_SMTP_PASSWORD:' in deploy_workflow
@@ -208,7 +228,6 @@ jobs:
           assert domain_gate < operational_preflight < backup < marker_creation < postgres_start < migration
           assert '--no-deps --entrypoint bundle rails' in deploy_script
           assert deploy_script.index('docker pull "$image"') < marker_creation
-          assert deploy_script.index('docker logout ghcr.io') < marker_creation
           assert deploy_workflow.index('Preflight immutable image and public ingress') < deploy_workflow.index('Install production environment file')
           assert deploy_workflow.index('docker buildx imagetools inspect') < deploy_workflow.index('Install production environment file')
           assert deploy_workflow.index('PROD_DOMAIN does not resolve') < deploy_workflow.index('Install production environment file')
@@ -231,7 +250,7 @@ jobs:
           workdir=$(mktemp -d)
           trap 'rm -rf "$workdir"' EXIT
           cat > "$workdir/production.env" <<EOF
-          CHATWOOT_IMAGE=ghcr.io/tadashiyukoyama/centraldeatendimentochat:0000000000000000000000000000000000000000
+          CHATWOOT_IMAGE=ghcr.io/cesaryukoyama28-eng/centraldeatendimentochat:0000000000000000000000000000000000000000
           CHATWOOT_ENV_FILE=$workdir/production.env
           CHATWOOT_APP_PORT=3000
           CHATWOOT_STORAGE_DIR=$workdir/storage
@@ -254,25 +273,30 @@ jobs:
         run: |
           set -euo pipefail
           script="$PWD/scripts/deploy/deploy-production.sh"
+          rollback_script="$PWD/scripts/deploy/rollback-production.sh"
           image_tag=0000000000000000000000000000000000000000
+          primary_repository=ghcr.io/cesaryukoyama28-eng/centraldeatendimentochat
+          legacy_repository=ghcr.io/tadashiyukoyama/centraldeatendimentochat
           workdir=$(mktemp -d)
           trap 'rm -rf "$workdir"' EXIT
 
-          active_root="$workdir/active"
-          mkdir -p "$active_root/shared"
-          printf 'ghcr.io/tadashiyukoyama/centraldeatendimentochat:%s\n' "$image_tag" > "$active_root/shared/active-image"
-          set +e
-          output=$(APP_ROOT="$active_root" "$script" "$image_tag" example.invalid panel.invalid 192.0.2.44 </dev/null 2>&1)
-          status=$?
-          set -e
-          test "$status" -eq 78
-          grep -F 'Subsequent deployment blocked: database backup gate is not configured.' <<< "$output"
+          for active_repository in "$legacy_repository" "$primary_repository"; do
+            active_root="$workdir/active-${active_repository##*/}"
+            mkdir -p "$active_root/shared"
+            printf '%s:%s\n' "$active_repository" "$image_tag" > "$active_root/shared/active-image"
+            set +e
+            output=$(APP_ROOT="$active_root" "$script" "$primary_repository" "$image_tag" example.invalid panel.invalid 192.0.2.44 </dev/null 2>&1)
+            status=$?
+            set -e
+            test "$status" -eq 78
+            grep -F 'Subsequent deployment blocked: database backup gate is not configured.' <<< "$output"
+          done
 
           attempt_root="$workdir/attempt"
           mkdir -p "$attempt_root/shared"
           touch "$attempt_root/shared/bootstrap-attempt"
           set +e
-          output=$(APP_ROOT="$attempt_root" "$script" "$image_tag" example.invalid panel.invalid 192.0.2.44 </dev/null 2>&1)
+          output=$(APP_ROOT="$attempt_root" "$script" "$primary_repository" "$image_tag" example.invalid panel.invalid 192.0.2.44 </dev/null 2>&1)
           status=$?
           set -e
           test "$status" -eq 79
@@ -281,7 +305,7 @@ jobs:
           invalid_root="$workdir/invalid"
           mkdir -p "$invalid_root/shared"
           set +e
-          output=$(APP_ROOT="$invalid_root" "$script" "$image_tag" does-not-exist.invalid panel.invalid 192.0.2.44 </dev/null 2>&1)
+          output=$(APP_ROOT="$invalid_root" "$script" "$primary_repository" "$image_tag" does-not-exist.invalid panel.invalid 192.0.2.44 </dev/null 2>&1)
           status=$?
           set -e
           test "$status" -ne 0
@@ -290,11 +314,25 @@ jobs:
 
           for invalid_ip in 192.0.2.999 192.0.2.1/24 example.invalid -192.0.2.1 192.0.2.01; do
             set +e
-            output=$(APP_ROOT="$invalid_root" "$script" "$image_tag" example.invalid panel.invalid "$invalid_ip" </dev/null 2>&1)
+            output=$(APP_ROOT="$invalid_root" "$script" "$primary_repository" "$image_tag" example.invalid panel.invalid "$invalid_ip" </dev/null 2>&1)
             status=$?
             set -e
             test "$status" -eq 64
           done
+
+          set +e
+          output=$(APP_ROOT="$invalid_root" "$script" ghcr.io/example/unauthorized "$image_tag" example.invalid panel.invalid 192.0.2.44 </dev/null 2>&1)
+          status=$?
+          set -e
+          test "$status" -eq 64
+          grep -F 'image repository is not allowed' <<< "$output"
+
+          set +e
+          output=$(APP_ROOT="$invalid_root" "$rollback_script" ghcr.io/example/unauthorized "$image_tag" example.invalid panel.invalid 192.0.2.44 </dev/null 2>&1)
+          status=$?
+          set -e
+          test "$status" -eq 64
+          grep -F 'image repository is not allowed' <<< "$output"
 
           gateway_bin="$workdir/gateway-bin"
           mkdir -p "$gateway_bin"
@@ -306,17 +344,17 @@ jobs:
           gateway="$PWD/scripts/deploy/ssh-gateway.sh"
           for action in deploy-production rollback-production; do
             set +e
-            SSH_ORIGINAL_COMMAND="$action $image_tag chat.example.test panel.example.test" PATH="$gateway_bin:$PATH" bash "$gateway"
+            SSH_ORIGINAL_COMMAND="$action $primary_repository $image_tag chat.example.test panel.example.test" PATH="$gateway_bin:$PATH" bash "$gateway"
             status=$?
             set -e
             test "$status" -ne 42
             set +e
-            SSH_ORIGINAL_COMMAND="$action $image_tag chat.example.test panel.example.test 192.0.2.44" PATH="$gateway_bin:$PATH" bash "$gateway"
+            SSH_ORIGINAL_COMMAND="$action $primary_repository $image_tag chat.example.test panel.example.test 192.0.2.44" PATH="$gateway_bin:$PATH" bash "$gateway"
             status=$?
             set -e
             test "$status" -eq 42
             set +e
-            SSH_ORIGINAL_COMMAND="$action $image_tag chat.example.test panel.example.test 192.0.2.44 extra" PATH="$gateway_bin:$PATH" bash "$gateway"
+            SSH_ORIGINAL_COMMAND="$action $primary_repository $image_tag chat.example.test panel.example.test 192.0.2.44 extra" PATH="$gateway_bin:$PATH" bash "$gateway"
             status=$?
             set -e
             test "$status" -ne 42
@@ -383,13 +421,38 @@ jobs:
             "ICP_CONTAINER=ic-openresty-tATe" \
             "ICP_NETWORK=icontainer-network" \
             "PROD_EXPECTED_IP=192.0.2.44" \
-            "$script" "$image_tag" chat.example.test panel.example.test 192.0.2.44 </dev/null > "$workdir/pull-failure.log" 2>&1
+            "$script" "$primary_repository" "$image_tag" chat.example.test panel.example.test 192.0.2.44 </dev/null > "$workdir/pull-failure.log" 2>&1
           status=$?
           set -e
           test "$status" -ne 0
           test ! -e "$pull_fail_app/shared/bootstrap-attempt"
           test ! -e "$pull_fail_app/shared/active-image"
-          grep -F 'logout ghcr.io' "$pull_fail_log"
+          grep -F "pull $primary_repository:$image_tag" "$pull_fail_log"
+          ! grep -F 'login' "$pull_fail_log"
+          test -z "$(find "$pull_fail_app/shared" -maxdepth 1 -type d -name '.ghcr-anonymous.*' -print -quit)"
+
+          rollback_pull_fail_app="$workdir/rollback-pull-fail-app"
+          rollback_pull_fail_log="$workdir/rollback-pull-fail-docker.log"
+          mkdir -p "$rollback_pull_fail_app/shared"
+          set +e
+          sudo -n env \
+            "PATH=$fake_bin:$PATH" \
+            "APP_ROOT=$rollback_pull_fail_app" \
+            "COMPOSE_FILE=$workdir/compose.yaml" \
+            "CHATWOOT_ENV_FILE=$workdir/production.env" \
+            "FAKE_DOCKER_LOG=$rollback_pull_fail_log" \
+            "FAKE_DOCKER_FAIL_PULL=1" \
+            "ICP_IMAGE=icontainer/openresty:1.29.2.3" \
+            "ICP_CONTAINER=ic-openresty-tATe" \
+            "ICP_NETWORK=icontainer-network" \
+            "$rollback_script" "$legacy_repository" "$image_tag" chat.example.test panel.example.test 192.0.2.44 </dev/null > "$workdir/rollback-pull-failure.log" 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          test ! -e "$rollback_pull_fail_app/shared/active-image"
+          grep -F "pull $legacy_repository:$image_tag" "$rollback_pull_fail_log"
+          ! grep -F 'login' "$rollback_pull_fail_log"
+          test -z "$(find "$rollback_pull_fail_app/shared" -maxdepth 1 -type d -name '.ghcr-anonymous.*' -print -quit)"
 
           set +e
           sudo -n env \
@@ -402,7 +465,7 @@ jobs:
             "ICP_CONTAINER=ic-openresty-tATe" \
             "ICP_NETWORK=icontainer-network" \
             "PROD_EXPECTED_IP=192.0.2.44" \
-            "$script" "$image_tag" chat.example.test panel.example.test 192.0.2.44 </dev/null > "$workdir/failure.log" 2>&1
+            "$script" "$primary_repository" "$image_tag" chat.example.test panel.example.test 192.0.2.44 </dev/null > "$workdir/failure.log" 2>&1
           status=$?
           set -e
           test "$status" -ne 0

@@ -37,20 +37,22 @@ case "$action" in
   deploy-production)
     test -n "${first_arg:-}"
     test -n "${second_arg:-}"
-    read -r third_arg fourth_arg fifth_arg <<< "${extra:-}"
+    read -r third_arg fourth_arg fifth_arg sixth_arg <<< "${extra:-}"
     test -n "${third_arg:-}"
     test -n "${fourth_arg:-}"
-    test -z "${fifth_arg:-}"
-    exec sudo -n /usr/local/sbin/central-atendimento-deploy "$first_arg" "$second_arg" "$third_arg" "$fourth_arg"
+    test -n "${fifth_arg:-}"
+    test -z "${sixth_arg:-}"
+    exec sudo -n /usr/local/sbin/central-atendimento-deploy "$first_arg" "$second_arg" "$third_arg" "$fourth_arg" "$fifth_arg"
     ;;
   rollback-production)
     test -n "${first_arg:-}"
     test -n "${second_arg:-}"
-    read -r third_arg fourth_arg fifth_arg <<< "${extra:-}"
+    read -r third_arg fourth_arg fifth_arg sixth_arg <<< "${extra:-}"
     test -n "${third_arg:-}"
     test -n "${fourth_arg:-}"
-    test -z "${fifth_arg:-}"
-    exec sudo -n /usr/local/sbin/central-atendimento-rollback "$first_arg" "$second_arg" "$third_arg" "$fourth_arg"
+    test -n "${fifth_arg:-}"
+    test -z "${sixth_arg:-}"
+    exec sudo -n /usr/local/sbin/central-atendimento-rollback "$first_arg" "$second_arg" "$third_arg" "$fourth_arg" "$fifth_arg"
     ;;
   *)
     echo 'Unsupported SSH command' >&2

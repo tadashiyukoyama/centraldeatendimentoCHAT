@@ -18,6 +18,9 @@ permissions:
   packages: write
 
 jobs:
+  production-contract-quality:
+    uses: ./.github/workflows/centraldeatendimentochat-infrastructure.yml
+
   captain-agent-quality:
     # Ruby and service-container dependencies remain on the ephemeral hosted
     # image. The persistent runner is reserved for the expensive Docker build.
@@ -121,8 +124,80 @@ jobs:
           spec/enterprise/services/captain/llm/assistant_chat_service_spec.rb
           --format progress
 
+      - name: Run targeted OpenJarvis control lint
+        run: >-
+          bundle exec rubocop
+          app/controllers/api/v1/accounts/integrations/openjarvis_controller.rb
+          app/controllers/api/v1/openjarvis/messages_controller.rb
+          app/controllers/api/v1/openjarvis/whatsapp_actions_controller.rb
+          app/services/openjarvis/access_scope.rb
+          app/services/openjarvis/capability_definition.rb
+          app/services/openjarvis/capability_resolver.rb
+          app/services/openjarvis/catalog_operations.rb
+          app/services/openjarvis/catalog_policies.rb
+          app/services/openjarvis/catalog_schemas.rb
+          app/services/openjarvis/configuration.rb
+          app/services/openjarvis/diagnostics.rb
+          app/services/openjarvis/remote_attachment_fetcher.rb
+          app/services/openjarvis/whatsapp_action_service.rb
+          app/services/whatsapp/evolution/api_client.rb
+          app/services/whatsapp/providers/evolution_service.rb
+
+      - name: Run targeted OpenJarvis control specs
+        run: >-
+          bundle exec rspec
+          spec/contracts/openjarvis/catalog_spec.rb
+          spec/lib/safe_fetch_spec.rb
+          spec/requests/api/v1/accounts/integrations/openjarvis_controller_spec.rb
+          spec/requests/api/v1/openjarvis_whatsapp_actions_spec.rb
+          spec/services/openjarvis/access_scope_spec.rb
+          spec/services/openjarvis/capability_resolver_spec.rb
+          spec/services/openjarvis/configuration_spec.rb
+          spec/services/openjarvis/remote_attachment_fetcher_spec.rb
+          spec/services/openjarvis/webhook_enqueuer_spec.rb
+          spec/services/openjarvis/whatsapp_action_service_spec.rb
+          spec/services/whatsapp/evolution/api_client_spec.rb
+          spec/services/whatsapp/providers/evolution_service_spec.rb
+          --format progress
+
+  openjarvis-frontend-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run targeted OpenJarvis frontend lint
+        run: >-
+          pnpm exec eslint
+          app/javascript/dashboard/routes/dashboard/settings/integrations/OpenJarvis.vue
+          app/javascript/dashboard/routes/dashboard/settings/integrations/OpenJarvis/OpenJarvisAccessForm.vue
+          app/javascript/dashboard/routes/dashboard/settings/integrations/OpenJarvis/OpenJarvisAccessForm.spec.js
+          app/javascript/dashboard/routes/dashboard/settings/integrations/OpenJarvis/formSanitizer.js
+          app/javascript/dashboard/routes/dashboard/settings/integrations/OpenJarvis/formSanitizer.spec.js
+
+      - name: Run targeted OpenJarvis frontend specs
+        run: >-
+          pnpm exec vitest run
+          app/javascript/dashboard/routes/dashboard/settings/integrations/OpenJarvis/OpenJarvisAccessForm.spec.js
+          app/javascript/dashboard/routes/dashboard/settings/integrations/OpenJarvis/formSanitizer.spec.js
+          --no-cache
+          --no-coverage
+
   build:
-    needs: captain-agent-quality
+    needs: [production-contract-quality, captain-agent-quality, openjarvis-frontend-quality]
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'acelerachat-ci' }}
     steps:
       - name: Checkout exact revision

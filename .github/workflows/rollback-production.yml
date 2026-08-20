@@ -7,6 +7,13 @@ on:
         description: Full 40-character commit SHA of a previous production image
         required: true
         type: string
+      image_repository:
+        description: GHCR namespace containing the rollback image
+        required: true
+        type: choice
+        options:
+          - ghcr.io/tadashiyukoyama/centraldeatendimentochat
+          - ghcr.io/cesaryukoyama28-eng/centraldeatendimentochat
       confirmation:
         description: Type ROLLBACK to confirm the production rollback
         required: true
@@ -27,10 +34,15 @@ jobs:
       - name: Validate explicit rollback target
         env:
           IMAGE_TAG: ${{ inputs.image_tag }}
+          IMAGE_REPOSITORY: ${{ inputs.image_repository }}
           CONFIRMATION: ${{ inputs.confirmation }}
         run: |
           set -euo pipefail
           [[ "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]]
+          case "$IMAGE_REPOSITORY" in
+            ghcr.io/tadashiyukoyama/centraldeatendimentochat|ghcr.io/cesaryukoyama28-eng/centraldeatendimentochat) ;;
+            *) exit 64 ;;
+          esac
           test "$CONFIRMATION" = 'ROLLBACK'
 
       - name: Checkout current production contract
@@ -149,8 +161,8 @@ jobs:
 
       - name: Preflight rollback image and public ingress
         env:
-          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
           IMAGE_TAG: ${{ inputs.image_tag }}
+          IMAGE_REPOSITORY: ${{ inputs.image_repository }}
           PROD_DOMAIN: ${{ vars.PROD_DOMAIN }}
           PROD_EXPECTED_IP: ${{ vars.PROD_EXPECTED_IP }}
           ICP_PANEL_DOMAIN: ${{ vars.ICP_PANEL_DOMAIN }}
@@ -192,7 +204,10 @@ jobs:
             echo "${label} status observed: ${http_status}"
           }
 
-          test -n "$GHCR_PULL_TOKEN"
+          case "$IMAGE_REPOSITORY" in
+            ghcr.io/tadashiyukoyama/centraldeatendimentochat|ghcr.io/cesaryukoyama28-eng/centraldeatendimentochat) ;;
+            *) exit 64 ;;
+          esac
           test -n "$IMAGE_TAG"
           test -n "$PROD_DOMAIN"
           test -n "$PROD_EXPECTED_IP"
@@ -200,9 +215,10 @@ jobs:
           [[ "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]]
           validate_ipv4 "$PROD_EXPECTED_IP"
 
-          trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
-          printf '%s' "$GHCR_PULL_TOKEN" | docker login ghcr.io --username tadashiyukoyama --password-stdin >/dev/null
-          docker buildx imagetools inspect "ghcr.io/tadashiyukoyama/centraldeatendimentochat:${IMAGE_TAG}" >/dev/null
+          anonymous_config=$(mktemp -d "$RUNNER_TEMP/ghcr-anonymous.XXXXXX")
+          trap 'rm -rf -- "$anonymous_config"' EXIT
+          chmod 700 "$anonymous_config"
+          DOCKER_CONFIG="$anonymous_config" docker buildx imagetools inspect "${IMAGE_REPOSITORY}:${IMAGE_TAG}" >/dev/null
 
           mapfile -t resolved_ips < <(getent ahostsv4 "$PROD_DOMAIN" | awk '{print $1}' | sort -u)
           if (( ${#resolved_ips[@]} != 1 )) || [[ "${resolved_ips[0]:-}" != "$PROD_EXPECTED_IP" ]]; then
@@ -214,8 +230,8 @@ jobs:
 
       - name: Roll back exact image and verify ICP
         env:
-          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
           IMAGE_TAG: ${{ inputs.image_tag }}
+          IMAGE_REPOSITORY: ${{ inputs.image_repository }}
           PROD_DOMAIN: ${{ vars.PROD_DOMAIN }}
           ICP_PANEL_DOMAIN: ${{ vars.ICP_PANEL_DOMAIN }}
           PROD_EXPECTED_IP: ${{ vars.PROD_EXPECTED_IP }}
@@ -224,18 +240,22 @@ jobs:
           PROD_USER: ${{ vars.PROD_USER }}
         run: |
           set -euo pipefail
-          test -n "$GHCR_PULL_TOKEN"
-          printf '%s' "$GHCR_PULL_TOKEN" | ssh -i "$RUNNER_TEMP/prod-key" -p "$PROD_PORT" \
+          case "$IMAGE_REPOSITORY" in
+            ghcr.io/tadashiyukoyama/centraldeatendimentochat|ghcr.io/cesaryukoyama28-eng/centraldeatendimentochat) ;;
+            *) exit 64 ;;
+          esac
+          ssh -i "$RUNNER_TEMP/prod-key" -p "$PROD_PORT" \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile="$RUNNER_TEMP/prod-known-hosts" \
             "$PROD_USER@$PROD_HOST" \
-            "rollback-production $IMAGE_TAG $PROD_DOMAIN $ICP_PANEL_DOMAIN $PROD_EXPECTED_IP"
+            "rollback-production $IMAGE_REPOSITORY $IMAGE_TAG $PROD_DOMAIN $ICP_PANEL_DOMAIN $PROD_EXPECTED_IP" </dev/null
 
       - name: Record rollback target
         env:
           IMAGE_TAG: ${{ inputs.image_tag }}
-        run: echo "Production rollback completed to ${IMAGE_TAG}." >> "$GITHUB_STEP_SUMMARY"
+          IMAGE_REPOSITORY: ${{ inputs.image_repository }}
+        run: echo "Production rollback completed to ${IMAGE_REPOSITORY}:${IMAGE_TAG}." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove transient SSH material
         if: always()
