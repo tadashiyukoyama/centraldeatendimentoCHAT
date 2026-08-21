@@ -144,6 +144,27 @@ RSpec.describe 'OpenJarvis contract API', type: :request do
     end
   end
 
+  it 'returns and replays a created conversation with its database-assigned public id' do
+    contact = create(:contact, account: account)
+    create(:conversation, account: account, inbox: inbox, contact: contact)
+    request_headers = headers.merge('Idempotency-Key' => 'conversation-create-contract-0001')
+    request_params = { conversation: { inbox_id: inbox.id, contact_id: contact.id } }
+
+    post '/api/v1/openjarvis/conversations', params: request_params, headers: request_headers, as: :json
+
+    expect(response).to have_http_status(:created)
+    created_body = response.parsed_body
+    created = account.conversations.find(created_body.dig('data', 'internal_id'))
+    expect(created_body.dig('data', 'id')).to eq(created.display_id)
+    expect(created_body.dig('data', 'id')).to be_present
+    expect_schema('ConversationResponse', created_body)
+
+    post '/api/v1/openjarvis/conversations', params: request_params, headers: request_headers, as: :json
+
+    expect(response.headers['Idempotency-Replayed']).to eq('true')
+    expect(response.parsed_body).to eq(created_body)
+  end
+
   it 'updates a contact idempotently using the published response schema' do
     contact = create(:contact, account: account)
     create(:conversation, account: account, inbox: inbox, contact: contact)

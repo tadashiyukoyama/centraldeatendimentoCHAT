@@ -91,7 +91,14 @@ class Api::V1::Openjarvis::ConversationsController < Api::V1::Openjarvis::BaseCo
     response_status = record.previously_new_record? ? :created : :ok
     apply_initial_assignment(record)
     create_initial_message(record)
-    idempotent_result(status: response_status, body: { data: present(record) }, resource: record)
+    idempotent_result(status: response_status, body: { data: present(persisted_copy(record)) }, resource: record)
+  end
+
+  # Conversation#display_id is assigned by a PostgreSQL trigger. The original
+  # instance must retain previous_changes for its after_commit dispatcher, so
+  # present a fresh copy instead of reloading it inside this transaction.
+  def persisted_copy(record)
+    Conversation.find(record.id)
   end
 
   def build_conversation
