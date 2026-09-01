@@ -46,10 +46,11 @@ jobs:
           set -euo pipefail
           printf 'filesystem_usage\n'
           df -h /
-          for root in "$HOME" "$RUNNER_TEMP" "$RUNNER_WORKSPACE"; do
+          runner_work_root=$(realpath "$RUNNER_TEMP/../..")
+          for root in "$HOME" "$runner_work_root" /srv/ci /var /opt; do
             if [[ -d "$root" ]]; then
               printf 'disk_usage_root=%s\n' "$root"
-              du --one-file-system --block-size=1G --max-depth=1 "$root" 2>/dev/null | sort -nr | head -20
+              (du --one-file-system --block-size=1G --max-depth=1 "$root" 2>/dev/null || true) | sort -nr | head -20
             fi
           done
 
