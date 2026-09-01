@@ -50,8 +50,6 @@ RSpec.describe Openjarvis::AccessScope do
     future_inbox = create(:inbox, account: account)
     create(:inbox)
 
-    expect(described_class.new(hook).inboxes).to match_array(
-      [allowed_inbox, other_inbox, future_inbox]
-    )
+    expect(described_class.new(hook).inboxes).to contain_exactly(allowed_inbox, other_inbox, future_inbox)
   end
 end

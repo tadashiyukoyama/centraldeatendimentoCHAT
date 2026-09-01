@@ -63,6 +63,8 @@ const eventStatusClass = status => {
   return 'text-n-amber-11';
 };
 
+const instagramUsername = username => `@${username || 'instagram'}`;
+
 const normalizeRule = rule => ({
   ...rule,
   keywordsText: (rule.keywords || []).join(', '),
@@ -454,11 +456,7 @@ onMounted(load);
                     {{ event.comment_text }}
                   </p>
                   <p class="text-xs text-n-slate-10">
-                    {{
-                      $t('INBOX_MGMT.INSTAGRAM_COMMENT_AUTOMATION.USERNAME', {
-                        username: event.sender_username || 'instagram',
-                      })
-                    }}
+                    {{ instagramUsername(event.sender_username) }}
                   </p>
                 </td>
                 <td class="py-3 pr-4 text-n-slate-11">

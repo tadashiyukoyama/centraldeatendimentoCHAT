@@ -36,11 +36,13 @@ RSpec.describe Openjarvis::RemoteAttachmentFetcher do
   it 'classifies unavailable remote media as retryable without exposing the remote error' do
     allow(SafeFetch).to receive(:fetch).and_raise(SafeFetch::FetchError, 'private upstream detail')
 
-    expect do
-      described_class.new('https://media.example.test/file.jpg').fetch!
-    end.to raise_error(Openjarvis::ApiError) do |error|
+    error_matcher = raise_error(Openjarvis::ApiError) do |error|
       expect(error).to have_attributes(code: 'remote_attachment_unavailable', retryable: true)
       expect(error.message).not_to include('private upstream detail')
     end
+
+    expect do
+      described_class.new('https://media.example.test/file.jpg').fetch!
+    end.to error_matcher
   end
 end
