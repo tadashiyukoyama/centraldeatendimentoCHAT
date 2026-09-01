@@ -2,9 +2,19 @@ name: Verify dedicated AceleraChat runner
 
 on:
   workflow_dispatch:
+    inputs:
+      cleanup_build_cache:
+        description: Remove only unused Docker build cache before enforcing the disk guard
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
+
+concurrency:
+  group: acelerachat-dedicated-runner-maintenance
+  cancel-in-progress: false
 
 jobs:
   smoke:
@@ -17,10 +27,37 @@ jobs:
           MIN_FREE_GIB: '18'
         run: |
           set -euo pipefail
-          test "$RUNNER_NAME" = "$EXPECTED_RUNNER_NAME"
+          if [[ "$RUNNER_NAME" != "$EXPECTED_RUNNER_NAME" ]]; then
+            echo "::error::Expected runner ${EXPECTED_RUNNER_NAME}, observed ${RUNNER_NAME}."
+            exit 1
+          fi
           security_options=$(docker info --format '{{json .SecurityOptions}}')
-          [[ "$security_options" == *rootless* ]]
+          if [[ "$security_options" != *rootless* ]]; then
+            echo '::error::Dedicated runner Docker daemon is not rootless.'
+            exit 1
+          fi
           free_gib=$(df --output=avail -BG / | tail -1 | tr -dc '0-9')
-          (( free_gib >= MIN_FREE_GIB ))
           docker version --format 'docker_client={{.Client.Version}} docker_server={{.Server.Version}}'
+          docker system df
           printf 'runner=%s free_disk_gib=%s rootless=true\n' "$RUNNER_NAME" "$free_gib"
+
+      - name: Reclaim unused Docker build cache
+        if: inputs.cleanup_build_cache
+        run: |
+          set -euo pipefail
+          before_gib=$(df --output=avail -BG / | tail -1 | tr -dc '0-9')
+          docker builder prune --all --force
+          after_gib=$(df --output=avail -BG / | tail -1 | tr -dc '0-9')
+          printf 'unused_build_cache_removed=true free_disk_before_gib=%s free_disk_after_gib=%s\n' "$before_gib" "$after_gib"
+
+      - name: Enforce disk guard
+        env:
+          MIN_FREE_GIB: '18'
+        run: |
+          set -euo pipefail
+          free_gib=$(df --output=avail -BG / | tail -1 | tr -dc '0-9')
+          if (( free_gib < MIN_FREE_GIB )); then
+            echo "::error::Dedicated runner has ${free_gib} GiB free; ${MIN_FREE_GIB} GiB is required."
+            exit 1
+          fi
+          echo "Dedicated runner disk guard passed with ${free_gib} GiB free." >> "$GITHUB_STEP_SUMMARY"

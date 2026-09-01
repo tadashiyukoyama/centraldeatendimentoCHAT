@@ -211,11 +211,21 @@ jobs:
           MIN_FREE_GIB: '18'
         run: |
           set -euo pipefail
-          test "$RUNNER_NAME" = "$EXPECTED_RUNNER_NAME"
+          if [[ "$RUNNER_NAME" != "$EXPECTED_RUNNER_NAME" ]]; then
+            echo "::error::Expected runner ${EXPECTED_RUNNER_NAME}, observed ${RUNNER_NAME}."
+            exit 1
+          fi
           security_options=$(docker info --format '{{json .SecurityOptions}}')
-          [[ "$security_options" == *rootless* ]]
+          if [[ "$security_options" != *rootless* ]]; then
+            echo '::error::Dedicated runner Docker daemon is not rootless.'
+            exit 1
+          fi
           free_gib=$(df --output=avail -BG / | tail -1 | tr -dc '0-9')
-          (( free_gib >= MIN_FREE_GIB ))
+          if (( free_gib < MIN_FREE_GIB )); then
+            docker system df
+            echo "::error::Dedicated runner has ${free_gib} GiB free; ${MIN_FREE_GIB} GiB is required."
+            exit 1
+          fi
           echo "Dedicated runner verified with ${free_gib} GiB free." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Set up Buildx
