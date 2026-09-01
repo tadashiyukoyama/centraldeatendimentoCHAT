@@ -53,6 +53,12 @@ jobs:
               (du --one-file-system --block-size=1G --max-depth=1 "$root" 2>/dev/null || true) | sort -nr | head -20
             fi
           done
+          if sudo -n true 2>/dev/null; then
+            printf 'sudo_noninteractive=true\n'
+            sudo du --one-file-system --block-size=1G --max-depth=1 / 2>/dev/null | sort -nr | head -30
+          else
+            printf 'sudo_noninteractive=false\n'
+          fi
 
       - name: Reclaim unused Docker build cache
         if: inputs.cleanup_build_cache
