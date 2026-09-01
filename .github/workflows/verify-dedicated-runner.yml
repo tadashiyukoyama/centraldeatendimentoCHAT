@@ -41,6 +41,18 @@ jobs:
           docker system df
           printf 'runner=%s free_disk_gib=%s rootless=true\n' "$RUNNER_NAME" "$free_gib"
 
+      - name: Report runner disk usage
+        run: |
+          set -euo pipefail
+          printf 'filesystem_usage\n'
+          df -h /
+          for root in "$HOME" "$RUNNER_TEMP" "$RUNNER_WORKSPACE"; do
+            if [[ -d "$root" ]]; then
+              printf 'disk_usage_root=%s\n' "$root"
+              du --one-file-system --block-size=1G --max-depth=1 "$root" 2>/dev/null | sort -nr | head -20
+            fi
+          done
+
       - name: Reclaim unused Docker build cache
         if: inputs.cleanup_build_cache
         run: |
