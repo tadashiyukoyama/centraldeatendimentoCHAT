@@ -52,4 +52,4 @@ results = assistants.map do |assistant|
 end
 
 # This is an operator CLI; machine-readable stdout is its public contract.
-puts JSON.pretty_generate(mode: mode, source_version: source.fetch('version'), assistants: results) # rubocop:disable Rails/Output
+puts JSON.pretty_generate(mode: mode, source_version: source.fetch('version'), assistants: results)

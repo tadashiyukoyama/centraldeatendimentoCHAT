@@ -32,4 +32,4 @@ result = case mode
          end
 
 # This is an operator CLI; machine-readable stdout is its public contract.
-puts JSON.pretty_generate(result) # rubocop:disable Rails/Output
+puts JSON.pretty_generate(result)
